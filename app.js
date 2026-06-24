@@ -20,7 +20,7 @@ const App = (() => {
     }
 
     function badgeCls(sev) {
-        return { HIGH: 'badge-high', MED: 'badge-med', LOW: 'badge-low', WARN: 'badge-warn' }[sev] || 'badge-warn';
+        return { HIGH: 'badge-error', MED: 'badge-warning', LOW: 'badge-info', WARN: 'badge-ghost' }[sev] || 'badge-ghost';
     }
 
     function sevLabel(sev) {
@@ -132,7 +132,7 @@ const App = (() => {
                 _enter();
             } else {
                 const e = document.getElementById('gate-error');
-                e.style.display = 'block';
+                e.classList.remove('hidden');
                 e.textContent = '密码错误';
             }
         });
@@ -151,8 +151,8 @@ const App = (() => {
     }
 
     function _enter() {
-        document.getElementById('gate').style.display = 'none';
-        document.getElementById('app').style.display = 'block';
+        document.getElementById('gate').classList.add('hidden');
+        document.getElementById('app').classList.remove('hidden');
         _loadAll();
         _startRefresh();
     }
@@ -187,12 +187,12 @@ const App = (() => {
     function _showErr(m) {
         const e = document.getElementById('data-error');
         const t = document.getElementById('data-error-text');
-        if (e) { if (t) t.textContent = m; e.style.display = 'flex'; }
+        if (e) { if (t) t.textContent = m; e.classList.remove('hidden'); }
     }
 
     function _hideErr() {
         const e = document.getElementById('data-error');
-        if (e) e.style.display = 'none';
+        if (e) e.classList.add('hidden');
     }
 
     function _updateStatus() {
@@ -200,14 +200,17 @@ const App = (() => {
         const ok = _data.session_valid;
         _setStatus(ok ? 'ok' : 'warn', ok ? '在线' : 'Session 已过期');
         const em = document.getElementById('session-expired-modal');
-        if (em) em.style.display = ok ? 'none' : 'flex';
+        if (em) { if (ok) em.close(); else em.showModal(); }
         if (_data.updated_at) {
             document.getElementById('last-update').textContent = fmtRel(_data.updated_at) + '前更新';
         }
     }
 
     function _setStatus(t, s) {
-        document.getElementById('status-badge').className = 'status-badge ' + t;
+        const dot = document.getElementById('status-dot');
+        if (dot) {
+            dot.className = 'w-2 h-2 rounded-full ' + ({ok:'bg-success',warn:'bg-warning',error:'bg-error'}[t] || 'bg-base-content/30');
+        }
         document.getElementById('status-text').textContent = s;
     }
 
@@ -238,15 +241,17 @@ const App = (() => {
 
     // ===== Tab =====
     function switchTab(t) {
-        document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
-        document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-        document.querySelector('.tab[data-tab="' + t + '"]').classList.add('active');
-        document.getElementById('panel-' + t).classList.add('active');
+        document.querySelectorAll('.tab').forEach(b => b.classList.remove('tab-active'));
+        document.querySelectorAll('.panel').forEach(p => p.classList.add('hidden'));
+        const tab = document.querySelector('.tab[data-tab="' + t + '"]');
+        if (tab) tab.classList.add('tab-active');
+        const panel = document.getElementById('panel-' + t);
+        if (panel) panel.classList.remove('hidden');
         _render();
     }
 
     function _curTab() {
-        const a = document.querySelector('.tab.active');
+        const a = document.querySelector('.tab.tab-active');
         return a ? a.dataset.tab : 'overview';
     }
 
@@ -290,16 +295,18 @@ const App = (() => {
             var skipCnt = (_data.skip_scans || []).length;
             var totalAnomaly = anomalyList.length + skipCnt;
 
-            var html = '<div class="collect-header"><span class="dot green"></span>采集时间 ' + fmt(upd) + '　|　下次 ' + fmt(nxt) + '</div>';
+            var html = '<div class="card-body p-4"><div class="flex items-center gap-2 mb-3"><span class="w-2 h-2 rounded-full bg-success"></span><span class="font-semibold text-sm">采集 ' + fmt(upd) + ' | 下次 ' + fmt(nxt) + '</span></div>';
 
             if (totalAnomaly === 0) {
-                html += '<div class="no-anomaly">本次采集无异常，一切正常</div>';
+                html += '<div class="text-success font-semibold">本次采集无异常，一切正常</div>';
             } else {
-                html += '<div class="collect-line red">分拣超时 <strong>' + (typeCnt['分拣超时'] || 0) + '</strong> 单</div>';
-                html += '<div class="collect-line orange">投餐超时 <strong>' + (typeCnt['投餐超时'] || 0) + '</strong> 单</div>';
-                html += '<div class="collect-line yellow">配送超时 <strong>' + (typeCnt['配送超时'] || 0) + '</strong> 单</div>';
-                html += '<div class="collect-line gray">压单 <strong>' + (typeCnt['压单'] || 0) + '</strong> 单</div>';
-                html += '<div class="collect-line purple">跳扫码 <strong>' + skipCnt + '</strong> 单</div>';
+                html += '<div class="space-y-1 text-sm">';
+                html += '<div class="text-error">分拣超时 <strong>' + (typeCnt['分拣超时'] || 0) + '</strong> 单</div>';
+                html += '<div class="text-warning">投餐超时 <strong>' + (typeCnt['投餐超时'] || 0) + '</strong> 单</div>';
+                html += '<div class="text-info">配送超时 <strong>' + (typeCnt['配送超时'] || 0) + '</strong> 单</div>';
+                html += '<div class="text-base-content/50">压单 <strong>' + (typeCnt['压单'] || 0) + '</strong> 单</div>';
+                html += '<div class="text-secondary">跳扫码 <strong>' + skipCnt + '</strong> 单</div>';
+                html += '</div>';
 
                 // 统计责任人
                 var riderFault = {};
@@ -320,16 +327,18 @@ const App = (() => {
 
                 var faultList = Object.keys(riderFault).sort(function(a, b) { return riderFault[b].count - riderFault[a].count; });
                 if (faultList.length > 0) {
-                    html += '<div class="collect-riders"><div class="collect-riders-title">涉及骑手（按问题数排序）</div>';
+                    html += '<div class="divider my-2"></div><div class="text-xs text-base-content/50 mb-2">涉及骑手（按问题数排序）</div><div class="flex flex-wrap gap-1">';
                     faultList.forEach(function(r) {
                         var info = riderFault[r];
                         var typeSummary = Object.keys(info.types).map(function(t) { return t + info.types[t] + '单'; }).join('、');
-                        var cls = info.count >= 3 ? '' : ' orange';
-                        html += '<span class="rider-tag' + cls + '">' + esc(r) + ' ' + info.count + '单（' + typeSummary + '）</span>';
+                        var cls = info.count >= 3 ? 'badge-error' : 'badge-warning';
+                        html += '<span class="badge ' + cls + ' badge-sm gap-1">' + esc(r) + ' ' + info.count + '单</span>';
                     });
+                    html += '</div>';
                     html += '</div>';
                 }
             }
+            html += '</div>'; // close card-body
             ci.innerHTML = html;
         }
 
@@ -340,8 +349,10 @@ const App = (() => {
     }
 
     function _mCard(l, v, c, prev, clickType) {
-        const cls = clickType ? 'clickable' : '';
+        const cls = clickType ? 'cursor-pointer hover:shadow-md transition-shadow' : '';
         const onclick = clickType ? ' onclick="App.showOrders(\'' + clickType + '\')"' : '';
+        const colorMap = {blue:'text-primary',green:'text-success',red:'text-error',orange:'text-warning'};
+        const bgMap = {blue:'bg-primary/10',green:'bg-success/10',red:'bg-error/10',orange:'bg-warning/10'};
         const icons = {
             '总订单': '<svg viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="10" rx="2" stroke="currentColor" stroke-width="1.3"/><path d="M5 7h6M5 10h4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>',
             '配送中': '<svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.3"/><polyline points="8,4 8,8 11,10" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>',
@@ -351,11 +362,12 @@ const App = (() => {
             '已完成': '<svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.3"/><polyline points="5.5,8 7.5,10 10.5,6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>',
         };
         const icon = icons[l] || '';
-        return '<div class="metric-card ' + c + ' ' + cls + '"' + onclick + '>' +
-            (icon ? '<div class="metric-icon ' + c + '">' + icon + '</div>' : '') +
-            '<div class="metric-label">' + esc(l) + '</div>' +
-            '<div class="metric-value">' + v + '</div>' +
-            '<div class="metric-sub">' + trendArrow(v, prev) + '</div></div>';
+        const trend = trendArrow(v, prev);
+        return '<div class="card bg-base-100 shadow-sm p-4 ' + cls + '"' + onclick + '>' +
+            (icon ? '<div class="w-8 h-8 rounded-lg flex items-center justify-center mb-2 ' + (bgMap[c]||'bg-base-200') + ' ' + (colorMap[c]||'') + '"><div class="w-4 h-4">' + icon + '</div></div>' : '') +
+            '<div class="text-xs text-base-content/50 mb-1">' + esc(l) + '</div>' +
+            '<div class="text-2xl font-bold ' + (colorMap[c]||'') + '">' + v + '</div>' +
+            (trend ? '<div class="mt-1">' + trend + '</div>' : '') + '</div>';
     }
 
     // ===== 趋势图 =====
@@ -467,7 +479,7 @@ const App = (() => {
         const a = _data.anomalies || [];
         const c = document.getElementById('delivering-table');
         if (!a.length) { c.innerHTML = empty('当前没有异常'); return; }
-        c.innerHTML = '<div class="table-scroll"><table class="data-table"><thead><tr>' +
+        c.innerHTML = '<div class="overflow-x-auto"><table class="table table-zebra table-sm"><thead><tr>' +
             '<th>严重度</th><th>配送单号</th><th>订单号</th><th>店名</th><th>耗时</th><th>骑手</th><th>弹簧指标</th><th>详情</th>' +
             '</tr></thead><tbody>' +
             a.slice(0, 20).map((x, i) => {
@@ -562,7 +574,7 @@ const App = (() => {
         }
 
         content.innerHTML = html;
-        document.getElementById('order-modal').style.display = 'flex';
+        document.getElementById('order-modal').showModal();
     }
 
     function _detailRow(label, value) {
@@ -578,7 +590,7 @@ const App = (() => {
     }
 
     function closeOrderModal() {
-        document.getElementById('order-modal').style.display = 'none';
+        document.getElementById('order-modal').close();
     }
 
     // ===== 指标卡片点击 -> 列表弹窗 =====
@@ -614,11 +626,11 @@ const App = (() => {
 
         if (!items.length) {
             tc.innerHTML = empty('暂无订单数据');
-            document.getElementById('list-modal').style.display = 'flex';
+            document.getElementById('list-modal').showModal();
             return;
         }
 
-        tc.innerHTML = '<div class="table-scroll"><table class="data-table"><thead><tr>' +
+        tc.innerHTML = '<div class="overflow-x-auto"><table class="table table-zebra table-sm"><thead><tr>' +
             '<th>严重度</th><th>订单号</th><th>店名</th><th>耗时</th><th>骑手</th><th>弹簧指标</th>' +
             '</tr></thead><tbody>' +
             items.map(x => {
@@ -634,11 +646,11 @@ const App = (() => {
             }).join('') +
             '</tbody></table></div>';
 
-        document.getElementById('list-modal').style.display = 'flex';
+        document.getElementById('list-modal').showModal();
     }
 
     function closeListModal() {
-        document.getElementById('list-modal').style.display = 'none';
+        document.getElementById('list-modal').close();
     }
 
     // ===== 异常告警 =====
@@ -666,10 +678,10 @@ const App = (() => {
         const cnt = { HIGH: 0, MED: 0, LOW: 0, WARN: 0 };
         a.forEach(x => { cnt[x.severity] = (cnt[x.severity] || 0) + 1; });
         sm.innerHTML = [
-            ['严重', cnt.HIGH, 'badge-high'],
-            ['中等', cnt.MED, 'badge-med'],
-            ['轻微', cnt.LOW, 'badge-low'],
-            ['警告', cnt.WARN, 'badge-warn']
+            ['严重', cnt.HIGH, 'badge-error'],
+            ['中等', cnt.MED, 'badge-warning'],
+            ['轻微', cnt.LOW, 'badge-info'],
+            ['警告', cnt.WARN, 'badge-ghost']
         ].filter(([, n]) => n).map(([l, n, c]) => '<span class="badge ' + c + '">' + l + ': ' + n + '</span>').join('');
 
         // 分组展示
@@ -683,9 +695,9 @@ const App = (() => {
             const t = tp.name;
             const items = a.filter(x => x.type === t);
             if (!items.length) return '';
-            return '<div class="anomaly-group ' + tp.cls + '"><div class="anomaly-group-title">' +
+            return '<div class="card bg-base-100 shadow-sm p-4 relative overflow-hidden border-l-4 border-base-300 ' + tp.cls + '"><div class="card bg-base-100 shadow-sm p-4 relative overflow-hidden border-l-4 border-base-300-title">' +
                 esc(t) + '<span class="anomaly-count">' + items.length + '</span></div>' +
-                '<div class="table-scroll"><table class="data-table"><thead><tr>' +
+                '<div class="overflow-x-auto"><table class="table table-zebra table-sm"><thead><tr>' +
                 '<th>严重度</th><th>配送单号</th><th>订单号</th><th>店名</th><th>耗时</th><th>骑手</th><th>弹簧指标</th><th>详情</th>' +
                 '</tr></thead><tbody>' +
                 items.map(x => {
@@ -717,7 +729,7 @@ const App = (() => {
         const by = {};
         r.forEach(x => { if (!by[x.area]) by[x.area] = []; by[x.area].push(x); });
         c.innerHTML = Object.entries(by).map(([area, list]) => {
-            return '<div class="rider-area-group"><div class="rider-area-title">' + esc(area) + '</div>' +
+            return '<div class="card bg-base-100 shadow-sm p-4"><div class="rider-area-title">' + esc(area) + '</div>' +
                 list.map(r => {
                     const dims = [
                         { l: '分拣', d: r.sort },
@@ -771,8 +783,8 @@ const App = (() => {
         const th = (_data.config || {}).skip_scan_threshold || 60;
         const se = document.getElementById('skip-rider-summary');
         se.innerHTML = rd.length ?
-            '<div class="skip-rider-cards">' + rd.map(r =>
-                '<div class="skip-rider-card ' + (r.high_risk ? 'high-risk' : '') + '">' +
+            '<div class="card bg-base-100 shadow-sm p-3s">' + rd.map(r =>
+                '<div class="card bg-base-100 shadow-sm p-3 ' + (r.high_risk ? 'high-risk' : '') + '">' +
                 '<div class="skip-rider-name">' + esc(r.name) + '</div>' +
                 '<div class="skip-rider-count">' + r.count + '</div>' +
                 '<div class="metric-sub">' + (r.high_risk ? '高风险' : '次疑似') + '</div></div>'
@@ -781,7 +793,7 @@ const App = (() => {
         const de = document.getElementById('skip-detail-table');
         if (!sc.length) { de.innerHTML = empty('暂无跳扫码记录'); return; }
         de.innerHTML = '<div class="table-card"><h3>全部记录 (阈值: ' + th + '秒)</h3>' +
-            '<div class="table-scroll"><table class="data-table"><thead><tr>' +
+            '<div class="overflow-x-auto"><table class="table table-zebra table-sm"><thead><tr>' +
             '<th>严重度</th><th>骑手</th><th>订单号</th><th>投餐</th><th>送达</th><th>间隔</th><th>详情</th>' +
             '</tr></thead><tbody>' +
             sc.map((s, i) => {
@@ -841,7 +853,7 @@ const App = (() => {
         }
 
         const te = document.getElementById('competitor-table');
-        te.innerHTML = '<div class="table-scroll"><table class="data-table"><thead><tr>' +
+        te.innerHTML = '<div class="overflow-x-auto"><table class="table table-zebra table-sm"><thead><tr>' +
             '<th>#</th><th>店铺</th><th>当日</th><th>累计</th><th>昨日</th><th>评分</th>' +
             '</tr></thead><tbody>' +
             stores.map((s, i) =>
@@ -888,7 +900,7 @@ const App = (() => {
 
     // ===== 设置 =====
     function openSettings() {
-        document.getElementById('settings-modal').style.display = 'flex';
+        document.getElementById('settings-modal').showModal();
         document.getElementById('setting-refresh').value = String(_refreshInterval);
         // 加载采集间隔
         var si = (_data && _data.config && _data.config.scan_intervals) || {};
@@ -900,7 +912,7 @@ const App = (() => {
     }
 
     function closeSettings() {
-        document.getElementById('settings-modal').style.display = 'none';
+        document.getElementById('settings-modal').close();
     }
 
     function updateRefresh() {
@@ -932,8 +944,8 @@ const App = (() => {
 
     // 检查登录状态
     if (!PASSWORD_HASH || _checkSavedLogin()) {
-        document.getElementById('gate').style.display = 'none';
-        document.getElementById('app').style.display = 'block';
+        document.getElementById('gate').classList.add('hidden');
+        document.getElementById('app').classList.remove('hidden');
         _loadAll();
         _startRefresh();
     }
