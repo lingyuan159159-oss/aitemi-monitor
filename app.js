@@ -18,8 +18,9 @@ const App = (() => {
     function sevLabel(sev) { return {HIGH:'严重',MED:'中等',LOW:'轻微',WARN:'警告'}[sev]||sev||'未知'; }
     function areaCls(a) { if(!a)return''; if(a.includes('饭堂')||a.includes('航天'))return'canteen'; if(a.includes('商业'))return'street'; return''; }
     function getTh(area,key) { const s=(_data&&_data.config)?_data.config.thresholds:(_config?_config.thresholds:{}); if(!s)return 20; return(s[area]||s['_default']||{})[key]||20; }
-    function fmtRel(d){const n=Date.now(),s=Math.floor((n-d)/1000);if(s<60)return s+'秒';if(s<3600)return Math.floor(s/60)+'分钟';if(s<86400)return Math.floor(s/3600)+'小时';return Math.floor(s/86400)+'天';}
-    function fmtTime(ts){if(!ts)return'--';try{const d=new Date(ts);return d.getMonth()+1+'/'+d.getDate()+' '+d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0');}catch(e){return ts;}}
+    function _toMs(ts){if(!ts)return 0;let s=String(ts);if(s.length===16)s+=':00';if(!s.includes('+')&&!s.includes('Z'))s+='+08:00';return new Date(s).getTime();}
+    function fmtRel(ts){const ms=_toMs(ts);if(!ms)return'--';const s=Math.floor((Date.now()-ms)/1000);if(s<0)return'刚刚';if(s<60)return s+'秒';if(s<3600)return Math.floor(s/60)+'分钟';if(s<86400)return Math.floor(s/3600)+'小时';return Math.floor(s/86400)+'天';}
+    function fmtTime(ts){if(!ts)return'--';try{const d=new Date(_toMs(ts));return(d.getMonth()+1)+'/'+d.getDate()+' '+d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0');}catch(e){return ts;}}
     function empty(t){return`<div class="empty-state"><svg width="36" height="36" viewBox="0 0 36 36" fill="none"><circle cx="18" cy="18" r="14" stroke="#86868b" stroke-width="1.5"/><path d="M12 18h12" stroke="#86868b" stroke-width="1.5" stroke-linecap="round"/></svg><p>${esc(t)}</p></div>`;}
     function chartEmpty(t){return`<div class="chart-empty"><svg width="32" height="32" viewBox="0 0 32 32" fill="none"><rect x="4" y="14" width="6" height="14" rx="1.5" stroke="#aeaeb2" stroke-width="1.2"/><rect x="13" y="8" width="6" height="20" rx="1.5" stroke="#aeaeb2" stroke-width="1.2"/><rect x="22" y="4" width="6" height="24" rx="1.5" stroke="#aeaeb2" stroke-width="1.2"/></svg><p>${esc(t)}</p></div>`;}
     function trendArrow(cur,prev){if(prev==null||prev===cur)return'';const d=cur-prev;if(d>0)return`<span class="metric-trend up">+${d}</span>`;return`<span class="metric-trend down">${d}</span>`;}
@@ -52,7 +53,7 @@ const App = (() => {
         _setStatus(ok?'ok':'warn',ok?'在线':'Session 已过期');
         const em=document.getElementById('session-expired-modal');if(em)em.style.display=ok?'none':'flex';
         const sw=document.getElementById('session-warning');if(sw)sw.style.display=ok?'none':'flex';
-        if(_data.updated_at){const d=new Date(_data.updated_at);document.getElementById('last-update').textContent=fmtRel(d)+'前更新';}
+        if(_data.updated_at){document.getElementById('last-update').textContent=fmtRel(_data.updated_at)+'前更新';}
     }
     function _setStatus(t,s){document.getElementById('status-badge').className='status-badge '+t;document.getElementById('status-text').textContent=s;}
     function refreshData(){_loadAll();}
@@ -117,20 +118,20 @@ const App = (() => {
     function _renderDeliveringTable(){
         const a=_data.anomalies||[];const c=document.getElementById('delivering-table');
         if(!a.length){c.innerHTML=empty('当前没有异常');return;}
-        c.innerHTML=`<div class="table-scroll"><table class="data-table"><thead><tr><th>严重度</th><th>类型</th><th>店铺</th><th>区域</th><th>耗时</th><th>详情</th></tr></thead><tbody>${a.slice(0,20).map(x=>`<tr class="clickable" onclick="App.showOrderDetail('${esc(x.oid)}','${esc(x.type)}')"><td><span class="badge ${badgeCls(x.severity)}">${sevLabel(x.severity)}</span></td><td>${esc(x.type)}</td><td>${esc(x.shop)}</td><td><span class="area-tag ${areaCls(x.area)}">${esc(x.area)}</span></td><td>${esc(String(x.elapsed_min))}分钟</td><td>${esc(x.detail)}</td></tr>`).join('')}</tbody></table></div>`;
+        c.innerHTML=`<div class="table-scroll"><table class="data-table"><thead><tr><th>严重度</th><th>类型</th><th>店铺</th><th>区域</th><th>耗时</th><th>详情</th></tr></thead><tbody>${a.slice(0,20).map((x,i)=>`<tr class="clickable" data-idx="${i}" data-src="anomalies"><td><span class="badge ${badgeCls(x.severity)}">${sevLabel(x.severity)}</span></td><td>${esc(x.type)}</td><td>${esc(x.shop)}</td><td><span class="area-tag ${areaCls(x.area)}">${esc(x.area)}</span></td><td>${esc(String(x.elapsed_min))}分钟</td><td>${esc(x.detail)}</td></tr>`).join('')}</tbody></table></div>`;
+        c.querySelectorAll('tr.clickable').forEach(tr=>tr.addEventListener('click',()=>_showDetailFromRow(tr)));
     }
 
     // ===== 订单详情弹窗 =====
-    function showOrderDetail(oid, type) {
-        const all = [
-            ...(_data.anomalies||[]).map(x=>({...x,_cat:'异常'})),
-            ...(_data.skip_scans||[]).map(x=>({...x,_cat:'跳扫码'})),
-        ];
-        const item = all.find(x=>String(x.oid)===String(oid));
-        if(!item) return;
+    function _showDetailFromRow(tr){
+        const idx=parseInt(tr.dataset.idx);const src=tr.dataset.src;
+        const list=_data[src]||[];const item=list[idx];if(!item)return;
+        _openDetailModal(item, src==='skip_scans'?'跳扫码':'异常');
+    }
+    function _openDetailModal(item, cat){
         const title = document.getElementById('order-modal-title');
         const content = document.getElementById('order-modal-content');
-        title.textContent = `${item._cat} - 订单 #${oid}`;
+        title.textContent = `${cat} - 订单 #${item.oid||''}`;
         content.innerHTML = `<div class="modal-order-body">
             <table class="data-table"><tbody>
                 <tr><td style="color:var(--text2);width:90px">店铺</td><td><strong>${esc(item.shop)}</strong></td></tr>
@@ -138,13 +139,18 @@ const App = (() => {
                 <tr><td style="color:var(--text2)">区域</td><td><span class="area-tag ${areaCls(item.area)}">${esc(item.area||'--')}</span></td></tr>
                 <tr><td style="color:var(--text2)">严重度</td><td><span class="badge ${badgeCls(item.severity)}">${sevLabel(item.severity)}</span></td></tr>
                 <tr><td style="color:var(--text2)">耗时</td><td>${esc(String(item.elapsed_min||item.gap_seconds||'--'))}${item.elapsed_min?'分钟':'秒'}</td></tr>
-                <tr><td style="color:var(--text2)">阈值</td><td>${esc(String(item.threshold||item.gap_seconds||'--'))}</td></tr>
+                <tr><td style="color:var(--text2)">阈值</td><td>${esc(String(item.threshold||'--'))}</td></tr>
                 <tr><td style="color:var(--text2)">配送人</td><td>${esc(item.rider||'--')}</td></tr>
                 <tr><td style="color:var(--text2)">宿舍</td><td>${esc(item.dorm||'--')}</td></tr>
                 <tr><td style="color:var(--text2)">详情</td><td>${esc(item.detail||'--')}</td></tr>
             </tbody></table>
         </div>`;
         document.getElementById('order-modal').style.display = 'flex';
+    }
+    function showOrderDetail(oid, type) {
+        const all = [...(_data.anomalies||[]),...(_data.skip_scans||[])];
+        const item = all.find(x=>String(x.oid)===String(oid));
+        if(item) _openDetailModal(item, type);
     }
     function closeOrderModal(){document.getElementById('order-modal').style.display='none';}
 
@@ -163,7 +169,7 @@ const App = (() => {
         const tc=document.getElementById('order-modal-content');
         tm.textContent=title;
         if(!items.length){tc.innerHTML=`<div class="modal-order-body">${empty('暂无订单数据')}</div>`;document.getElementById('order-modal').style.display='flex';return;}
-        tc.innerHTML=`<div class="modal-order-body"><div class="table-scroll"><table class="data-table"><thead><tr><th>严重度</th><th>类型</th><th>店铺</th><th>区域</th><th>耗时</th><th>配送人</th><th>详情</th></tr></thead><tbody>${items.map(x=>`<tr class="clickable" onclick="App.showOrderDetail('${esc(x.oid)}','${esc(x._type)}')"><td><span class="badge ${badgeCls(x.severity)}">${sevLabel(x.severity)}</span></td><td>${esc(x._type)}</td><td>${esc(x.shop)}</td><td><span class="area-tag ${areaCls(x.area)}">${esc(x.area||'--')}</span></td><td>${esc(x._elapsed)}</td><td>${esc(x.rider||'--')}</td><td>${esc(x.detail||'--')}</td></tr>`).join('')}</tbody></table></div></div>`;
+        tc.innerHTML=`<div class="modal-order-body"><div class="table-scroll"><table class="data-table"><thead><tr><th>严重度</th><th>类型</th><th>店铺</th><th>区域</th><th>耗时</th><th>配送人</th><th>详情</th></tr></thead><tbody>${items.map(x=>`<tr><td><span class="badge ${badgeCls(x.severity)}">${sevLabel(x.severity)}</span></td><td>${esc(x._type)}</td><td>${esc(x.shop)}</td><td><span class="area-tag ${areaCls(x.area)}">${esc(x.area||'--')}</span></td><td>${esc(x._elapsed)}</td><td>${esc(x.rider||'--')}</td><td>${esc(x.detail||'--')}</td></tr>`).join('')}</tbody></table></div></div>`;
         document.getElementById('order-modal').style.display='flex';
     }
 
@@ -172,15 +178,16 @@ const App = (() => {
         const a=_data.anomalies||[];const sm=document.getElementById('anomaly-summary');const gr=document.getElementById('anomaly-groups');
         const ci=document.getElementById('collect-info');
         if(ci&&_data.updated_at){
-            const d=new Date(_data.updated_at);
-            const next=new Date(d.getTime()+5*60000);
-            ci.innerHTML=`<span><span class="dot green"></span>本次采集: ${fmtTime(_data.updated_at)}</span><span><span class="dot blue"></span>下次采集: ${fmtTime(next.toISOString())}</span>`;
+            const nextMs=_toMs(_data.updated_at)+5*60000;
+            const nextStr=new Date(nextMs).toISOString().slice(0,19);
+            ci.innerHTML=`<span><span class="dot green"></span>本次采集: ${fmtTime(_data.updated_at)}</span><span><span class="dot blue"></span>下次采集: ${fmtTime(nextStr)}</span>`;
         }
         const cnt={HIGH:0,MED:0,LOW:0,WARN:0};a.forEach(x=>{cnt[x.severity]=(cnt[x.severity]||0)+1;});
         sm.innerHTML=[['严重',cnt.HIGH,'badge-high'],['中等',cnt.MED,'badge-med'],['轻微',cnt.LOW,'badge-low'],['警告',cnt.WARN,'badge-warn']].filter(([,n])=>n).map(([l,n,c])=>`<span class="badge ${c}">${l}: ${n}</span>`).join('');
         const types=['分拣超时','投餐超时','配送超时','压单'];
-        gr.innerHTML=types.map(t=>{const items=a.filter(x=>x.type===t);if(!items.length)return'';return`<div class="anomaly-group"><div class="anomaly-group-title">${esc(t)}<span class="anomaly-count">${items.length}</span></div><div class="table-scroll"><table class="data-table"><thead><tr><th>严重度</th><th>订单</th><th>店铺</th><th>区域</th><th>耗时</th><th>阈值</th><th>配送人</th><th>详情</th></tr></thead><tbody>${items.map(x=>`<tr class="clickable" onclick="App.showOrderDetail('${esc(x.oid)}','${esc(x.type)}')"><td><span class="badge ${badgeCls(x.severity)}">${sevLabel(x.severity)}</span></td><td>${esc(x.oid)}</td><td>${esc(x.shop)}</td><td><span class="area-tag ${areaCls(x.area)}">${esc(x.area)}</span></td><td>${esc(String(x.elapsed_min))}分钟</td><td>${esc(String(x.threshold||'--'))}分钟</td><td>${esc(x.rider||'--')}</td><td>${esc(x.detail)}</td></tr>`).join('')}</tbody></table></div></div>`;}).join('');
+        gr.innerHTML=types.map(t=>{const items=a.filter(x=>x.type===t);if(!items.length)return'';return`<div class="anomaly-group"><div class="anomaly-group-title">${esc(t)}<span class="anomaly-count">${items.length}</span></div><div class="table-scroll"><table class="data-table"><thead><tr><th>严重度</th><th>订单</th><th>店铺</th><th>区域</th><th>耗时</th><th>阈值</th><th>配送人</th><th>详情</th></tr></thead><tbody>${items.map(x=>{const idx=a.indexOf(x);return`<tr class="clickable" data-idx="${idx}" data-src="anomalies"><td><span class="badge ${badgeCls(x.severity)}">${sevLabel(x.severity)}</span></td><td>${esc(x.oid)}</td><td>${esc(x.shop)}</td><td><span class="area-tag ${areaCls(x.area)}">${esc(x.area)}</span></td><td>${esc(String(x.elapsed_min))}分钟</td><td>${esc(String(x.threshold||'--'))}分钟</td><td>${esc(x.rider||'--')}</td><td>${esc(x.detail)}</td></tr>`;}).join('')}</tbody></table></div></div>`;}).join('');
         if(!a.length)gr.innerHTML=empty('暂无异常');
+        gr.querySelectorAll('tr.clickable').forEach(tr=>tr.addEventListener('click',()=>_showDetailFromRow(tr)));
     }
 
     // ===== 骑手 =====
@@ -209,7 +216,8 @@ const App = (() => {
         se.innerHTML=rd.length?`<div class="skip-rider-cards">${rd.map(r=>`<div class="skip-rider-card ${r.high_risk?'high-risk':''}"><div class="skip-rider-name">${esc(r.name)}</div><div class="skip-rider-count">${r.count}</div><div class="metric-sub">${r.high_risk?'高风险':'次疑似'}</div></div>`).join('')}</div>`:'';
         const de=document.getElementById('skip-detail-table');
         if(!sc.length){de.innerHTML=empty('暂无跳扫码记录');return;}
-        de.innerHTML=`<div class="table-card"><h3>全部记录（阈值: ${th}秒）</h3><div class="table-scroll"><table class="data-table"><thead><tr><th>严重度</th><th>骑手</th><th>订单</th><th>店铺</th><th>投餐</th><th>送达</th><th>间隔</th></tr></thead><tbody>${sc.map(s=>`<tr class="clickable" onclick="App.showOrderDetail('${esc(s.oid)}','跳扫码')"><td><span class="badge ${badgeCls(s.severity)}">${sevLabel(s.severity)}</span></td><td>${esc(s.rider)}</td><td>${esc(s.oid)}</td><td>${esc(s.shop)}</td><td>${esc(s.place_time)}</td><td>${esc(s.deliver_time)}</td><td><strong>${esc(String(s.gap_seconds))}秒</strong></td></tr>`).join('')}</tbody></table></div></div>`;
+        de.innerHTML=`<div class="table-card"><h3>全部记录（阈值: ${th}秒）</h3><div class="table-scroll"><table class="data-table"><thead><tr><th>严重度</th><th>骑手</th><th>订单</th><th>店铺</th><th>投餐</th><th>送达</th><th>间隔</th></tr></thead><tbody>${sc.map((s,i)=>`<tr class="clickable" data-idx="${i}" data-src="skip_scans"><td><span class="badge ${badgeCls(s.severity)}">${sevLabel(s.severity)}</span></td><td>${esc(s.rider)}</td><td>${esc(s.oid)}</td><td>${esc(s.shop)}</td><td>${esc(s.place_time)}</td><td>${esc(s.deliver_time)}</td><td><strong>${esc(String(s.gap_seconds))}秒</strong></td></tr>`).join('')}</tbody></table></div></div>`;
+        de.querySelectorAll('tr.clickable').forEach(tr=>tr.addEventListener('click',()=>_showDetailFromRow(tr)));
     }
 
     // ===== 竞品 =====
