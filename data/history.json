@@ -1,17 +1,130 @@
 [
-  {"time":"2026-06-24T08:00","orders":120,"delivering":8,"anomalies":1,"skip_scans":0,"competitor_daily":0},
-  {"time":"2026-06-24T08:30","orders":145,"delivering":12,"anomalies":2,"skip_scans":0,"competitor_daily":0},
-  {"time":"2026-06-24T09:00","orders":168,"delivering":15,"anomalies":2,"skip_scans":1,"competitor_daily":0},
-  {"time":"2026-06-24T09:30","orders":195,"delivering":18,"anomalies":3,"skip_scans":1,"competitor_daily":0},
-  {"time":"2026-06-24T10:00","orders":220,"delivering":22,"anomalies":4,"skip_scans":1,"competitor_daily":0},
-  {"time":"2026-06-24T10:30","orders":248,"delivering":25,"anomalies":3,"skip_scans":2,"competitor_daily":0},
-  {"time":"2026-06-24T11:00","orders":280,"delivering":30,"anomalies":5,"skip_scans":2,"competitor_daily":890},
-  {"time":"2026-06-24T11:30","orders":310,"delivering":35,"anomalies":6,"skip_scans":3,"competitor_daily":1020},
-  {"time":"2026-06-24T12:00","orders":342,"delivering":38,"anomalies":8,"skip_scans":3,"competitor_daily":1150},
-  {"time":"2026-06-24T12:30","orders":355,"delivering":42,"anomalies":7,"skip_scans":2,"competitor_daily":1200},
-  {"time":"2026-06-24T13:00","orders":348,"delivering":35,"anomalies":5,"skip_scans":2,"competitor_daily":1256},
-  {"time":"2026-06-24T13:30","orders":340,"delivering":28,"anomalies":4,"skip_scans":1,"competitor_daily":1256},
-  {"time":"2026-06-24T14:00","orders":335,"delivering":22,"anomalies":3,"skip_scans":1,"competitor_daily":1256},
-  {"time":"2026-06-24T14:30","orders":330,"delivering":18,"anomalies":2,"skip_scans":0,"competitor_daily":1256},
-  {"time":"2026-06-24T15:00","orders":325,"delivering":15,"anomalies":2,"skip_scans":0,"competitor_daily":1256}
+  {
+    "time": "2026-06-24T08:00",
+    "orders": 120,
+    "delivering": 8,
+    "anomalies": 1,
+    "skip_scans": 0,
+    "competitor_daily": 0
+  },
+  {
+    "time": "2026-06-24T08:30",
+    "orders": 145,
+    "delivering": 12,
+    "anomalies": 2,
+    "skip_scans": 0,
+    "competitor_daily": 0
+  },
+  {
+    "time": "2026-06-24T09:00",
+    "orders": 168,
+    "delivering": 15,
+    "anomalies": 2,
+    "skip_scans": 1,
+    "competitor_daily": 0
+  },
+  {
+    "time": "2026-06-24T09:30",
+    "orders": 195,
+    "delivering": 18,
+    "anomalies": 3,
+    "skip_scans": 1,
+    "competitor_daily": 0
+  },
+  {
+    "time": "2026-06-24T10:00",
+    "orders": 220,
+    "delivering": 22,
+    "anomalies": 4,
+    "skip_scans": 1,
+    "competitor_daily": 0
+  },
+  {
+    "time": "2026-06-24T10:30",
+    "orders": 248,
+    "delivering": 25,
+    "anomalies": 3,
+    "skip_scans": 2,
+    "competitor_daily": 0
+  },
+  {
+    "time": "2026-06-24T11:00",
+    "orders": 280,
+    "delivering": 30,
+    "anomalies": 5,
+    "skip_scans": 2,
+    "competitor_daily": 890
+  },
+  {
+    "time": "2026-06-24T11:30",
+    "orders": 310,
+    "delivering": 35,
+    "anomalies": 6,
+    "skip_scans": 3,
+    "competitor_daily": 1020
+  },
+  {
+    "time": "2026-06-24T12:00",
+    "orders": 342,
+    "delivering": 38,
+    "anomalies": 8,
+    "skip_scans": 3,
+    "competitor_daily": 1150
+  },
+  {
+    "time": "2026-06-24T12:30",
+    "orders": 355,
+    "delivering": 42,
+    "anomalies": 7,
+    "skip_scans": 2,
+    "competitor_daily": 1200
+  },
+  {
+    "time": "2026-06-24T13:00",
+    "orders": 348,
+    "delivering": 35,
+    "anomalies": 5,
+    "skip_scans": 2,
+    "competitor_daily": 1256
+  },
+  {
+    "time": "2026-06-24T13:30",
+    "orders": 340,
+    "delivering": 28,
+    "anomalies": 4,
+    "skip_scans": 1,
+    "competitor_daily": 1256
+  },
+  {
+    "time": "2026-06-24T14:00",
+    "orders": 335,
+    "delivering": 22,
+    "anomalies": 3,
+    "skip_scans": 1,
+    "competitor_daily": 1256
+  },
+  {
+    "time": "2026-06-24T14:30",
+    "orders": 330,
+    "delivering": 18,
+    "anomalies": 2,
+    "skip_scans": 0,
+    "competitor_daily": 1256
+  },
+  {
+    "time": "2026-06-24T15:00",
+    "orders": 325,
+    "delivering": 15,
+    "anomalies": 2,
+    "skip_scans": 0,
+    "competitor_daily": 1256
+  },
+  {
+    "time": "2026-06-24T13:09",
+    "orders": 1700,
+    "delivering": 107,
+    "anomalies": 20,
+    "skip_scans": 19,
+    "competitor_daily": 0
+  }
 ]

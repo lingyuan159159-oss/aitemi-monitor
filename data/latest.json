@@ -1,187 +1,1871 @@
 {
-  "updated_at": "2026-06-24T18:30:00",
+  "updated_at": "2026-06-24T13:09:27",
   "session_valid": true,
   "summary": {
-    "total_orders": 342,
-    "delivering": 18,
-    "completed": 310,
+    "total_orders": 1700,
+    "delivering": 107,
+    "completed": 780,
     "aftersale": 14,
-    "anomaly_count": 5,
-    "skip_scan_count": 2
+    "anomaly_count": 20,
+    "skip_scan_count": 19
   },
   "anomalies": [
     {
-      "type": "配送超时",
-      "oid": "732456",
-      "shop": "益禾堂",
+      "type": "压单",
+      "oid": "732831",
+      "shop": "森鹿·小糖记（第一饭堂）",
       "area": "一饭堂",
-      "elapsed_min": 22.5,
-      "threshold": 15,
+      "elapsed_min": 65.0,
+      "threshold": 30,
       "severity": "HIGH",
-      "detail": "投餐12:15已23min未送达",
-      "dorm": "A3105",
-      "delivery_seq": "1089"
-    },
-    {
-      "type": "投餐超时",
-      "oid": "732461",
-      "shop": "茶悦日记",
-      "area": "商业街",
-      "elapsed_min": 18.3,
-      "threshold": 15,
-      "severity": "MED",
-      "detail": "分拣12:08已18min未投餐",
-      "dorm": "B2203",
-      "delivery_seq": "1092"
-    },
-    {
-      "type": "分拣超时",
-      "oid": "732470",
-      "shop": "荷叶蒸饭",
-      "area": "一饭堂",
-      "elapsed_min": 25.1,
-      "threshold": 20,
-      "severity": "LOW",
-      "detail": "下单25min未处理",
-      "dorm": "C1502",
-      "delivery_seq": "1095"
+      "detail": "分拣16:39→投餐17:44 停留65min",
+      "sort_time": "16:39:23",
+      "place_time": "17:44:24",
+      "dorm": "7b240",
+      "delivery_seq": 71
     },
     {
       "type": "压单",
-      "oid": "732445",
-      "shop": "蜜雪冰城",
+      "oid": "732559",
+      "shop": "蜜雪冰城（体育广场）",
       "area": "商业街",
-      "elapsed_min": 35.0,
-      "threshold": 15,
+      "elapsed_min": 62.0,
+      "threshold": 30,
       "severity": "HIGH",
-      "detail": "分拣11:50投餐12:25 停留35min",
-      "dorm": "A2301",
-      "delivery_seq": "1085"
+      "detail": "分拣12:39→投餐13:41 停留62min",
+      "sort_time": "12:39:31",
+      "place_time": "13:41:28",
+      "dorm": "160",
+      "delivery_seq": 62
     },
     {
-      "type": "配送超时",
-      "oid": "732480",
-      "shop": "馋嘴猫（卤肉饭）",
+      "type": "压单",
+      "oid": "733268",
+      "shop": "益禾堂（第一饭堂）",
       "area": "一饭堂",
-      "elapsed_min": 16.2,
-      "threshold": 15,
-      "severity": "WARN",
-      "detail": "投餐12:20已16min未送达",
-      "dorm": "D4108",
-      "delivery_seq": "1098"
+      "elapsed_min": 57.5,
+      "threshold": 30,
+      "severity": "MED",
+      "detail": "分拣17:58→投餐18:56 停留57min",
+      "sort_time": "17:58:40",
+      "place_time": "18:56:09",
+      "dorm": "7a515",
+      "delivery_seq": 26
+    },
+    {
+      "type": "压单",
+      "oid": "733169",
+      "shop": "江西小炒（第一饭堂）",
+      "area": "一饭堂",
+      "elapsed_min": 50.8,
+      "threshold": 30,
+      "severity": "MED",
+      "detail": "分拣17:41→投餐18:31 停留51min",
+      "sort_time": "17:41:01",
+      "place_time": "18:31:50",
+      "dorm": "7b344",
+      "delivery_seq": 35
+    },
+    {
+      "type": "压单",
+      "oid": "732871",
+      "shop": "森鹿·小糖记（第一饭堂）",
+      "area": "一饭堂",
+      "elapsed_min": 50.6,
+      "threshold": 30,
+      "severity": "MED",
+      "detail": "分拣16:50→投餐17:41 停留51min",
+      "sort_time": "16:50:37",
+      "place_time": "17:41:13",
+      "dorm": "335",
+      "delivery_seq": 81
+    },
+    {
+      "type": "压单",
+      "oid": "732684",
+      "shop": "零食有鸣（体育广场）",
+      "area": "商业街",
+      "elapsed_min": 45.4,
+      "threshold": 30,
+      "severity": "MED",
+      "detail": "分拣13:03→投餐13:49 停留45min",
+      "sort_time": "13:03:48",
+      "place_time": "13:49:09",
+      "dorm": "329",
+      "delivery_seq": 11
+    },
+    {
+      "type": "压单",
+      "oid": "732615",
+      "shop": "奥克力汉堡（体育广场）",
+      "area": "商业街",
+      "elapsed_min": 42.7,
+      "threshold": 30,
+      "severity": "LOW",
+      "detail": "分拣13:03→投餐13:46 停留43min",
+      "sort_time": "13:03:38",
+      "place_time": "13:46:20",
+      "dorm": "133",
+      "delivery_seq": 9
+    },
+    {
+      "type": "压单",
+      "oid": "732918",
+      "shop": "森鹿·小糖记(第一饭堂)",
+      "area": "一饭堂",
+      "elapsed_min": 42.0,
+      "threshold": 30,
+      "severity": "LOW",
+      "detail": "分拣17:02→投餐17:44 停留42min",
+      "sort_time": "17:02:10",
+      "place_time": "17:44:08",
+      "dorm": "232",
+      "delivery_seq": 21
+    },
+    {
+      "type": "压单",
+      "oid": "733035",
+      "shop": "炒饭·粥（第一饭堂）",
+      "area": "一饭堂",
+      "elapsed_min": 40.9,
+      "threshold": 30,
+      "severity": "LOW",
+      "detail": "分拣17:03→投餐17:44 停留41min",
+      "sort_time": "17:03:31",
+      "place_time": "17:44:26",
+      "dorm": "7B334",
+      "delivery_seq": 56
+    },
+    {
+      "type": "压单",
+      "oid": "732919",
+      "shop": "森鹿·小糖记(第一饭堂)",
+      "area": "一饭堂",
+      "elapsed_min": 40.9,
+      "threshold": 30,
+      "severity": "LOW",
+      "detail": "分拣17:03→投餐17:43 停留41min",
+      "sort_time": "17:03:00",
+      "place_time": "17:43:54",
+      "dorm": "7B641",
+      "delivery_seq": 22
+    },
+    {
+      "type": "压单",
+      "oid": "732945",
+      "shop": "泰岛蛋（第一饭堂）",
+      "area": "一饭堂",
+      "elapsed_min": 39.5,
+      "threshold": 30,
+      "severity": "LOW",
+      "detail": "分拣16:40→投餐17:19 停留40min",
+      "sort_time": "16:40:19",
+      "place_time": "17:19:49",
+      "dorm": "261",
+      "delivery_seq": 38
+    },
+    {
+      "type": "压单",
+      "oid": "733030",
+      "shop": "沙县小吃（第一饭堂）",
+      "area": "一饭堂",
+      "elapsed_min": 39.2,
+      "threshold": 30,
+      "severity": "LOW",
+      "detail": "分拣17:05→投餐17:44 停留39min",
+      "sort_time": "17:05:19",
+      "place_time": "17:44:30",
+      "dorm": "538",
+      "delivery_seq": 74
+    },
+    {
+      "type": "压单",
+      "oid": "732799",
+      "shop": "益禾堂 （第一饭堂）",
+      "area": "一饭堂",
+      "elapsed_min": 38.3,
+      "threshold": 30,
+      "severity": "LOW",
+      "detail": "分拣16:16→投餐16:54 停留38min",
+      "sort_time": "16:16:17",
+      "place_time": "16:54:37",
+      "dorm": "157",
+      "delivery_seq": 39
+    },
+    {
+      "type": "压单",
+      "oid": "732865",
+      "shop": "益禾堂 （第一饭堂）",
+      "area": "一饭堂",
+      "elapsed_min": 33.4,
+      "threshold": 30,
+      "severity": "LOW",
+      "detail": "分拣16:45→投餐17:19 停留33min",
+      "sort_time": "16:45:54",
+      "place_time": "17:19:20",
+      "dorm": "349",
+      "delivery_seq": 48
+    },
+    {
+      "type": "压单",
+      "oid": "732835",
+      "shop": "益禾堂 （第一饭堂）",
+      "area": "一饭堂",
+      "elapsed_min": 32.8,
+      "threshold": 30,
+      "severity": "LOW",
+      "detail": "分拣16:44→投餐17:16 停留33min",
+      "sort_time": "16:44:08",
+      "place_time": "17:16:58",
+      "dorm": "522",
+      "delivery_seq": 43
+    },
+    {
+      "type": "压单",
+      "oid": "732568",
+      "shop": "大拇指小吃（第一饭堂）",
+      "area": "一饭堂",
+      "elapsed_min": 32.7,
+      "threshold": 30,
+      "severity": "LOW",
+      "detail": "分拣12:27→投餐12:59 停留33min",
+      "sort_time": "12:27:09",
+      "place_time": "12:59:49",
+      "dorm": "758",
+      "delivery_seq": 24
+    },
+    {
+      "type": "压单",
+      "oid": "733522",
+      "shop": "麦乐鸡扒饭（第一饭堂）",
+      "area": "一饭堂",
+      "elapsed_min": 30.9,
+      "threshold": 30,
+      "severity": "LOW",
+      "detail": "分拣19:14→投餐19:45 停留31min",
+      "sort_time": "19:14:45",
+      "place_time": "19:45:36",
+      "dorm": "7B464",
+      "delivery_seq": 39
+    },
+    {
+      "type": "压单",
+      "oid": "732928",
+      "shop": "一楼大众餐（第一饭堂）",
+      "area": "一饭堂",
+      "elapsed_min": 30.7,
+      "threshold": 30,
+      "severity": "LOW",
+      "detail": "分拣16:49→投餐17:19 停留31min",
+      "sort_time": "16:49:02",
+      "place_time": "17:19:45",
+      "dorm": "7b258",
+      "delivery_seq": 82
+    },
+    {
+      "type": "压单",
+      "oid": "732766",
+      "shop": "沙县小吃（第一饭堂）",
+      "area": "一饭堂",
+      "elapsed_min": 30.7,
+      "threshold": 30,
+      "severity": "LOW",
+      "detail": "分拣16:30→投餐17:01 停留31min",
+      "sort_time": "16:30:53",
+      "place_time": "17:01:37",
+      "dorm": "7A707",
+      "delivery_seq": 64
+    },
+    {
+      "type": "压单",
+      "oid": "732582",
+      "shop": "一楼大众餐（第一饭堂）",
+      "area": "一饭堂",
+      "elapsed_min": 30.5,
+      "threshold": 30,
+      "severity": "LOW",
+      "detail": "分拣12:28→投餐12:58 停留30min",
+      "sort_time": "12:28:25",
+      "place_time": "12:58:54",
+      "dorm": "7a242",
+      "delivery_seq": 55
     }
   ],
   "skip_scans": [
     {
       "type": "跳扫码",
-      "oid": "732430",
-      "shop": "兰州拉面",
-      "rider": "梁智森",
-      "gap_seconds": 8.5,
+      "oid": "732673",
+      "shop": "奈斯汉堡（第一饭堂）",
+      "rider": "奈斯汉堡配送员5号 (ID:29272)",
+      "gap_seconds": 3.0,
       "severity": "HIGH",
-      "place_time": "11:45:12",
-      "deliver_time": "11:45:20",
-      "dorm": "B3106",
-      "delivery_seq": "1080"
+      "place_time": "12:56:21",
+      "deliver_time": "12:56:24",
+      "dorm": "201",
+      "delivery_seq": 5
     },
     {
       "type": "跳扫码",
-      "oid": "732455",
-      "shop": "潮汕牛肉粿",
-      "rider": "梁智森",
-      "gap_seconds": 22.0,
+      "oid": "732501",
+      "shop": "炒饭·粥（第一饭堂）",
+      "rider": "谭福炫 (ID:29020)",
+      "gap_seconds": 3.0,
+      "severity": "HIGH",
+      "place_time": "12:43:16",
+      "deliver_time": "12:43:19",
+      "dorm": "7b233",
+      "delivery_seq": 28
+    },
+    {
+      "type": "跳扫码",
+      "oid": "732766",
+      "shop": "沙县小吃（第一饭堂）",
+      "rider": "苏嘉荣 (ID:29164)",
+      "gap_seconds": 5.0,
+      "severity": "HIGH",
+      "place_time": "17:01:37",
+      "deliver_time": "17:01:42",
+      "dorm": "7A707",
+      "delivery_seq": 64
+    },
+    {
+      "type": "跳扫码",
+      "oid": "732611",
+      "shop": "饼类（第一饭堂）",
+      "rider": "殷灿彬 (ID:29021)",
+      "gap_seconds": 5.0,
+      "severity": "HIGH",
+      "place_time": "12:52:07",
+      "deliver_time": "12:52:12",
+      "dorm": "202",
+      "delivery_seq": 7
+    },
+    {
+      "type": "跳扫码",
+      "oid": "732881",
+      "shop": "一楼大众餐（第一饭堂）",
+      "rider": "苏嘉荣 (ID:29164)",
+      "gap_seconds": 6.0,
+      "severity": "HIGH",
+      "place_time": "16:58:11",
+      "deliver_time": "16:58:17",
+      "dorm": "7a515",
+      "delivery_seq": 77
+    },
+    {
+      "type": "跳扫码",
+      "oid": "732733",
+      "shop": "喜上生煎（体育广场）",
+      "rider": "梁智森 (ID:28847)",
+      "gap_seconds": 8.0,
+      "severity": "HIGH",
+      "place_time": "13:50:00",
+      "deliver_time": "13:50:08",
+      "dorm": "7b241",
+      "delivery_seq": 18
+    },
+    {
+      "type": "跳扫码",
+      "oid": "732559",
+      "shop": "蜜雪冰城（体育广场）",
+      "rider": "陈颂博 (ID:29244)",
+      "gap_seconds": 8.0,
+      "severity": "HIGH",
+      "place_time": "13:41:28",
+      "deliver_time": "13:41:36",
+      "dorm": "160",
+      "delivery_seq": 62
+    },
+    {
+      "type": "跳扫码",
+      "oid": "732648",
+      "shop": "一楼大众餐（第一饭堂）",
+      "rider": "殷灿彬 (ID:29021)",
+      "gap_seconds": 9.0,
+      "severity": "HIGH",
+      "place_time": "13:00:31",
+      "deliver_time": "13:00:40",
+      "dorm": "7A721",
+      "delivery_seq": 61
+    },
+    {
+      "type": "跳扫码",
+      "oid": "732347",
+      "shop": "喜上生煎（体育广场）",
+      "rider": "苏嘉荣 (ID:29164)",
+      "gap_seconds": 9.0,
+      "severity": "HIGH",
+      "place_time": "12:26:26",
+      "deliver_time": "12:26:35",
+      "dorm": "216",
+      "delivery_seq": 7
+    },
+    {
+      "type": "跳扫码",
+      "oid": "732601",
+      "shop": "大拇指小吃（第一饭堂）",
+      "rider": "殷灿彬 (ID:29021)",
+      "gap_seconds": 10.0,
+      "severity": "HIGH",
+      "place_time": "12:45:57",
+      "deliver_time": "12:46:07",
+      "dorm": "7a166",
+      "delivery_seq": 27
+    },
+    {
+      "type": "跳扫码",
+      "oid": "732556",
+      "shop": "蜜雪冰城（体育广场）",
+      "rider": "练家辉 (ID:29008)",
+      "gap_seconds": 10.0,
+      "severity": "HIGH",
+      "place_time": "12:50:06",
+      "deliver_time": "12:50:16",
+      "dorm": "7A259",
+      "delivery_seq": 61
+    },
+    {
+      "type": "跳扫码",
+      "oid": "732439",
+      "shop": "大拇指小吃（第一饭堂）",
+      "rider": "苏嘉荣 (ID:29164)",
+      "gap_seconds": 38.0,
+      "severity": "HIGH",
+      "place_time": "12:36:11",
+      "deliver_time": "12:36:49",
+      "dorm": "7a622",
+      "delivery_seq": 17
+    },
+    {
+      "type": "跳扫码",
+      "oid": "732760",
+      "shop": "森鹿·小糖记(第一饭堂)",
+      "rider": "陈嘉乐 (ID:28860)",
+      "gap_seconds": 18.0,
       "severity": "MED",
-      "place_time": "12:10:05",
-      "deliver_time": "12:10:27",
-      "dorm": "A1205",
-      "delivery_seq": "1088"
+      "place_time": "14:09:23",
+      "deliver_time": "14:09:41",
+      "dorm": "3304",
+      "delivery_seq": 15
+    },
+    {
+      "type": "跳扫码",
+      "oid": "732623",
+      "shop": "益禾堂（第一饭堂）",
+      "rider": "陈颂博 (ID:29244)",
+      "gap_seconds": 21.0,
+      "severity": "MED",
+      "place_time": "12:48:38",
+      "deliver_time": "12:48:59",
+      "dorm": "7B134",
+      "delivery_seq": 10
+    },
+    {
+      "type": "跳扫码",
+      "oid": "732805",
+      "shop": "奈斯汉堡（第一饭堂）",
+      "rider": "柰斯汉堡配送员6号 (ID:29302)",
+      "gap_seconds": 23.0,
+      "severity": "MED",
+      "place_time": "16:13:36",
+      "deliver_time": "16:13:59",
+      "dorm": "7B716",
+      "delivery_seq": 8
+    },
+    {
+      "type": "跳扫码",
+      "oid": "732738",
+      "shop": "熹上茶颜（体育广场）",
+      "rider": "陈嘉乐 (ID:28860)",
+      "gap_seconds": 24.0,
+      "severity": "MED",
+      "place_time": "13:48:52",
+      "deliver_time": "13:49:16",
+      "dorm": "3306",
+      "delivery_seq": 8
+    },
+    {
+      "type": "跳扫码",
+      "oid": "732676",
+      "shop": "奈斯汉堡（第一饭堂）",
+      "rider": "奈斯汉堡配送员5号 (ID:29272)",
+      "gap_seconds": 29.0,
+      "severity": "MED",
+      "place_time": "13:06:08",
+      "deliver_time": "13:06:37",
+      "dorm": "7A551",
+      "delivery_seq": 6
+    },
+    {
+      "type": "跳扫码",
+      "oid": "732618",
+      "shop": "蜜雪冰城（体育广场）",
+      "rider": "练家辉 (ID:29008)",
+      "gap_seconds": 39.0,
+      "severity": "LOW",
+      "place_time": "12:55:11",
+      "deliver_time": "12:55:50",
+      "dorm": "342",
+      "delivery_seq": 65
+    },
+    {
+      "type": "跳扫码",
+      "oid": "732317",
+      "shop": "水饺·肥汁米线（第一饭堂）",
+      "rider": "吕耀霖 (ID:29145)",
+      "gap_seconds": 57.0,
+      "severity": "LOW",
+      "place_time": "12:36:11",
+      "deliver_time": "12:37:08",
+      "dorm": "7a102",
+      "delivery_seq": 14
     }
   ],
   "skip_scan_riders": [
     {
-      "name": "梁智森",
+      "name": "苏嘉荣 (ID:29164)",
       "count": 4,
       "high_risk": true,
       "orders": [
-        {"oid": "732430", "shop": "兰州拉面", "dorm": "B3106", "gap": 8.5},
-        {"oid": "732455", "shop": "潮汕牛肉粿", "dorm": "A1205", "gap": 22.0}
+        {
+          "oid": "732881",
+          "shop": "一楼大众餐（第一饭堂）",
+          "dorm": "7a515",
+          "gap": 6.0
+        },
+        {
+          "oid": "732766",
+          "shop": "沙县小吃（第一饭堂）",
+          "dorm": "7A707",
+          "gap": 5.0
+        },
+        {
+          "oid": "732439",
+          "shop": "大拇指小吃（第一饭堂）",
+          "dorm": "7a622",
+          "gap": 38.0
+        },
+        {
+          "oid": "732347",
+          "shop": "喜上生煎（体育广场）",
+          "dorm": "216",
+          "gap": 9.0
+        }
+      ]
+    },
+    {
+      "name": "殷灿彬 (ID:29021)",
+      "count": 3,
+      "high_risk": true,
+      "orders": [
+        {
+          "oid": "732648",
+          "shop": "一楼大众餐（第一饭堂）",
+          "dorm": "7A721",
+          "gap": 9.0
+        },
+        {
+          "oid": "732611",
+          "shop": "饼类（第一饭堂）",
+          "dorm": "202",
+          "gap": 5.0
+        },
+        {
+          "oid": "732601",
+          "shop": "大拇指小吃（第一饭堂）",
+          "dorm": "7a166",
+          "gap": 10.0
+        }
+      ]
+    },
+    {
+      "name": "陈嘉乐 (ID:28860)",
+      "count": 2,
+      "high_risk": false,
+      "orders": [
+        {
+          "oid": "732760",
+          "shop": "森鹿·小糖记(第一饭堂)",
+          "dorm": "3304",
+          "gap": 18.0
+        },
+        {
+          "oid": "732738",
+          "shop": "熹上茶颜（体育广场）",
+          "dorm": "3306",
+          "gap": 24.0
+        }
+      ]
+    },
+    {
+      "name": "奈斯汉堡配送员5号 (ID:29272)",
+      "count": 2,
+      "high_risk": false,
+      "orders": [
+        {
+          "oid": "732676",
+          "shop": "奈斯汉堡（第一饭堂）",
+          "dorm": "7A551",
+          "gap": 29.0
+        },
+        {
+          "oid": "732673",
+          "shop": "奈斯汉堡（第一饭堂）",
+          "dorm": "201",
+          "gap": 3.0
+        }
+      ]
+    },
+    {
+      "name": "陈颂博 (ID:29244)",
+      "count": 2,
+      "high_risk": false,
+      "orders": [
+        {
+          "oid": "732623",
+          "shop": "益禾堂（第一饭堂）",
+          "dorm": "7B134",
+          "gap": 21.0
+        },
+        {
+          "oid": "732559",
+          "shop": "蜜雪冰城（体育广场）",
+          "dorm": "160",
+          "gap": 8.0
+        }
+      ]
+    },
+    {
+      "name": "练家辉 (ID:29008)",
+      "count": 2,
+      "high_risk": false,
+      "orders": [
+        {
+          "oid": "732618",
+          "shop": "蜜雪冰城（体育广场）",
+          "dorm": "342",
+          "gap": 39.0
+        },
+        {
+          "oid": "732556",
+          "shop": "蜜雪冰城（体育广场）",
+          "dorm": "7A259",
+          "gap": 10.0
+        }
+      ]
+    },
+    {
+      "name": "柰斯汉堡配送员6号 (ID:29302)",
+      "count": 1,
+      "high_risk": false,
+      "orders": [
+        {
+          "oid": "732805",
+          "shop": "奈斯汉堡（第一饭堂）",
+          "dorm": "7B716",
+          "gap": 23.0
+        }
+      ]
+    },
+    {
+      "name": "梁智森 (ID:28847)",
+      "count": 1,
+      "high_risk": false,
+      "orders": [
+        {
+          "oid": "732733",
+          "shop": "喜上生煎（体育广场）",
+          "dorm": "7b241",
+          "gap": 8.0
+        }
+      ]
+    },
+    {
+      "name": "谭福炫 (ID:29020)",
+      "count": 1,
+      "high_risk": false,
+      "orders": [
+        {
+          "oid": "732501",
+          "shop": "炒饭·粥（第一饭堂）",
+          "dorm": "7b233",
+          "gap": 3.0
+        }
+      ]
+    },
+    {
+      "name": "吕耀霖 (ID:29145)",
+      "count": 1,
+      "high_risk": false,
+      "orders": [
+        {
+          "oid": "732317",
+          "shop": "水饺·肥汁米线（第一饭堂）",
+          "dorm": "7a102",
+          "gap": 57.0
+        }
       ]
     }
   ],
   "riders": [
     {
-      "name": "梁智森",
+      "name": "郑世柏 (ID:28952)",
       "area": "一饭堂",
-      "sort": {"total": 22, "overtime": 3, "rate": 13.6, "avg": 15.2},
-      "stay": {"total": 22, "overtime": 1, "rate": 4.5, "avg": 10.8},
-      "deliver": {"total": 22, "overtime": 2, "rate": 9.1, "avg": 8.3}
+      "sort": {
+        "total": 654,
+        "overtime": 100,
+        "rate": 15.3,
+        "avg": 13.1
+      },
+      "stay": {
+        "total": 0,
+        "overtime": 0,
+        "rate": 0,
+        "avg": 0
+      },
+      "deliver": {
+        "total": 0,
+        "overtime": 0,
+        "rate": 0,
+        "avg": 0
+      }
     },
     {
-      "name": "陈浩然",
+      "name": "张铁儒 (ID:29142)",
+      "area": "一饭堂",
+      "sort": {
+        "total": 36,
+        "overtime": 26,
+        "rate": 72.2,
+        "avg": 35.7
+      },
+      "stay": {
+        "total": 10,
+        "overtime": 3,
+        "rate": 30.0,
+        "avg": 14.7
+      },
+      "deliver": {
+        "total": 110,
+        "overtime": 0,
+        "rate": 0.0,
+        "avg": 6.3
+      }
+    },
+    {
+      "name": "苏嘉荣 (ID:29164)",
+      "area": "一饭堂",
+      "sort": {
+        "total": 20,
+        "overtime": 5,
+        "rate": 25.0,
+        "avg": 12.6
+      },
+      "stay": {
+        "total": 9,
+        "overtime": 0,
+        "rate": 0.0,
+        "avg": 6.3
+      },
+      "deliver": {
+        "total": 124,
+        "overtime": 15,
+        "rate": 12.1,
+        "avg": 9.0
+      }
+    },
+    {
+      "name": "吕耀霖 (ID:29145)",
+      "area": "一饭堂",
+      "sort": {
+        "total": 22,
+        "overtime": 5,
+        "rate": 22.7,
+        "avg": 14.0
+      },
+      "stay": {
+        "total": 5,
+        "overtime": 0,
+        "rate": 0.0,
+        "avg": 6.0
+      },
+      "deliver": {
+        "total": 115,
+        "overtime": 7,
+        "rate": 6.1,
+        "avg": 8.9
+      }
+    },
+    {
+      "name": "练家辉 (ID:29008)",
+      "area": "一饭堂",
+      "sort": {
+        "total": 35,
+        "overtime": 10,
+        "rate": 28.6,
+        "avg": 15.5
+      },
+      "stay": {
+        "total": 9,
+        "overtime": 0,
+        "rate": 0.0,
+        "avg": 5.8
+      },
+      "deliver": {
+        "total": 91,
+        "overtime": 10,
+        "rate": 11.0,
+        "avg": 9.3
+      }
+    },
+    {
+      "name": "李睿文 (ID:29065)",
+      "area": "一饭堂",
+      "sort": {
+        "total": 56,
+        "overtime": 6,
+        "rate": 10.7,
+        "avg": 13.1
+      },
+      "stay": {
+        "total": 4,
+        "overtime": 0,
+        "rate": 0.0,
+        "avg": 4.1
+      },
+      "deliver": {
+        "total": 57,
+        "overtime": 0,
+        "rate": 0.0,
+        "avg": 7.5
+      }
+    },
+    {
+      "name": "陈颂博 (ID:29244)",
+      "area": "一饭堂",
+      "sort": {
+        "total": 0,
+        "overtime": 0,
+        "rate": 0,
+        "avg": 0
+      },
+      "stay": {
+        "total": 0,
+        "overtime": 0,
+        "rate": 0,
+        "avg": 0
+      },
+      "deliver": {
+        "total": 76,
+        "overtime": 11,
+        "rate": 14.5,
+        "avg": 9.4
+      }
+    },
+    {
+      "name": "谭福炫 (ID:29020)",
+      "area": "一饭堂",
+      "sort": {
+        "total": 0,
+        "overtime": 0,
+        "rate": 0,
+        "avg": 0
+      },
+      "stay": {
+        "total": 0,
+        "overtime": 0,
+        "rate": 0,
+        "avg": 0
+      },
+      "deliver": {
+        "total": 69,
+        "overtime": 15,
+        "rate": 21.7,
+        "avg": 9.7
+      }
+    },
+    {
+      "name": "梁智森 (ID:28847)",
+      "area": "一饭堂",
+      "sort": {
+        "total": 4,
+        "overtime": 0,
+        "rate": 0.0,
+        "avg": 8.2
+      },
+      "stay": {
+        "total": 0,
+        "overtime": 0,
+        "rate": 0,
+        "avg": 0
+      },
+      "deliver": {
+        "total": 65,
+        "overtime": 0,
+        "rate": 0.0,
+        "avg": 7.1
+      }
+    },
+    {
+      "name": "陈荣豪 (ID:29019)",
+      "area": "一饭堂",
+      "sort": {
+        "total": 6,
+        "overtime": 0,
+        "rate": 0.0,
+        "avg": 12.4
+      },
+      "stay": {
+        "total": 1,
+        "overtime": 0,
+        "rate": 0.0,
+        "avg": 9.6
+      },
+      "deliver": {
+        "total": 58,
+        "overtime": 8,
+        "rate": 13.8,
+        "avg": 8.6
+      }
+    },
+    {
+      "name": "钟浩怀 (ID:28881)",
+      "area": "一饭堂",
+      "sort": {
+        "total": 42,
+        "overtime": 12,
+        "rate": 28.6,
+        "avg": 14.9
+      },
+      "stay": {
+        "total": 1,
+        "overtime": 0,
+        "rate": 0.0,
+        "avg": 0.1
+      },
+      "deliver": {
+        "total": 1,
+        "overtime": 0,
+        "rate": 0.0,
+        "avg": 0.1
+      }
+    },
+    {
+      "name": "殷灿彬 (ID:29021)",
+      "area": "一饭堂",
+      "sort": {
+        "total": 0,
+        "overtime": 0,
+        "rate": 0,
+        "avg": 0
+      },
+      "stay": {
+        "total": 0,
+        "overtime": 0,
+        "rate": 0,
+        "avg": 0
+      },
+      "deliver": {
+        "total": 33,
+        "overtime": 0,
+        "rate": 0.0,
+        "avg": 5.6
+      }
+    },
+    {
+      "name": "张晓怡 (ID:29086)",
+      "area": "一饭堂",
+      "sort": {
+        "total": 0,
+        "overtime": 0,
+        "rate": 0,
+        "avg": 0
+      },
+      "stay": {
+        "total": 0,
+        "overtime": 0,
+        "rate": 0,
+        "avg": 0
+      },
+      "deliver": {
+        "total": 23,
+        "overtime": 0,
+        "rate": 0.0,
+        "avg": 6.1
+      }
+    },
+    {
+      "name": "凌关连 (ID:29054)",
+      "area": "一饭堂",
+      "sort": {
+        "total": 0,
+        "overtime": 0,
+        "rate": 0,
+        "avg": 0
+      },
+      "stay": {
+        "total": 0,
+        "overtime": 0,
+        "rate": 0,
+        "avg": 0
+      },
+      "deliver": {
+        "total": 22,
+        "overtime": 0,
+        "rate": 0.0,
+        "avg": 6.2
+      }
+    },
+    {
+      "name": "钟镇彬 (ID:29335)",
+      "area": "一饭堂",
+      "sort": {
+        "total": 0,
+        "overtime": 0,
+        "rate": 0,
+        "avg": 0
+      },
+      "stay": {
+        "total": 0,
+        "overtime": 0,
+        "rate": 0,
+        "avg": 0
+      },
+      "deliver": {
+        "total": 15,
+        "overtime": 0,
+        "rate": 0.0,
+        "avg": 6.7
+      }
+    },
+    {
+      "name": "陈淑金 (ID:29356)",
+      "area": "一饭堂",
+      "sort": {
+        "total": 0,
+        "overtime": 0,
+        "rate": 0,
+        "avg": 0
+      },
+      "stay": {
+        "total": 0,
+        "overtime": 0,
+        "rate": 0,
+        "avg": 0
+      },
+      "deliver": {
+        "total": 13,
+        "overtime": 0,
+        "rate": 0.0,
+        "avg": 6.6
+      }
+    },
+    {
+      "name": "方怡晴 (ID:29355)",
+      "area": "一饭堂",
+      "sort": {
+        "total": 0,
+        "overtime": 0,
+        "rate": 0,
+        "avg": 0
+      },
+      "stay": {
+        "total": 0,
+        "overtime": 0,
+        "rate": 0,
+        "avg": 0
+      },
+      "deliver": {
+        "total": 13,
+        "overtime": 0,
+        "rate": 0.0,
+        "avg": 3.6
+      }
+    },
+    {
+      "name": "李映涛 (ID:29357)",
+      "area": "一饭堂",
+      "sort": {
+        "total": 0,
+        "overtime": 0,
+        "rate": 0,
+        "avg": 0
+      },
+      "stay": {
+        "total": 0,
+        "overtime": 0,
+        "rate": 0,
+        "avg": 0
+      },
+      "deliver": {
+        "total": 11,
+        "overtime": 0,
+        "rate": 0.0,
+        "avg": 4.2
+      }
+    },
+    {
+      "name": "柰斯汉堡配送员6号 (ID:29302)",
+      "area": "一饭堂",
+      "sort": {
+        "total": 0,
+        "overtime": 0,
+        "rate": 0,
+        "avg": 0
+      },
+      "stay": {
+        "total": 0,
+        "overtime": 0,
+        "rate": 0,
+        "avg": 0
+      },
+      "deliver": {
+        "total": 9,
+        "overtime": 5,
+        "rate": 55.6,
+        "avg": 16.3
+      }
+    },
+    {
+      "name": "奈斯汉堡配送员1号 (ID:29267)",
+      "area": "一饭堂",
+      "sort": {
+        "total": 0,
+        "overtime": 0,
+        "rate": 0,
+        "avg": 0
+      },
+      "stay": {
+        "total": 0,
+        "overtime": 0,
+        "rate": 0,
+        "avg": 0
+      },
+      "deliver": {
+        "total": 6,
+        "overtime": 2,
+        "rate": 33.3,
+        "avg": 17.4
+      }
+    },
+    {
+      "name": "陈嘉乐 (ID:28860)",
+      "area": "一饭堂",
+      "sort": {
+        "total": 0,
+        "overtime": 0,
+        "rate": 0,
+        "avg": 0
+      },
+      "stay": {
+        "total": 0,
+        "overtime": 0,
+        "rate": 0,
+        "avg": 0
+      },
+      "deliver": {
+        "total": 6,
+        "overtime": 0,
+        "rate": 0.0,
+        "avg": 3.7
+      }
+    },
+    {
+      "name": "奈斯汉堡配送员5号 (ID:29272)",
+      "area": "一饭堂",
+      "sort": {
+        "total": 0,
+        "overtime": 0,
+        "rate": 0,
+        "avg": 0
+      },
+      "stay": {
+        "total": 0,
+        "overtime": 0,
+        "rate": 0,
+        "avg": 0
+      },
+      "deliver": {
+        "total": 2,
+        "overtime": 0,
+        "rate": 0.0,
+        "avg": 0.3
+      }
+    },
+    {
+      "name": "梁金妹 (ID:29191)",
+      "area": "一饭堂",
+      "sort": {
+        "total": 0,
+        "overtime": 0,
+        "rate": 0,
+        "avg": 0
+      },
+      "stay": {
+        "total": 0,
+        "overtime": 0,
+        "rate": 0,
+        "avg": 0
+      },
+      "deliver": {
+        "total": 1,
+        "overtime": 0,
+        "rate": 0.0,
+        "avg": 5.6
+      }
+    },
+    {
+      "name": "奈斯汉堡配送员7号 (ID:29305)",
+      "area": "一饭堂",
+      "sort": {
+        "total": 0,
+        "overtime": 0,
+        "rate": 0,
+        "avg": 0
+      },
+      "stay": {
+        "total": 0,
+        "overtime": 0,
+        "rate": 0,
+        "avg": 0
+      },
+      "deliver": {
+        "total": 1,
+        "overtime": 1,
+        "rate": 100.0,
+        "avg": 29.4
+      }
+    },
+    {
+      "name": "闲育鹏 (ID:29317)",
+      "area": "一饭堂",
+      "sort": {
+        "total": 0,
+        "overtime": 0,
+        "rate": 0,
+        "avg": 0
+      },
+      "stay": {
+        "total": 0,
+        "overtime": 0,
+        "rate": 0,
+        "avg": 0
+      },
+      "deliver": {
+        "total": 0,
+        "overtime": 0,
+        "rate": 0,
+        "avg": 0
+      }
+    },
+    {
+      "name": "陈嘉乐 (ID:28860)",
       "area": "商业街",
-      "sort": {"total": 18, "overtime": 5, "rate": 27.8, "avg": 22.1},
-      "stay": {"total": 18, "overtime": 2, "rate": 11.1, "avg": 12.5},
-      "deliver": {"total": 18, "overtime": 0, "rate": 0, "avg": 7.2}
+      "sort": {
+        "total": 122,
+        "overtime": 14,
+        "rate": 11.5,
+        "avg": 21.8
+      },
+      "stay": {
+        "total": 2,
+        "overtime": 0,
+        "rate": 0.0,
+        "avg": 5.9
+      },
+      "deliver": {
+        "total": 2,
+        "overtime": 0,
+        "rate": 0.0,
+        "avg": 0.3
+      }
     },
     {
-      "name": "张嘉文",
-      "area": "一饭堂",
-      "sort": {"total": 15, "overtime": 0, "rate": 0, "avg": 11.0},
-      "stay": {"total": 15, "overtime": 0, "rate": 0, "avg": 9.5},
-      "deliver": {"total": 15, "overtime": 1, "rate": 6.7, "avg": 10.1}
-    },
-    {
-      "name": "李明辉",
+      "name": "温振锋 (ID:28845)",
       "area": "商业街",
-      "sort": {"total": 12, "overtime": 1, "rate": 8.3, "avg": 16.5},
-      "stay": {"total": 12, "overtime": 3, "rate": 25.0, "avg": 14.2},
-      "deliver": {"total": 12, "overtime": 0, "rate": 0, "avg": 6.8}
+      "sort": {
+        "total": 58,
+        "overtime": 12,
+        "rate": 20.7,
+        "avg": 25.3
+      },
+      "stay": {
+        "total": 0,
+        "overtime": 0,
+        "rate": 0,
+        "avg": 0
+      },
+      "deliver": {
+        "total": 0,
+        "overtime": 0,
+        "rate": 0,
+        "avg": 0
+      }
     },
     {
-      "name": "王志远",
-      "area": "一饭堂",
-      "sort": {"total": 20, "overtime": 2, "rate": 10.0, "avg": 13.8},
-      "stay": {"total": 20, "overtime": 0, "rate": 0, "avg": 8.2},
-      "deliver": {"total": 20, "overtime": 4, "rate": 20.0, "avg": 12.5}
+      "name": "苏嘉荣 (ID:29164)",
+      "area": "商业街",
+      "sort": {
+        "total": 0,
+        "overtime": 0,
+        "rate": 0,
+        "avg": 0
+      },
+      "stay": {
+        "total": 0,
+        "overtime": 0,
+        "rate": 0,
+        "avg": 0
+      },
+      "deliver": {
+        "total": 41,
+        "overtime": 4,
+        "rate": 9.8,
+        "avg": 9.7
+      }
+    },
+    {
+      "name": "张铁儒 (ID:29142)",
+      "area": "商业街",
+      "sort": {
+        "total": 0,
+        "overtime": 0,
+        "rate": 0,
+        "avg": 0
+      },
+      "stay": {
+        "total": 0,
+        "overtime": 0,
+        "rate": 0,
+        "avg": 0
+      },
+      "deliver": {
+        "total": 32,
+        "overtime": 0,
+        "rate": 0.0,
+        "avg": 5.7
+      }
+    },
+    {
+      "name": "陈荣豪 (ID:29019)",
+      "area": "商业街",
+      "sort": {
+        "total": 0,
+        "overtime": 0,
+        "rate": 0,
+        "avg": 0
+      },
+      "stay": {
+        "total": 0,
+        "overtime": 0,
+        "rate": 0,
+        "avg": 0
+      },
+      "deliver": {
+        "total": 23,
+        "overtime": 6,
+        "rate": 26.1,
+        "avg": 11.6
+      }
+    },
+    {
+      "name": "梁智森 (ID:28847)",
+      "area": "商业街",
+      "sort": {
+        "total": 0,
+        "overtime": 0,
+        "rate": 0,
+        "avg": 0
+      },
+      "stay": {
+        "total": 0,
+        "overtime": 0,
+        "rate": 0,
+        "avg": 0
+      },
+      "deliver": {
+        "total": 23,
+        "overtime": 0,
+        "rate": 0.0,
+        "avg": 7.3
+      }
+    },
+    {
+      "name": "陈颂博 (ID:29244)",
+      "area": "商业街",
+      "sort": {
+        "total": 0,
+        "overtime": 0,
+        "rate": 0,
+        "avg": 0
+      },
+      "stay": {
+        "total": 0,
+        "overtime": 0,
+        "rate": 0,
+        "avg": 0
+      },
+      "deliver": {
+        "total": 22,
+        "overtime": 1,
+        "rate": 4.5,
+        "avg": 8.0
+      }
+    },
+    {
+      "name": "吕耀霖 (ID:29145)",
+      "area": "商业街",
+      "sort": {
+        "total": 0,
+        "overtime": 0,
+        "rate": 0,
+        "avg": 0
+      },
+      "stay": {
+        "total": 0,
+        "overtime": 0,
+        "rate": 0,
+        "avg": 0
+      },
+      "deliver": {
+        "total": 21,
+        "overtime": 2,
+        "rate": 9.5,
+        "avg": 8.6
+      }
+    },
+    {
+      "name": "谭福炫 (ID:29020)",
+      "area": "商业街",
+      "sort": {
+        "total": 0,
+        "overtime": 0,
+        "rate": 0,
+        "avg": 0
+      },
+      "stay": {
+        "total": 0,
+        "overtime": 0,
+        "rate": 0,
+        "avg": 0
+      },
+      "deliver": {
+        "total": 19,
+        "overtime": 2,
+        "rate": 10.5,
+        "avg": 10.4
+      }
+    },
+    {
+      "name": "李睿文 (ID:29065)",
+      "area": "商业街",
+      "sort": {
+        "total": 0,
+        "overtime": 0,
+        "rate": 0,
+        "avg": 0
+      },
+      "stay": {
+        "total": 0,
+        "overtime": 0,
+        "rate": 0,
+        "avg": 0
+      },
+      "deliver": {
+        "total": 17,
+        "overtime": 0,
+        "rate": 0.0,
+        "avg": 7.9
+      }
+    },
+    {
+      "name": "练家辉 (ID:29008)",
+      "area": "商业街",
+      "sort": {
+        "total": 0,
+        "overtime": 0,
+        "rate": 0,
+        "avg": 0
+      },
+      "stay": {
+        "total": 0,
+        "overtime": 0,
+        "rate": 0,
+        "avg": 0
+      },
+      "deliver": {
+        "total": 15,
+        "overtime": 1,
+        "rate": 6.7,
+        "avg": 8.5
+      }
+    },
+    {
+      "name": "凌关连 (ID:29054)",
+      "area": "商业街",
+      "sort": {
+        "total": 0,
+        "overtime": 0,
+        "rate": 0,
+        "avg": 0
+      },
+      "stay": {
+        "total": 0,
+        "overtime": 0,
+        "rate": 0,
+        "avg": 0
+      },
+      "deliver": {
+        "total": 4,
+        "overtime": 0,
+        "rate": 0.0,
+        "avg": 6.1
+      }
+    },
+    {
+      "name": "陈淑金 (ID:29356)",
+      "area": "商业街",
+      "sort": {
+        "total": 0,
+        "overtime": 0,
+        "rate": 0,
+        "avg": 0
+      },
+      "stay": {
+        "total": 0,
+        "overtime": 0,
+        "rate": 0,
+        "avg": 0
+      },
+      "deliver": {
+        "total": 4,
+        "overtime": 0,
+        "rate": 0.0,
+        "avg": 9.3
+      }
+    },
+    {
+      "name": "郑世柏 (ID:28952)",
+      "area": "商业街",
+      "sort": {
+        "total": 3,
+        "overtime": 0,
+        "rate": 0.0,
+        "avg": 12.5
+      },
+      "stay": {
+        "total": 0,
+        "overtime": 0,
+        "rate": 0,
+        "avg": 0
+      },
+      "deliver": {
+        "total": 0,
+        "overtime": 0,
+        "rate": 0,
+        "avg": 0
+      }
+    },
+    {
+      "name": "钟镇彬 (ID:29335)",
+      "area": "商业街",
+      "sort": {
+        "total": 0,
+        "overtime": 0,
+        "rate": 0,
+        "avg": 0
+      },
+      "stay": {
+        "total": 0,
+        "overtime": 0,
+        "rate": 0,
+        "avg": 0
+      },
+      "deliver": {
+        "total": 2,
+        "overtime": 0,
+        "rate": 0.0,
+        "avg": 9.4
+      }
+    },
+    {
+      "name": "张晓怡 (ID:29086)",
+      "area": "商业街",
+      "sort": {
+        "total": 0,
+        "overtime": 0,
+        "rate": 0,
+        "avg": 0
+      },
+      "stay": {
+        "total": 0,
+        "overtime": 0,
+        "rate": 0,
+        "avg": 0
+      },
+      "deliver": {
+        "total": 2,
+        "overtime": 0,
+        "rate": 0.0,
+        "avg": 5.2
+      }
+    },
+    {
+      "name": "殷灿彬 (ID:29021)",
+      "area": "商业街",
+      "sort": {
+        "total": 0,
+        "overtime": 0,
+        "rate": 0,
+        "avg": 0
+      },
+      "stay": {
+        "total": 0,
+        "overtime": 0,
+        "rate": 0,
+        "avg": 0
+      },
+      "deliver": {
+        "total": 2,
+        "overtime": 0,
+        "rate": 0.0,
+        "avg": 5.2
+      }
+    },
+    {
+      "name": "李映涛 (ID:29357)",
+      "area": "商业街",
+      "sort": {
+        "total": 0,
+        "overtime": 0,
+        "rate": 0,
+        "avg": 0
+      },
+      "stay": {
+        "total": 0,
+        "overtime": 0,
+        "rate": 0,
+        "avg": 0
+      },
+      "deliver": {
+        "total": 2,
+        "overtime": 0,
+        "rate": 0.0,
+        "avg": 5.8
+      }
+    },
+    {
+      "name": "方怡晴 (ID:29355)",
+      "area": "商业街",
+      "sort": {
+        "total": 0,
+        "overtime": 0,
+        "rate": 0,
+        "avg": 0
+      },
+      "stay": {
+        "total": 0,
+        "overtime": 0,
+        "rate": 0,
+        "avg": 0
+      },
+      "deliver": {
+        "total": 1,
+        "overtime": 0,
+        "rate": 0.0,
+        "avg": 11.3
+      }
+    },
+    {
+      "name": "梁金妹 (ID:29191)",
+      "area": "商业街",
+      "sort": {
+        "total": 0,
+        "overtime": 0,
+        "rate": 0,
+        "avg": 0
+      },
+      "stay": {
+        "total": 0,
+        "overtime": 0,
+        "rate": 0,
+        "avg": 0
+      },
+      "deliver": {
+        "total": 1,
+        "overtime": 0,
+        "rate": 0.0,
+        "avg": 6.3
+      }
     }
   ],
   "competitor": {
-    "date": "2026-06-24",
-    "total_daily": 1256,
-    "total_cumul": 45890,
-    "active_stores": 52,
-    "total_stores": 66,
-    "stores": [
-      {"id": "1", "name": "荷叶蒸饭", "total": 5670, "yesterday_total": 5581, "daily": 89, "score": 4.8},
-      {"id": "2", "name": "蜜雪冰城", "total": 4320, "yesterday_total": 4250, "daily": 70, "score": 4.9},
-      {"id": "3", "name": "茶悦日记", "total": 3890, "yesterday_total": 3835, "daily": 55, "score": 4.7},
-      {"id": "4", "name": "益禾堂", "total": 3200, "yesterday_total": 3160, "daily": 40, "score": 4.6},
-      {"id": "5", "name": "兰州拉面", "total": 2980, "yesterday_total": 2950, "daily": 30, "score": 4.5},
-      {"id": "6", "name": "家乐堡（技师店）", "total": 2450, "yesterday_total": 2428, "daily": 22, "score": 4.4},
-      {"id": "7", "name": "潮汕牛肉粿", "total": 2100, "yesterday_total": 2085, "daily": 15, "score": 4.3},
-      {"id": "8", "name": "馋嘴猫（卤肉饭）", "total": 1890, "yesterday_total": 1878, "daily": 12, "score": 4.2},
-      {"id": "9", "name": "食知味.烧腊", "total": 1650, "yesterday_total": 1640, "daily": 10, "score": 4.1},
-      {"id": "10", "name": "沙县小吃", "total": 1420, "yesterday_total": 1412, "daily": 8, "score": 4.0},
-      {"id": "11", "name": "老上海", "total": 1200, "yesterday_total": 1195, "daily": 5, "score": 3.9},
-      {"id": "12", "name": "骨汤麻辣烫，麻辣香锅", "total": 980, "yesterday_total": 980, "daily": 0, "score": 3.8},
-      {"id": "13", "name": "一楼自选餐（大众餐）", "total": 870, "yesterday_total": 865, "daily": 5, "score": 3.7},
-      {"id": "14", "name": "小锅猪肚鸡", "total": 760, "yesterday_total": 758, "daily": 2, "score": 4.0},
-      {"id": "15", "name": "原味汤粉皇", "total": 650, "yesterday_total": 648, "daily": 2, "score": 3.6}
-    ]
+    "date": "",
+    "total_daily": 0,
+    "total_cumul": 0,
+    "active_stores": 0,
+    "total_stores": 0,
+    "stores": []
   },
   "config": {
     "thresholds": {
-      "一饭堂": {"sort": 20, "stay": 15, "deliver": 15},
-      "商业街": {"sort": 30, "stay": 15, "deliver": 15},
-      "航天食堂二楼": {"sort": 30, "stay": 15, "deliver": 15},
-      "第二饭堂": {"sort": 20, "stay": 15, "deliver": 15},
-      "第四饭堂": {"sort": 20, "stay": 15, "deliver": 15},
-      "第三饭堂": {"sort": 20, "stay": 15, "deliver": 15},
-      "_default": {"sort": 20, "stay": 15, "deliver": 15}
+      "一饭堂": {
+        "sort": 20,
+        "stay": 15,
+        "deliver": 15
+      },
+      "商业街": {
+        "sort": 30,
+        "stay": 15,
+        "deliver": 15
+      },
+      "航天食堂二楼": {
+        "sort": 30,
+        "stay": 15,
+        "deliver": 15
+      },
+      "第二饭堂": {
+        "sort": 20,
+        "stay": 15,
+        "deliver": 15
+      },
+      "第四饭堂": {
+        "sort": 20,
+        "stay": 15,
+        "deliver": 15
+      },
+      "第三饭堂": {
+        "sort": 20,
+        "stay": 15,
+        "deliver": 15
+      },
+      "_default": {
+        "sort": 20,
+        "stay": 15,
+        "deliver": 15
+      }
     },
     "skip_scan_threshold": 60,
     "high_risk_count": 3,
     "press_order_threshold": 30,
+    "exclude_shops": [
+      "贝贝店铺测试(不用接单)",
+      "贝贝店铺测试（不用接单）",
+      "美滋堡（第一饭堂）",
+      "美滋堡(第一饭堂)"
+    ],
+    "self_delivery_shops": [
+      "奈斯汉堡(一楼饭堂)",
+      "奈斯汉堡（一楼饭堂）"
+    ],
+    "shop_areas": {
+      "益禾堂": "第一饭堂",
+      "堂堂2号": "第一饭堂",
+      "荷叶蒸饭": "第一饭堂",
+      "一楼自选餐（大众餐）": "第一饭堂",
+      "一楼蒸饭自选": "第一饭堂",
+      "芝士烤肉拌饭·秘制牛杂饭": "第一饭堂",
+      "茶悦日记": "商业街",
+      "一楼煲仔档自选": "第一饭堂",
+      "粤煲粤正（煲仔饭，盖浇饭）": "第一饭堂",
+      "家乐堡（技师店）": "商业街",
+      "食知味.烧腊": "第一饭堂",
+      "馋嘴猫（卤肉饭）": "第一饭堂",
+      "老上海": "第一饭堂",
+      "蜜雪冰城": "商业街",
+      "肥仔烧腊": "第一饭堂",
+      "骨汤麻辣烫，麻辣香锅": "第一饭堂",
+      "零食有鸣": "商业街",
+      "潮汕牛肉粿": "商业街",
+      "一人食·披萨（长条披萨）": "商业街",
+      "咚蜜缘": "商业街",
+      "果汁屋（酸奶捞）": "商业街",
+      "一楼大众餐": "第一饭堂",
+      "金牌9.9元特惠套餐": "第一饭堂",
+      "这家炸串真好吃（章鱼小丸子）": "商业街",
+      "熹上茶颜": "商业街",
+      "柳州螺香": "第一饭堂",
+      "超值套餐饭": "第一饭堂",
+      "烧腊世家": "第一饭堂",
+      "自选水饺馆": "第一饭堂",
+      "美滋堡（第一饭堂）": "第一饭堂",
+      "中式快餐（小锅现炒）": "第一饭堂",
+      "一杯好糖水": "商业街",
+      "福建正宗蒸饺": "第一饭堂",
+      "喜上生煎": "商业街",
+      "原味汤粉皇": "第一饭堂",
+      "粤小粤(一饭堂小糖记)": "第一饭堂",
+      "拌壹桶（干拌冒菜）": "商业街",
+      "小饭当家": "第一饭堂",
+      "大众优惠套餐": "第一饭堂",
+      "千里香馄饨": "第一饭堂",
+      "小锅猪肚鸡": "第一饭堂",
+      "台湾手抓饼": "第一饭堂",
+      "一元寿司": "商业街",
+      "紫米饭团": "第一饭堂",
+      "奥克力汉堡": "商业街",
+      "兰州拉面": "商业街",
+      "沙县小吃": "第一饭堂",
+      "泰岛蛋（蛋包饭·咖喱）": "第一饭堂",
+      "江西小炒": "第一饭堂",
+      "水饺·肥汁米线": "第一饭堂",
+      "重庆小面": "航天食堂二楼",
+      "隆江猪脚饭": "航天食堂二楼",
+      "松松西厨": "航天食堂二楼",
+      "大唐串串": "航天食堂二楼",
+      "泰正（东南亚特色）": "航天食堂二楼",
+      "关东煮": "航天食堂二楼",
+      "烩饭·烧烤": "航天食堂二楼",
+      "六福水饺": "航天食堂二楼",
+      "烧鹅侠": "航天食堂二楼",
+      "鲜美汤饭（二楼）": "第二饭堂",
+      "煲煲香-煲仔饭（二楼）": "第二饭堂",
+      "笼仔饭-肠粉（二楼）": "第二饭堂",
+      "二楼特色自选": "第二饭堂",
+      "猪肚鸡&滑蛋饭（二楼）": "第二饭堂",
+      "广式云吞": "第二饭堂",
+      "金牌烧腊（二楼饭堂）": "第二饭堂",
+      "潮州汤饭店": "商业街",
+      "笑开颜烘焙店": "商业街",
+      "7仔小吃店": "商业街",
+      "水果捞SoGood（水果，果切）": "商业街",
+      "体育广场酸奶捞（水果.果切）": "商业街",
+      "双汤饭档": "第四饭堂",
+      "老地方炒饭": "第四饭堂",
+      "第四饭堂星仔烧腊店": "第四饭堂",
+      "大众餐美食": "第四饭堂",
+      "四楼大众餐": "第四饭堂",
+      "四楼原味汤粉": "第四饭堂",
+      "一口好饭·【外婆家】": "第一饭堂",
+      "他乡遇川菜·招牌小炒肉": "商业街",
+      "干饭人扒饭": "第一饭堂",
+      "亿点甜": "第一饭堂",
+      "战斗鸡": "商业街",
+      "潮汕粿条": "商业街",
+      "新鲜手作饺子·炒粉·粥": "第一饭堂",
+      "无辣不欢（盖饭/炒饭/炒粉）": "第一饭堂",
+      "烤盘饭": "第一饭堂",
+      "烤肉饭": "第一饭堂",
+      "玲姐牛杂": "商业街",
+      "一楼酱香饼": "第一饭堂",
+      "有滋有面·拌粉王": "第一饭堂",
+      "开心花甲粉·五谷鱼粉": "第一饭堂",
+      "大拇指小吃": "第一饭堂",
+      "奈斯汉堡(一楼饭堂)": "第一饭堂",
+      "蒸ok老面鲜肉小笼包": "第一饭堂",
+      "咔坤咔·泰美味": "第一饭堂",
+      "PA BOSE柠茶（二楼饭堂）": "第二饭堂",
+      "森鹿·小糖记": "第一饭堂",
+      "意面时光": "第一饭堂",
+      "安记五谷鱼粉（二楼）": "第二饭堂",
+      "王者扒饭": "第二饭堂",
+      "麦乐鸡扒饭（第一饭堂）": "第一饭堂",
+      "糖果铺（万圣节限定）": "商业街",
+      "稻香园蒸饭": "第三饭堂",
+      "湛江仔烧腊": "第三饭堂",
+      "麻辣烫·干锅": "商业街",
+      "贝贝店铺测试(不用接单)": "商业街"
+    },
     "fetch_interval": 300
   }
 }
