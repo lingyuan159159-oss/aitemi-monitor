@@ -37,6 +37,7 @@ LATEST_PATH = DATA_DIR / 'latest.json'
 STATUS_PATH = DATA_DIR / 'status.json'
 HISTORY_PATH = DATA_DIR / 'competitor_history.json'
 HISTORY_TRACK_PATH = DATA_DIR / 'history.json'
+BASELINE_PATH = DATA_DIR / 'baseline.json'
 MAX_HISTORY = 288  # 24小时 × 每5分钟一条
 
 # 竞品数据为空时的默认结构
@@ -122,7 +123,7 @@ def main():
 
     # 4. 异常检测
     print("\n=== 异常检测 ===", file=sys.stderr)
-    anomalies = detect_anomalies(orders, ops, config, shop_areas_api)
+    anomalies = detect_anomalies(orders, ops, config, str(BASELINE_PATH), shop_areas_api)
     print(f"  异常: {len(anomalies)}", file=sys.stderr)
 
     # 5. 跳扫码检测
