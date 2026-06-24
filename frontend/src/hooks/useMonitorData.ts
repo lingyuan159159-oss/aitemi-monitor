@@ -1,0 +1,77 @@
+import { useState, useEffect, useCallback } from 'react';
+import type { MonitorData, HistoryEntry } from '@/lib/types';
+
+const DATA_URL = '/data/latest.json';
+const CONFIG_URL = '/data/config.json';
+const HISTORY_URL = '/data/history.json';
+
+export function useMonitorData(refreshInterval: number = 300) {
+  const [data, setData] = useState<MonitorData | null>(null);
+  const [history, setHistory] = useState<HistoryEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchData = useCallback(async () => {
+    try {
+      const [dataRes, configRes] = await Promise.all([
+        fetch(DATA_URL + '?t=' + Date.now()),
+        fetch(CONFIG_URL),
+      ]);
+
+      if (!dataRes.ok) throw new Error('数据加载失败');
+      const monitorData = await dataRes.json();
+      if (configRes.ok) {
+        const config = await configRes.json();
+        monitorData.config = { ...monitorData.config, ...config };
+      }
+      setData(monitorData);
+      setError(null);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : '加载失败');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const fetchHistory = useCallback(async () => {
+    try {
+      const res = await fetch(HISTORY_URL + '?t=' + Date.now());
+      if (res.ok) {
+        const h = await res.json();
+        setHistory(Array.isArray(h) ? h : []);
+      }
+    } catch {
+      // 静默失败
+    }
+  }, []);
+
+  const triggerCollect = useCallback(async () => {
+    try {
+      const res = await fetch('/api/collect');
+      if (res.ok) {
+        const d = await res.json();
+        if (d.status === 'ok') {
+          setTimeout(fetchData, 1000);
+        }
+      }
+    } catch {
+      // API 不可用时静默
+    }
+  }, [fetchData]);
+
+  useEffect(() => {
+    fetchData();
+    fetchHistory();
+  }, [fetchData, fetchHistory]);
+
+  useEffect(() => {
+    if (refreshInterval <= 0) return;
+    const timer = setInterval(() => {
+      fetchData();
+      fetchHistory();
+    }, refreshInterval * 1000);
+    return () => clearInterval(timer);
+  }, [refreshInterval, fetchData, fetchHistory]);
+
+  return { data, history, loading, error, refresh: fetchData, triggerCollect };
+}
