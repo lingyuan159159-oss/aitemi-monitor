@@ -10,11 +10,11 @@ function MetricCard({ icon: Icon, label, value, color }: { icon: React.ElementTy
   return (
     <Card>
       <CardContent className="p-4">
-        <div className={`w-8 h-8 rounded-lg flex items-center justify-center mb-2 ${color}`}>
-          <Icon className="h-4 w-4" />
+        <div className={`w-9 h-9 rounded-xl flex items-center justify-center mb-3 ${color}`}>
+          <Icon className="h-[18px] w-[18px]" />
         </div>
-        <div className="text-xs text-muted-foreground mb-1">{label}</div>
-        <div className="text-2xl font-bold">{value}</div>
+        <div className="text-xs text-[#86868b] mb-0.5">{label}</div>
+        <div className="text-[26px] font-semibold tracking-tight text-[#1d1d1f]">{value}</div>
       </CardContent>
     </Card>
   );
@@ -22,43 +22,63 @@ function MetricCard({ icon: Icon, label, value, color }: { icon: React.ElementTy
 
 export function CompetitorPanel({ data }: Props) {
   if (!data || !data.competitor || !data.competitor.stores) {
-    return <Card><CardContent className="p-8 text-center text-muted-foreground">暂无竞品数据</CardContent></Card>;
+    return (
+      <Card>
+        <CardContent className="p-10 text-center">
+          <div className="text-[#86868b] text-sm">暂无竞品数据</div>
+        </CardContent>
+      </Card>
+    );
   }
   const comp = data.competitor;
   const top15 = comp.stores.slice(0, 15);
 
+  const customTooltipStyle = {
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    backdropFilter: 'blur(8px)',
+    border: 'none',
+    borderRadius: '12px',
+    boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
+    padding: '8px 12px',
+    fontSize: '12px',
+  };
+
   return (
     <div className="space-y-4">
       <Card>
-        <CardContent className="p-4 text-sm text-muted-foreground">数据日期: {comp.date}</CardContent>
+        <CardContent className="px-4 py-3 text-[13px] text-[#86868b]">数据日期: {comp.date}</CardContent>
       </Card>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <MetricCard icon={TrendingUp} label="当日销量" value={comp.total_daily} color="bg-blue-500/10 text-blue-500" />
-        <MetricCard icon={BarChart3} label="累计销量" value={comp.total_cumul.toLocaleString()} color="bg-green-500/10 text-green-500" />
-        <MetricCard icon={Users} label="活跃店铺" value={comp.active_stores} color="bg-green-500/10 text-green-500" />
-        <MetricCard icon={Store} label="总店铺数" value={comp.total_stores} color="bg-muted text-muted-foreground" />
+        <MetricCard icon={TrendingUp} label="当日销量" value={comp.total_daily} color="bg-[#0071e3]/10 text-[#0071e3]" />
+        <MetricCard icon={BarChart3} label="累计销量" value={comp.total_cumul.toLocaleString()} color="bg-[#34c759]/10 text-[#34c759]" />
+        <MetricCard icon={Users} label="活跃店铺" value={comp.active_stores} color="bg-[#34c759]/10 text-[#34c759]" />
+        <MetricCard icon={Store} label="总店铺数" value={comp.total_stores} color="bg-[#86868b]/10 text-[#86868b]" />
       </div>
 
-      {/* TOP 15 横向柱状图 */}
+      {/* TOP 15 Bar Chart */}
       <Card>
-        <CardHeader><CardTitle className="text-sm">TOP 15</CardTitle></CardHeader>
-        <CardContent>
+        <CardHeader className="pb-0">
+          <CardTitle className="text-[13px] font-medium text-[#1d1d1f]">TOP 15</CardTitle>
+        </CardHeader>
+        <CardContent className="pt-2">
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={top15} layout="vertical" margin={{ left: 80 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-              <XAxis type="number" tick={{ fontSize: 11 }} />
-              <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={75} />
-              <Tooltip />
-              <Bar dataKey="daily" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.04)" horizontal={false} />
+              <XAxis type="number" tick={{ fontSize: 11, fill: '#86868b' }} axisLine={false} tickLine={false} />
+              <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: '#1d1d1f' }} width={75} axisLine={false} tickLine={false} />
+              <Tooltip contentStyle={customTooltipStyle} />
+              <Bar dataKey="daily" fill="#0071e3" radius={[0, 6, 6, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </CardContent>
       </Card>
 
-      {/* 全部排名 */}
+      {/* Full Ranking Table */}
       <Card>
-        <CardHeader><CardTitle className="text-sm">全部排名</CardTitle></CardHeader>
+        <CardHeader className="pb-0">
+          <CardTitle className="text-[13px] font-medium text-[#1d1d1f]">全部排名</CardTitle>
+        </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
@@ -74,12 +94,12 @@ export function CompetitorPanel({ data }: Props) {
             <TableBody>
               {comp.stores.map((s, i) => (
                 <TableRow key={s.id} className={s.daily === 0 ? 'opacity-40' : ''}>
-                  <TableCell>{i + 1}</TableCell>
-                  <TableCell className="font-medium">{s.name}</TableCell>
-                  <TableCell className="font-bold">{s.daily}</TableCell>
-                  <TableCell>{s.total.toLocaleString()}</TableCell>
-                  <TableCell>{s.yesterday_total.toLocaleString()}</TableCell>
-                  <TableCell>{s.score || '--'}</TableCell>
+                  <TableCell className="text-[13px]">{i + 1}</TableCell>
+                  <TableCell className="font-medium text-[13px]">{s.name}</TableCell>
+                  <TableCell className="font-semibold text-[13px]">{s.daily}</TableCell>
+                  <TableCell className="text-[13px]">{s.total.toLocaleString()}</TableCell>
+                  <TableCell className="text-[13px]">{s.yesterday_total.toLocaleString()}</TableCell>
+                  <TableCell className="text-[13px]">{s.score || '--'}</TableCell>
                 </TableRow>
               ))}
             </TableBody>

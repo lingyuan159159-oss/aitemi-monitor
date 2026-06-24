@@ -59,8 +59,11 @@ export default function App() {
 
   if (loading && !data) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      <div className="flex flex-col items-center justify-center min-h-screen gap-3">
+        <div className="w-12 h-12 rounded-2xl bg-[#0071e3] flex items-center justify-center">
+          <Loader2 className="h-6 w-6 animate-spin text-white" />
+        </div>
+        <span className="text-sm text-[#86868b]">正在加载...</span>
       </div>
     );
   }
@@ -68,24 +71,43 @@ export default function App() {
   const sessionOk = data?.session_valid ?? false;
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Navbar */}
-      <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="max-w-7xl mx-auto flex h-14 items-center justify-between px-4">
+    <div className="min-h-screen bg-[#f5f5f7]">
+      {/* Glassmorphism Navbar */}
+      <header className="sticky top-0 z-50 border-b border-black/[0.06] bg-white/70 backdrop-blur-xl backdrop-saturate-150">
+        <div className="max-w-6xl mx-auto flex h-[52px] items-center justify-between px-4">
           <div className="flex items-center gap-3">
-            <h1 className="text-lg font-bold tracking-tight">艾特米监控</h1>
-            <Badge variant={sessionOk ? 'default' : 'destructive'} className="gap-1">
-              <span className={cn('h-2 w-2 rounded-full', sessionOk ? 'bg-green-500' : 'bg-red-500')} />
+            <h1 className="text-[17px] font-semibold tracking-tight text-[#1d1d1f]">艾特米监控</h1>
+            <Badge
+              variant={sessionOk ? 'default' : 'destructive'}
+              className={cn(
+                'gap-1 text-[11px] px-2 py-0.5',
+                sessionOk
+                  ? 'bg-[#34c759]/10 text-[#34c759] hover:bg-[#34c759]/15'
+                  : 'bg-[#ff3b30]/10 text-[#ff3b30] hover:bg-[#ff3b30]/15'
+              )}
+            >
+              <span className={cn('h-1.5 w-1.5 rounded-full', sessionOk ? 'bg-[#34c759]' : 'bg-[#ff3b30]')} />
               {sessionOk ? '在线' : 'Session 过期'}
             </Badge>
           </div>
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <span>{relativeTime(data?.updated_at || '')}更新</span>
-            <Button variant="ghost" size="icon" onClick={handleRefresh} disabled={refreshing}>
-              <RefreshCw className={cn('h-4 w-4', refreshing && 'animate-spin')} />
+          <div className="flex items-center gap-1.5 text-[13px] text-[#86868b]">
+            <span className="hidden sm:inline">{relativeTime(data?.updated_at || '')}更新</span>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="text-[#86868b] hover:text-[#1d1d1f] hover:bg-black/[0.04]"
+            >
+              <RefreshCw className={cn('h-[18px] w-[18px]', refreshing && 'animate-spin')} />
             </Button>
-            <Button variant="ghost" size="icon" onClick={() => setSettingsOpen(true)}>
-              <Settings className="h-4 w-4" />
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setSettingsOpen(true)}
+              className="text-[#86868b] hover:text-[#1d1d1f] hover:bg-black/[0.04]"
+            >
+              <Settings className="h-[18px] w-[18px]" />
             </Button>
           </div>
         </div>
@@ -93,40 +115,44 @@ export default function App() {
 
       {/* Error Banner */}
       {error && (
-        <Alert variant="destructive" className="max-w-7xl mx-auto mt-3 mx-4">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
+        <div className="max-w-6xl mx-auto px-4 pt-3">
+          <Alert variant="destructive" className="rounded-2xl border-none bg-[#ff3b30]/8 text-[#ff3b30]">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription className="text-[13px]">{error}</AlertDescription>
+          </Alert>
+        </div>
       )}
 
       {!sessionOk && (
-        <Alert variant="destructive" className="max-w-7xl mx-auto mt-3 mx-4">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertDescription>Session 已过期，请更新 Cookie</AlertDescription>
-        </Alert>
+        <div className="max-w-6xl mx-auto px-4 pt-3">
+          <Alert variant="destructive" className="rounded-2xl border-none bg-[#ff3b30]/8 text-[#ff3b30]">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription className="text-[13px]">Session 已过期，请更新 Cookie</AlertDescription>
+          </Alert>
+        </div>
       )}
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto p-4">
-        <Tabs defaultValue="overview" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-6">
-            <TabsTrigger value="overview" className="gap-1.5">
-              <LayoutDashboard className="h-4 w-4" />总览
+      <main className="max-w-6xl mx-auto px-4 py-4">
+        <Tabs defaultValue="overview" className="space-y-5">
+          <TabsList className="w-full sm:w-auto flex overflow-x-auto no-scrollbar">
+            <TabsTrigger value="overview" className="gap-1.5 text-[13px] px-3">
+              <LayoutDashboard className="h-3.5 w-3.5" />总览
             </TabsTrigger>
-            <TabsTrigger value="anomalies" className="gap-1.5">
-              <AlertTriangle className="h-4 w-4" />异常
+            <TabsTrigger value="anomalies" className="gap-1.5 text-[13px] px-3">
+              <AlertTriangle className="h-3.5 w-3.5" />异常
             </TabsTrigger>
-            <TabsTrigger value="riders" className="gap-1.5">
-              <Users className="h-4 w-4" />骑手
+            <TabsTrigger value="riders" className="gap-1.5 text-[13px] px-3">
+              <Users className="h-3.5 w-3.5" />骑手
             </TabsTrigger>
-            <TabsTrigger value="skipscan" className="gap-1.5">
-              <Clock className="h-4 w-4" />跳扫
+            <TabsTrigger value="skipscan" className="gap-1.5 text-[13px] px-3">
+              <Clock className="h-3.5 w-3.5" />跳扫
             </TabsTrigger>
-            <TabsTrigger value="competitor" className="gap-1.5">
-              <BarChart3 className="h-4 w-4" />竞品
+            <TabsTrigger value="competitor" className="gap-1.5 text-[13px] px-3">
+              <BarChart3 className="h-3.5 w-3.5" />竞品
             </TabsTrigger>
-            <TabsTrigger value="history" className="gap-1.5">
-              <TrendingUp className="h-4 w-4" />历史
+            <TabsTrigger value="history" className="gap-1.5 text-[13px] px-3">
+              <TrendingUp className="h-3.5 w-3.5" />历史
             </TabsTrigger>
           </TabsList>
 

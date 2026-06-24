@@ -12,10 +12,10 @@ interface Props {
 }
 
 const severityColors: Record<string, string> = {
-  HIGH: 'bg-red-500/10 text-red-500 border-red-500/20',
-  MED: 'bg-orange-500/10 text-orange-500 border-orange-500/20',
-  LOW: 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20',
-  WARN: 'bg-muted text-muted-foreground border-border',
+  HIGH: 'bg-[#ff3b30]/10 text-[#ff3b30]',
+  MED: 'bg-[#ff9500]/10 text-[#ff9500]',
+  LOW: 'bg-[#ffcc00]/10 text-[#9a6700]',
+  WARN: 'bg-[#86868b]/10 text-[#86868b]',
 };
 
 const severityLabels: Record<string, string> = {
@@ -27,15 +27,18 @@ function MetricCard({ icon: Icon, label, value, color, prev, onClick }: {
 }) {
   const diff = prev != null ? value - prev : null;
   return (
-    <Card className={cn('cursor-pointer hover:shadow-md transition-shadow', onClick && 'cursor-pointer')} onClick={onClick}>
+    <Card
+      className={cn('cursor-pointer transition-all duration-200 hover:-translate-y-0.5', onClick && 'cursor-pointer')}
+      onClick={onClick}
+    >
       <CardContent className="p-4">
-        <div className={cn('w-8 h-8 rounded-lg flex items-center justify-center mb-2', color)}>
-          <Icon className="h-4 w-4" />
+        <div className={cn('w-9 h-9 rounded-xl flex items-center justify-center mb-3', color)}>
+          <Icon className="h-[18px] w-[18px]" />
         </div>
-        <div className="text-xs text-muted-foreground mb-1">{label}</div>
-        <div className="text-2xl font-bold">{value}</div>
+        <div className="text-xs text-[#86868b] mb-0.5">{label}</div>
+        <div className="text-[26px] font-semibold tracking-tight text-[#1d1d1f]">{value}</div>
         {diff != null && diff !== 0 && (
-          <div className={cn('flex items-center gap-1 mt-1 text-xs font-medium', diff > 0 ? 'text-red-500' : 'text-green-500')}>
+          <div className={cn('flex items-center gap-0.5 mt-1 text-xs font-medium', diff > 0 ? 'text-[#ff3b30]' : 'text-[#34c759]')}>
             {diff > 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
             {diff > 0 ? '+' : ''}{diff}
           </div>
@@ -45,25 +48,22 @@ function MetricCard({ icon: Icon, label, value, color, prev, onClick }: {
   );
 }
 
-export function OverviewPanel({ data, formatTime }: Props) {
+export function OverviewPanel({ data, formatTime: _formatTime }: Props) {
   if (!data) return null;
   const s = data.summary;
 
-  // 异常分布数据
   const distData = [
-    { name: '分拣', count: data.anomalies.filter(a => a.type === '分拣超时').length, fill: '#ef4444' },
-    { name: '投餐', count: data.anomalies.filter(a => a.type === '投餐超时').length, fill: '#f97316' },
-    { name: '配送', count: data.anomalies.filter(a => a.type === '配送超时').length, fill: '#eab308' },
-    { name: '压单', count: data.anomalies.filter(a => a.type === '压单').length, fill: '#6b7280' },
-    { name: '跳扫', count: data.skip_scans.length, fill: '#8b5cf6' },
+    { name: '分拣', count: data.anomalies.filter(a => a.type === '分拣超时').length, fill: '#ff3b30' },
+    { name: '投餐', count: data.anomalies.filter(a => a.type === '投餐超时').length, fill: '#ff9500' },
+    { name: '配送', count: data.anomalies.filter(a => a.type === '配送超时').length, fill: '#ffcc00' },
+    { name: '压单', count: data.anomalies.filter(a => a.type === '压单').length, fill: '#86868b' },
+    { name: '跳扫', count: data.skip_scans.length, fill: '#af52de' },
   ];
 
-  // 采集总结
   const typeCnt: Record<string, number> = {};
   data.anomalies.forEach(a => { typeCnt[a.type] = (typeCnt[a.type] || 0) + 1; });
   const skipCnt = data.skip_scans.length;
 
-  // 责任人
   const riderFault: Record<string, { count: number; types: Record<string, number> }> = {};
   data.anomalies.forEach(a => {
     if (!a.rider) return;
@@ -79,42 +79,62 @@ export function OverviewPanel({ data, formatTime }: Props) {
   });
   const faultList = Object.entries(riderFault).sort((a, b) => b[1].count - a[1].count);
 
+  const customTooltipStyle = {
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    backdropFilter: 'blur(8px)',
+    border: 'none',
+    borderRadius: '12px',
+    boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
+    padding: '8px 12px',
+    fontSize: '12px',
+  };
+
   return (
-    <div className="space-y-4">
-      {/* 指标卡片 */}
+    <div className="space-y-5">
+      {/* Metric Cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-        <MetricCard icon={Package} label="总订单" value={s.total_orders} color="bg-blue-500/10 text-blue-500" />
-        <MetricCard icon={Truck} label="配送中" value={s.delivering} color="bg-green-500/10 text-green-500" />
-        <MetricCard icon={AlertTriangle} label="异常" value={s.anomaly_count} color={s.anomaly_count > 0 ? 'bg-red-500/10 text-red-500' : 'bg-green-500/10 text-green-500'} />
-        <MetricCard icon={Clock} label="跳扫码" value={s.skip_scan_count} color={s.skip_scan_count > 0 ? 'bg-orange-500/10 text-orange-500' : 'bg-green-500/10 text-green-500'} />
-        <MetricCard icon={RotateCcw} label="售后" value={s.aftersale} color="bg-orange-500/10 text-orange-500" />
-        <MetricCard icon={CheckCircle2} label="已完成" value={s.completed} color="bg-green-500/10 text-green-500" />
+        <MetricCard icon={Package} label="总订单" value={s.total_orders} color="bg-[#0071e3]/10 text-[#0071e3]" />
+        <MetricCard icon={Truck} label="配送中" value={s.delivering} color="bg-[#34c759]/10 text-[#34c759]" />
+        <MetricCard icon={AlertTriangle} label="异常" value={s.anomaly_count} color={s.anomaly_count > 0 ? 'bg-[#ff3b30]/10 text-[#ff3b30]' : 'bg-[#34c759]/10 text-[#34c759]'} />
+        <MetricCard icon={Clock} label="跳扫码" value={s.skip_scan_count} color={s.skip_scan_count > 0 ? 'bg-[#ff9500]/10 text-[#ff9500]' : 'bg-[#34c759]/10 text-[#34c759]'} />
+        <MetricCard icon={RotateCcw} label="售后" value={s.aftersale} color="bg-[#ff9500]/10 text-[#ff9500]" />
+        <MetricCard icon={CheckCircle2} label="已完成" value={s.completed} color="bg-[#34c759]/10 text-[#34c759]" />
       </div>
 
-      {/* 采集总结卡片 */}
+      {/* Collection Summary */}
       <Card>
-        <CardContent className="p-4">
+        <CardContent className="p-5">
           <div className="flex items-center gap-2 mb-3">
-            <span className="h-2 w-2 rounded-full bg-green-500" />
-            <span className="font-semibold text-sm">采集 {formatTime(data.updated_at)} | 下次 {formatTime(new Date(new Date(data.updated_at.includes('+') ? data.updated_at : data.updated_at + '+08:00').getTime() + 300000).toISOString())}</span>
+            <span className="h-2 w-2 rounded-full bg-[#34c759]" />
+            <span className="font-medium text-[13px] text-[#1d1d1f]">
+              {(() => {
+                const upd = new Date(data.updated_at.includes('+') ? data.updated_at : data.updated_at + '+08:00');
+                const nxt = new Date(upd.getTime() + 300000);
+                const fmt = (d: Date) => d.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Shanghai' });
+                return `采集 ${fmt(upd)} | 下次 ${fmt(nxt)}`;
+              })()}
+            </span>
           </div>
           {s.anomaly_count === 0 && s.skip_scan_count === 0 ? (
-            <div className="text-green-500 font-semibold">本次采集无异常，一切正常</div>
+            <div className="flex items-center gap-2 text-[#34c759] font-medium text-[15px]">
+              <CheckCircle2 className="h-5 w-5" />
+              本次采集无异常，一切正常
+            </div>
           ) : (
-            <div className="space-y-1 text-sm mb-3">
-              {typeCnt['分拣超时'] && <div className="text-red-500">分拣超时 <strong>{typeCnt['分拣超时']}</strong> 单</div>}
-              {typeCnt['投餐超时'] && <div className="text-orange-500">投餐超时 <strong>{typeCnt['投餐超时']}</strong> 单</div>}
-              {typeCnt['配送超时'] && <div className="text-yellow-500">配送超时 <strong>{typeCnt['配送超时']}</strong> 单</div>}
-              {typeCnt['压单'] && <div className="text-muted-foreground">压单 <strong>{typeCnt['压单']}</strong> 单</div>}
-              {skipCnt > 0 && <div className="text-purple-500">跳扫码 <strong>{skipCnt}</strong> 单</div>}
+            <div className="space-y-1.5 text-[13px] mb-3">
+              {typeCnt['分拣超时'] && <div className="text-[#ff3b30]">分拣超时 <strong>{typeCnt['分拣超时']}</strong> 单</div>}
+              {typeCnt['投餐超时'] && <div className="text-[#ff9500]">投餐超时 <strong>{typeCnt['投餐超时']}</strong> 单</div>}
+              {typeCnt['配送超时'] && <div className="text-[#9a6700]">配送超时 <strong>{typeCnt['配送超时']}</strong> 单</div>}
+              {typeCnt['压单'] && <div className="text-[#86868b]">压单 <strong>{typeCnt['压单']}</strong> 单</div>}
+              {skipCnt > 0 && <div className="text-[#af52de]">跳扫码 <strong>{skipCnt}</strong> 单</div>}
             </div>
           )}
           {faultList.length > 0 && (
             <>
-              <div className="text-xs text-muted-foreground mb-2">涉及骑手（按问题数排序）</div>
-              <div className="flex flex-wrap gap-1">
+              <div className="text-xs text-[#86868b] mb-2 mt-2">涉及骑手（按问题数排序）</div>
+              <div className="flex flex-wrap gap-1.5">
                 {faultList.map(([name, info]) => (
-                  <Badge key={name} variant={info.count >= 3 ? 'destructive' : 'secondary'} className="text-xs">
+                  <Badge key={name} variant={info.count >= 3 ? 'destructive' : 'secondary'} className="text-xs rounded-full">
                     {name} {info.count}单
                   </Badge>
                 ))}
@@ -124,18 +144,20 @@ export function OverviewPanel({ data, formatTime }: Props) {
         </CardContent>
       </Card>
 
-      {/* 图表 */}
+      {/* Charts */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card>
-          <CardHeader><CardTitle className="text-sm">异常分布</CardTitle></CardHeader>
-          <CardContent>
+          <CardHeader className="pb-0">
+            <CardTitle className="text-[13px] font-medium text-[#1d1d1f]">异常分布</CardTitle>
+          </CardHeader>
+          <CardContent className="pt-2">
             <ResponsiveContainer width="100%" height={200}>
               <BarChart data={distData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-                <YAxis tick={{ fontSize: 12 }} />
-                <Tooltip />
-                <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.04)" vertical={false} />
+                <XAxis dataKey="name" tick={{ fontSize: 12, fill: '#86868b' }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 12, fill: '#86868b' }} axisLine={false} tickLine={false} />
+                <Tooltip contentStyle={customTooltipStyle} />
+                <Bar dataKey="count" radius={[6, 6, 0, 0]}>
                   {distData.map((entry, i) => (
                     <rect key={i} fill={entry.fill} />
                   ))}
@@ -145,24 +167,28 @@ export function OverviewPanel({ data, formatTime }: Props) {
           </CardContent>
         </Card>
         <Card>
-          <CardHeader><CardTitle className="text-sm">订单趋势（最近）</CardTitle></CardHeader>
-          <CardContent>
+          <CardHeader className="pb-0">
+            <CardTitle className="text-[13px] font-medium text-[#1d1d1f]">订单趋势（最近）</CardTitle>
+          </CardHeader>
+          <CardContent className="pt-2">
             <ResponsiveContainer width="100%" height={200}>
               <LineChart data={[]}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis tick={{ fontSize: 12 }} />
-                <YAxis tick={{ fontSize: 12 }} />
-                <Tooltip />
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.04)" vertical={false} />
+                <XAxis tick={{ fontSize: 12, fill: '#86868b' }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 12, fill: '#86868b' }} axisLine={false} tickLine={false} />
+                <Tooltip contentStyle={customTooltipStyle} />
               </LineChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
       </div>
 
-      {/* 当前异常表格 */}
+      {/* Current Anomalies Table */}
       {data.anomalies.length > 0 && (
         <Card>
-          <CardHeader><CardTitle className="text-sm">当前异常</CardTitle></CardHeader>
+          <CardHeader className="pb-0">
+            <CardTitle className="text-[13px] font-medium text-[#1d1d1f]">当前异常</CardTitle>
+          </CardHeader>
           <CardContent>
             <Table>
               <TableHeader>
@@ -183,11 +209,11 @@ export function OverviewPanel({ data, formatTime }: Props) {
                         {severityLabels[a.severity] || a.severity}
                       </Badge>
                     </TableCell>
-                    <TableCell className="font-medium">{a.delivery_seq || '--'}</TableCell>
-                    <TableCell>{a.oid}</TableCell>
-                    <TableCell className="font-medium">{a.shop}</TableCell>
-                    <TableCell>{a.elapsed_min}分钟</TableCell>
-                    <TableCell>{a.rider || '--'}</TableCell>
+                    <TableCell className="font-medium text-[13px]">{a.delivery_seq || '--'}</TableCell>
+                    <TableCell className="text-[13px]">{a.oid}</TableCell>
+                    <TableCell className="font-medium text-[13px]">{a.shop}</TableCell>
+                    <TableCell className="text-[13px]">{a.elapsed_min}分钟</TableCell>
+                    <TableCell className="text-[13px]">{a.rider || '--'}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>

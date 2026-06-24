@@ -10,18 +10,18 @@ interface Props {
 }
 
 const severityColors: Record<string, string> = {
-  HIGH: 'bg-red-500/10 text-red-500 border-red-500/20',
-  MED: 'bg-orange-500/10 text-orange-500 border-orange-500/20',
-  LOW: 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20',
-  WARN: 'bg-muted text-muted-foreground border-border',
+  HIGH: 'bg-[#ff3b30]/10 text-[#ff3b30]',
+  MED: 'bg-[#ff9500]/10 text-[#ff9500]',
+  LOW: 'bg-[#ffcc00]/10 text-[#9a6700]',
+  WARN: 'bg-[#86868b]/10 text-[#86868b]',
 };
 const severityLabels: Record<string, string> = { HIGH: '严重', MED: '中等', LOW: '轻微', WARN: '警告' };
 
 const typeColors: Record<string, string> = {
-  '分拣超时': 'border-l-4 border-red-500',
-  '投餐超时': 'border-l-4 border-orange-500',
-  '配送超时': 'border-l-4 border-yellow-500',
-  '压单': 'border-l-4 border-gray-400',
+  '分拣超时': 'border-l-[3px] border-l-[#ff3b30]',
+  '投餐超时': 'border-l-[3px] border-l-[#ff9500]',
+  '配送超时': 'border-l-[3px] border-l-[#ffcc00]',
+  '压单': 'border-l-[3px] border-l-[#86868b]',
 };
 
 export function AnomalyPanel({ data, formatTime }: Props) {
@@ -35,32 +35,32 @@ export function AnomalyPanel({ data, formatTime }: Props) {
 
   return (
     <div className="space-y-4">
-      {/* 采集时间 */}
+      {/* Collection Time */}
       <Card>
-        <CardContent className="p-4 flex items-center gap-2 text-sm">
-          <span className="h-2 w-2 rounded-full bg-green-500" />
+        <CardContent className="px-4 py-3 flex items-center gap-2 text-[13px] text-[#86868b]">
+          <span className="h-2 w-2 rounded-full bg-[#34c759]" />
           <span>采集时间: {formatTime(data.updated_at)}</span>
         </CardContent>
       </Card>
 
-      {/* 严重度摘要 */}
-      <div className="flex flex-wrap gap-2">
-        {cnt.HIGH > 0 && <Badge className="bg-red-500/10 text-red-500">严重: {cnt.HIGH}</Badge>}
-        {cnt.MED > 0 && <Badge className="bg-orange-500/10 text-orange-500">中等: {cnt.MED}</Badge>}
-        {cnt.LOW > 0 && <Badge className="bg-yellow-500/10 text-yellow-500">轻微: {cnt.LOW}</Badge>}
+      {/* Severity Summary */}
+      <div className="flex flex-wrap gap-1.5">
+        {cnt.HIGH > 0 && <Badge className="bg-[#ff3b30]/10 text-[#ff3b30]">严重: {cnt.HIGH}</Badge>}
+        {cnt.MED > 0 && <Badge className="bg-[#ff9500]/10 text-[#ff9500]">中等: {cnt.MED}</Badge>}
+        {cnt.LOW > 0 && <Badge className="bg-[#ffcc00]/10 text-[#9a6700]">轻微: {cnt.LOW}</Badge>}
         {cnt.WARN > 0 && <Badge variant="secondary">警告: {cnt.WARN}</Badge>}
       </div>
 
-      {/* 分组展示 */}
+      {/* Grouped Display */}
       {types.map(type => {
         const items = anomalies.filter(a => a.type === type);
         if (items.length === 0) return null;
         return (
           <Card key={type} className={cn('overflow-hidden', typeColors[type])}>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm flex items-center gap-2">
+            <CardHeader className="pb-1">
+              <CardTitle className="text-[13px] font-medium text-[#1d1d1f] flex items-center gap-2">
                 {type}
-                <Badge variant="secondary" className="text-xs">{items.length}</Badge>
+                <Badge variant="secondary" className="text-[11px]">{items.length}</Badge>
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -85,13 +85,13 @@ export function AnomalyPanel({ data, formatTime }: Props) {
                           {severityLabels[a.severity] || a.severity}
                         </Badge>
                       </TableCell>
-                      <TableCell className="font-medium">{a.delivery_seq || '--'}</TableCell>
-                      <TableCell>{a.oid}</TableCell>
-                      <TableCell className="font-medium">{a.shop}</TableCell>
-                      <TableCell>{a.elapsed_min}分钟</TableCell>
-                      <TableCell>{a.threshold}分钟</TableCell>
-                      <TableCell>{a.rider || '--'}</TableCell>
-                      <TableCell className="text-xs text-muted-foreground">
+                      <TableCell className="font-medium text-[13px]">{a.delivery_seq || '--'}</TableCell>
+                      <TableCell className="text-[13px]">{a.oid}</TableCell>
+                      <TableCell className="font-medium text-[13px]">{a.shop}</TableCell>
+                      <TableCell className="text-[13px]">{a.elapsed_min}分钟</TableCell>
+                      <TableCell className="text-[13px]">{a.threshold}分钟</TableCell>
+                      <TableCell className="text-[13px]">{a.rider || '--'}</TableCell>
+                      <TableCell className="text-xs text-[#86868b]">
                         {a.baseline != null ? `基线${a.baseline} 斜率${a.slope != null ? (a.slope >= 0 ? '+' : '') + a.slope : '--'}` : '--'}
                       </TableCell>
                     </TableRow>
@@ -105,7 +105,9 @@ export function AnomalyPanel({ data, formatTime }: Props) {
 
       {anomalies.length === 0 && (
         <Card>
-          <CardContent className="p-8 text-center text-muted-foreground">暂无异常</CardContent>
+          <CardContent className="p-10 text-center">
+            <div className="text-[#86868b] text-sm">暂无异常</div>
+          </CardContent>
         </Card>
       )}
     </div>

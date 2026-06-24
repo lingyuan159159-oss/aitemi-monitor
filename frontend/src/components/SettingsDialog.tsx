@@ -38,19 +38,19 @@ export function SettingsDialog({ open, onOpenChange, refreshInterval, onInterval
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md rounded-2xl bg-white/90 backdrop-blur-xl">
         <DialogHeader>
-          <DialogTitle>设置</DialogTitle>
+          <DialogTitle className="text-[17px] font-semibold text-[#1d1d1f]">设置</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="space-y-5">
           <div>
-            <Label className="text-xs text-muted-foreground uppercase tracking-wider">页面刷新</Label>
+            <Label className="text-xs text-[#86868b] font-medium uppercase tracking-wider">页面刷新</Label>
             <Select value={String(refreshInterval)} onValueChange={(v: string | null) => v && onIntervalChange(parseInt(v, 10))}>
-              <SelectTrigger className="mt-2">
+              <SelectTrigger className="mt-2 rounded-xl border-black/[0.06] bg-[#f5f5f7] h-10">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="rounded-xl">
                 <SelectItem value="60">1 分钟</SelectItem>
                 <SelectItem value="120">2 分钟</SelectItem>
                 <SelectItem value="300">5 分钟</SelectItem>
@@ -61,19 +61,19 @@ export function SettingsDialog({ open, onOpenChange, refreshInterval, onInterval
             </Select>
           </div>
 
-          <Separator />
+          <Separator className="bg-black/[0.06]" />
 
           <div>
-            <Label className="text-xs text-muted-foreground uppercase tracking-wider">采集间隔（分钟）</Label>
-            <div className="grid grid-cols-2 gap-3 mt-2">
+            <Label className="text-xs text-[#86868b] font-medium uppercase tracking-wider">采集间隔（分钟）</Label>
+            <div className="grid grid-cols-2 gap-3 mt-3">
               {Object.entries(intervalLabels).map(([key, label]) => (
                 <div key={key} className="space-y-1">
-                  <Label className="text-xs">{label}</Label>
+                  <Label className="text-xs text-[#1d1d1f]">{label}</Label>
                   <Input
                     type="number"
                     value={localIntervals[key] || 5}
                     min={1}
-                    className="h-8 text-sm"
+                    className="h-9 text-sm rounded-xl border-black/[0.06] bg-[#f5f5f7]"
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLocalIntervals(prev => ({ ...prev, [key]: parseInt(e.target.value, 10) || 5 }))}
                   />
                 </div>
@@ -82,9 +82,20 @@ export function SettingsDialog({ open, onOpenChange, refreshInterval, onInterval
           </div>
         </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>取消</Button>
-          <Button onClick={handleSave}>保存</Button>
+        <DialogFooter className="gap-2">
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            className="rounded-xl border-black/[0.06] bg-[#f5f5f7] text-[#1d1d1f] hover:bg-black/[0.04]"
+          >
+            取消
+          </Button>
+          <Button
+            onClick={handleSave}
+            className="rounded-xl bg-[#0071e3] text-white hover:bg-[#0077ed]"
+          >
+            保存
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
