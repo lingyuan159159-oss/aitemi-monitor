@@ -182,6 +182,6 @@
     "skip_scan_threshold": 60,
     "high_risk_count": 3,
     "press_order_threshold": 30,
-    "fetch_interval": 1800
+    "fetch_interval": 300
   }
 }

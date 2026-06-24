@@ -36,6 +36,8 @@ CONFIG_PATH = DATA_DIR / 'config.json'
 LATEST_PATH = DATA_DIR / 'latest.json'
 STATUS_PATH = DATA_DIR / 'status.json'
 HISTORY_PATH = DATA_DIR / 'competitor_history.json'
+HISTORY_TRACK_PATH = DATA_DIR / 'history.json'
+MAX_HISTORY = 288  # 24小时 × 每5分钟一条
 
 # 竞品数据为空时的默认结构
 EMPTY_COMPETITOR = {
@@ -170,6 +172,9 @@ def main():
         'skip_scans': len(skip_scans),
     })
 
+    # 10. 追加历史趋势数据
+    _append_history(now_str, len(orders), len(delivering), len(anomalies), len(skip_scans), competitor)
+
     print(f"\n=== 完成 ===", file=sys.stderr)
     print(f"  订单: {len(orders)} | 异常: {len(anomalies)} | 跳扫码: {len(skip_scans)}", file=sys.stderr)
     print(f"  输出: {LATEST_PATH}", file=sys.stderr)
@@ -195,6 +200,33 @@ def _collect_competitor(config, now_str):
     except Exception as e:
         print(f"  竞品采集失败: {e}", file=sys.stderr)
         return EMPTY_COMPETITOR
+
+
+def _append_history(now_str, total_orders, delivering, anomaly_count, skip_scan_count, competitor):
+    """追加当前指标到历史趋势文件，保留最近 MAX_HISTORY 条。"""
+    history = []
+    if HISTORY_TRACK_PATH.exists():
+        try:
+            history = json.loads(HISTORY_TRACK_PATH.read_text())
+        except Exception:
+            history = []
+
+    entry = {
+        'time': now_str[:16],  # 精确到分钟
+        'orders': total_orders,
+        'delivering': delivering,
+        'anomalies': anomaly_count,
+        'skip_scans': skip_scan_count,
+        'competitor_daily': competitor.get('total_daily', 0) if competitor else 0,
+    }
+    history.append(entry)
+
+    # 只保留最近 MAX_HISTORY 条
+    if len(history) > MAX_HISTORY:
+        history = history[-MAX_HISTORY:]
+
+    write_json(HISTORY_TRACK_PATH, history)
+    print(f"  历史: {len(history)} 条记录", file=sys.stderr)
 
 
 if __name__ == '__main__':

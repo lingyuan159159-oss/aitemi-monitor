@@ -1,612 +1,194 @@
 /**
- * Aitemi Monitor - 前端应用
- *
- * 从 data/latest.json 加载数据，渲染五个 Tab 的仪表盘。
- * 纯 Vanilla JS，无框架依赖。
+ * 艾特米监控平台 - 前端应用
  */
-
 const App = (() => {
-    // ===== 配置 =====
     const DATA_URL = 'data/latest.json';
     const CONFIG_URL = 'data/config.json';
-    const PASSWORD_HASH = ''; // 由部署时设置（SHA-256）
+    const HISTORY_URL = 'data/history.json';
+    const PASSWORD_HASH = '';
 
-    let _data = null;
-    let _config = null;
-    let _refreshTimer = null;
-    let _charts = {};
-    let _refreshInterval = parseInt(localStorage.getItem('refresh_interval') || '1800', 10);
+    let _data = null, _config = null, _history = null;
+    let _refreshTimer = null, _charts = {};
+    let _refreshInterval = parseInt(localStorage.getItem('refresh_interval') || '300', 10);
+    let _prevSummary = null;
 
-    // ===== 工具函数 =====
+    // ===== 工具 =====
+    function esc(s) { return s == null ? '' : String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+    function badgeCls(sev) { return {HIGH:'badge-high',MED:'badge-med',LOW:'badge-low',WARN:'badge-warn'}[sev]||'badge-warn'; }
+    function sevLabel(sev) { return {HIGH:'严重',MED:'中等',LOW:'轻微',WARN:'警告'}[sev]||sev||'未知'; }
+    function areaCls(a) { if(!a)return''; if(a.includes('饭堂')||a.includes('航天'))return'canteen'; if(a.includes('商业'))return'street'; return''; }
+    function getTh(area,key) { const s=(_data&&_data.config)?_data.config.thresholds:(_config?_config.thresholds:{}); if(!s)return 20; return(s[area]||s['_default']||{})[key]||20; }
+    function fmtRel(d){const n=Date.now(),s=Math.floor((n-d)/1000);if(s<60)return s+'秒';if(s<3600)return Math.floor(s/60)+'分钟';if(s<86400)return Math.floor(s/3600)+'小时';return Math.floor(s/86400)+'天';}
+    function empty(t){return`<div class="empty-state"><svg width="36" height="36" viewBox="0 0 36 36" fill="none"><circle cx="18" cy="18" r="14" stroke="#86868b" stroke-width="1.5"/><path d="M12 18h12" stroke="#86868b" stroke-width="1.5" stroke-linecap="round"/></svg><p>${esc(t)}</p></div>`;}
+    function trendArrow(cur,prev){if(prev==null||prev===cur)return'';const d=cur-prev;if(d>0)return`<span class="metric-trend up">+${d}</span>`;if(d<0)return`<span class="metric-trend down">${d}</span>`;return`<span class="metric-trend flat">0</span>`;}
 
-    function _escapeHtml(str) {
-        if (str == null) return '';
-        return String(str)
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#39;');
+    // ===== 密码 =====
+    async function sha256(s){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s));return Array.from(new Uint8Array(b)).map(x=>x.toString(16).padStart(2,'0')).join('');}
+    function checkPassword(){
+        const v=document.getElementById('gate-input').value; if(!v)return;
+        if(!PASSWORD_HASH){_enter();return;}
+        sha256(v).then(h=>{if(h===PASSWORD_HASH)_enter();else{const e=document.getElementById('gate-error');e.style.display='block';e.textContent='密码错误';}});
     }
-
-    function _badgeClass(sev) {
-        const map = { HIGH: 'badge-high', MED: 'badge-med', LOW: 'badge-low', WARN: 'badge-warn' };
-        return map[sev] || 'badge-warn';
-    }
-
-    function _sevLabel(sev) {
-        const map = { HIGH: '严重', MED: '中等', LOW: '轻微', WARN: '警告' };
-        return map[sev] || sev || '未知';
-    }
-
-    function _areaClass(area) {
-        if (!area) return '';
-        if (area.includes('饭堂') || area.includes('航天')) return 'canteen';
-        if (area.includes('商业')) return 'street';
-        return '';
-    }
-
-    function _getThreshold(area, key) {
-        // 优先从后端 latest.json 的完整 config 读取
-        const source = (_data && _data.config) ? _data.config.thresholds : (_config ? _config.thresholds : {});
-        if (!source) return 20;
-        return (source[area] || source['_default'] || {})[key] || 20;
-    }
-
-    function _formatRelative(date) {
-        const now = new Date();
-        const diff = Math.floor((now - date) / 1000);
-        if (diff < 60) return diff + '秒';
-        if (diff < 3600) return Math.floor(diff / 60) + '分钟';
-        if (diff < 86400) return Math.floor(diff / 3600) + '小时';
-        return Math.floor(diff / 86400) + '天';
-    }
-
-    function _emptyState(text) {
-        return `<div class="empty-state">
-            <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
-                <circle cx="20" cy="20" r="16" stroke="#86868b" stroke-width="1.5"/>
-                <path d="M14 20h12" stroke="#86868b" stroke-width="1.5" stroke-linecap="round"/>
-            </svg>
-            <p>${_escapeHtml(text)}</p>
-        </div>`;
-    }
-
-    // ===== 密码验证 =====
-
-    async function _sha256(str) {
-        const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
-        return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
-    }
-
-    function checkPassword() {
-        const input = document.getElementById('gate-input').value;
-        if (!input) return;
-        if (!PASSWORD_HASH) { _enterApp(); return; }
-        _sha256(input).then(hash => {
-            if (hash === PASSWORD_HASH) {
-                _enterApp();
-            } else {
-                const err = document.getElementById('gate-error');
-                err.style.display = 'block';
-                err.textContent = '密码错误';
-            }
-        });
-    }
-
-    function _enterApp() {
-        document.getElementById('gate').style.display = 'none';
-        document.getElementById('app').style.display = 'block';
-        _loadData();
-        _startAutoRefresh();
-    }
+    function _enter(){document.getElementById('gate').style.display='none';document.getElementById('app').style.display='block';_loadAll();_startRefresh();}
 
     // ===== 数据加载 =====
-
-    async function _loadData() {
-        try {
-            const [dataResp, configResp] = await Promise.all([
-                fetch(DATA_URL + '?t=' + Date.now()),
-                fetch(CONFIG_URL),
-            ]);
-
-            if (dataResp.ok) {
-                _data = await dataResp.json();
-            } else {
-                _showError('数据加载失败: HTTP ' + dataResp.status);
-                _setStatus('error', '加载失败');
-                return;
-            }
-            if (configResp.ok) {
-                _config = await configResp.json();
-            }
-
-            // 从后端数据同步刷新间隔
-            if (_data && _data.config && _data.config.fetch_interval) {
-                // 只在用户没有手动设置过时才同步
-                if (!localStorage.getItem('refresh_interval')) {
-                    _refreshInterval = _data.config.fetch_interval;
-                }
-            }
-
-            _hideError();
-            _updateStatus();
-            _renderCurrentTab();
-        } catch (e) {
-            console.error('加载失败:', e);
-            _showError('网络连接失败，请检查网络后刷新页面');
-            _setStatus('error', '连接失败');
-        }
+    async function _loadAll(){
+        try{
+            const[dr,cr]=await Promise.all([fetch(DATA_URL+'?t='+Date.now()),fetch(CONFIG_URL)]);
+            if(dr.ok)_data=await dr.json();else{_showErr('数据加载失败');_setStatus('error','加载失败');return;}
+            if(cr.ok)_config=await cr.json();
+            if(_data?.config?.fetch_interval&&!localStorage.getItem('refresh_interval'))_refreshInterval=_data.config.fetch_interval;
+            _hideErr();_updateStatus();_render();
+        }catch(e){console.error(e);_showErr('网络连接失败');_setStatus('error','连接失败');}
+        // 加载历史（不阻塞）
+        fetch(HISTORY_URL+'?t='+Date.now()).then(r=>r.ok?r.json():[]).then(h=>{_history=h;_render();}).catch(()=>{});
     }
-
-    function _showError(msg) {
-        const el = document.getElementById('data-error');
-        const textEl = document.getElementById('data-error-text');
-        if (el) {
-            if (textEl) textEl.textContent = msg;
-            el.style.display = 'flex';
-        }
+    function _showErr(m){const e=document.getElementById('data-error');const t=document.getElementById('data-error-text');if(e){if(t)t.textContent=m;e.style.display='flex';}}
+    function _hideErr(){const e=document.getElementById('data-error');if(e)e.style.display='none';}
+    function _updateStatus(){
+        if(!_data){_setStatus('error','无数据');return;}
+        const ok=_data.session_valid;
+        _setStatus(ok?'ok':'warn',ok?'在线':'Session 已过期');
+        const em=document.getElementById('session-expired-modal');if(em)em.style.display=ok?'none':'flex';
+        const sw=document.getElementById('session-warning');if(sw)sw.style.display=ok?'none':'flex';
+        if(_data.updated_at){const d=new Date(_data.updated_at);document.getElementById('last-update').textContent=fmtRel(d)+'前更新';}
     }
+    function _setStatus(t,s){document.getElementById('status-badge').className='status-badge '+t;document.getElementById('status-text').textContent=s;}
+    function refreshData(){_loadAll();}
+    function _startRefresh(){_stopRefresh();if(_refreshInterval>0)_refreshTimer=setInterval(_loadAll,_refreshInterval*1000);}
+    function _stopRefresh(){if(_refreshTimer){clearInterval(_refreshTimer);_refreshTimer=null;}}
 
-    function _hideError() {
-        const el = document.getElementById('data-error');
-        if (el) el.style.display = 'none';
-    }
+    // ===== Tab =====
+    function switchTab(t){document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));document.querySelector(`.tab[data-tab="${t}"]`).classList.add('active');document.getElementById('panel-'+t).classList.add('active');_render();}
+    function _curTab(){const a=document.querySelector('.tab.active');return a?a.dataset.tab:'overview';}
+    function _render(){if(!_data)return;switch(_curTab()){case'overview':_renderOverview();break;case'anomalies':_renderAnomalies();break;case'riders':_renderRiders();break;case'skipscan':_renderSkipScan();break;case'competitor':_renderCompetitor();break;}}
 
-    function _updateStatus() {
-        if (!_data) {
-            _setStatus('error', '无数据');
-            return;
-        }
-        const valid = _data.session_valid;
-        const updated = _data.updated_at;
-
-        if (valid) {
-            _setStatus('ok', '在线');
-        } else {
-            _setStatus('warn', 'Session 已过期');
-        }
-
-        // Session 过期全屏弹窗
-        const expiredModal = document.getElementById('session-expired-modal');
-        if (expiredModal) {
-            expiredModal.style.display = valid ? 'none' : 'flex';
-        }
-
-        // 顶部小警告条（保留，作为次要提示）
-        const warn = document.getElementById('session-warning');
-        warn.style.display = valid ? 'none' : 'flex';
-
-        if (updated) {
-            const d = new Date(updated);
-            document.getElementById('last-update').textContent =
-                _formatRelative(d) + ' 前更新';
-        }
-    }
-
-    function _setStatus(type, text) {
-        const badge = document.getElementById('status-badge');
-        badge.className = 'status-badge ' + type;
-        document.getElementById('status-text').textContent = text;
-    }
-
-    function refreshData() {
-        _loadData();
-    }
-
-    // ===== 自动刷新 =====
-
-    function _startAutoRefresh() {
-        _stopAutoRefresh();
-        if (_refreshInterval > 0) {
-            _refreshTimer = setInterval(_loadData, _refreshInterval * 1000);
-        }
-    }
-
-    function _stopAutoRefresh() {
-        if (_refreshTimer) { clearInterval(_refreshTimer); _refreshTimer = null; }
-    }
-
-    // ===== Tab 切换 =====
-
-    function switchTab(tab) {
-        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-        document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-        document.querySelector(`.tab[data-tab="${tab}"]`).classList.add('active');
-        document.getElementById('panel-' + tab).classList.add('active');
-        _renderCurrentTab();
-    }
-
-    function _currentTab() {
-        const active = document.querySelector('.tab.active');
-        return active ? active.dataset.tab : 'overview';
-    }
-
-    function _renderCurrentTab() {
-        if (!_data) return;
-        switch (_currentTab()) {
-            case 'overview': _renderOverview(); break;
-            case 'anomalies': _renderAnomalies(); break;
-            case 'riders': _renderRiders(); break;
-            case 'skipscan': _renderSkipScan(); break;
-            case 'competitor': _renderCompetitor(); break;
-        }
-    }
-
-    // ===== 总览 Tab =====
-
-    function _renderOverview() {
-        const s = _data.summary || {};
-        const metrics = document.getElementById('metrics-grid');
-        metrics.innerHTML = [
-            _metricCard('总订单', s.total_orders || 0, 'blue'),
-            _metricCard('配送中', s.delivering || 0, 'green'),
-            _metricCard('异常', s.anomaly_count || 0, s.anomaly_count > 0 ? 'red' : 'green'),
-            _metricCard('跳扫码', s.skip_scan_count || 0, s.skip_scan_count > 0 ? 'orange' : 'green'),
-            _metricCard('售后', s.aftersale || 0, 'orange'),
-            _metricCard('已完成', s.completed || 0, 'green'),
+    // ===== 总览 =====
+    function _renderOverview(){
+        const s=_data.summary||{},p=_prevSummary;
+        const mg=document.getElementById('metrics-grid');
+        mg.innerHTML=[
+            _mCard('总订单',s.total_orders||0,'blue',p?p.total_orders:null),
+            _mCard('配送中',s.delivering||0,'green',p?p.delivering:null),
+            _mCard('异常',s.anomaly_count||0,s.anomaly_count>0?'red':'green',p?p.anomaly_count:null),
+            _mCard('跳扫码',s.skip_scan_count||0,s.skip_scan_count>0?'orange':'green',p?p.skip_scan_count:null),
+            _mCard('售后',s.aftersale||0,'orange',null),
+            _mCard('已完成',s.completed||0,'green',null),
         ].join('');
-
-        _renderTrendChart();
-        _renderDeliveringTable();
+        _prevSummary={...s};
+        _renderTrendCharts();_renderDistChart();_renderDeliveringTable();
     }
+    function _mCard(l,v,c,prev){return`<div class="metric-card ${c}"><div class="metric-label">${esc(l)}</div><div class="metric-value">${v}</div><div class="metric-sub">${trendArrow(v,prev)}</div></div>`;}
 
-    function _metricCard(label, value, color) {
-        return `<div class="metric-card ${color}">
-            <div class="metric-label">${_escapeHtml(label)}</div>
-            <div class="metric-value">${_escapeHtml(String(value))}</div>
-        </div>`;
+    // ===== 趋势图 =====
+    function _renderTrendCharts(){
+        if(!_history||_history.length<2)return;
+        const labels=_history.map(h=>{const d=new Date(h.time);return d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0');});
+        // 订单趋势
+        _lineChart('chart-orders-trend',labels,[
+            {label:'总订单',data:_history.map(h=>h.orders),color:'#0071e3'},
+            {label:'配送中',data:_history.map(h=>h.delivering),color:'#34c759'},
+        ]);
+        // 异常趋势
+        _lineChart('chart-anomaly-trend',labels,[
+            {label:'异常',data:_history.map(h=>h.anomalies),color:'#ff3b30'},
+            {label:'跳扫码',data:_history.map(h=>h.skip_scans),color:'#ff9500'},
+        ]);
     }
-
-    function _renderTrendChart() {
-        const anomalies = _data.anomalies || [];
-        const byType = { '分拣超时': 0, '投餐超时': 0, '配送超时': 0, '压单': 0 };
-        anomalies.forEach(a => { byType[a.type] = (byType[a.type] || 0) + 1; });
-
-        const ctx = document.getElementById('chart-trend');
-        if (!ctx) return;
-        if (_charts.trend) _charts.trend.destroy();
-
-        _charts.trend = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: ['分拣超时', '投餐超时', '配送超时', '压单'],
-                datasets: [{
-                    label: '数量',
-                    data: [byType['分拣超时'], byType['投餐超时'], byType['配送超时'], byType['压单']],
-                    backgroundColor: ['#ff3b30', '#ff9500', '#ffcc00', '#8e8e93'],
-                    borderRadius: 6,
-                    borderSkipped: false,
-                }],
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: {
-                    y: { beginAtZero: true, ticks: { stepSize: 1, font: { size: 11 } }, grid: { color: '#f2f2f7' } },
-                    x: { grid: { display: false }, ticks: { font: { size: 11 } } },
+    function _lineChart(id,labels,datasets){
+        const ctx=document.getElementById(id);if(!ctx)return;
+        if(_charts[id])_charts[id].destroy();
+        _charts[id]=new Chart(ctx,{
+            type:'line',
+            data:{labels,datasets:datasets.map(d=>({
+                label:d.label,data:d.data,borderColor:d.color,backgroundColor:d.color+'18',
+                borderWidth:2,pointRadius:0,pointHoverRadius:4,fill:true,tension:.3,
+            }))},
+            options:{
+                responsive:true,maintainAspectRatio:false,
+                interaction:{mode:'index',intersect:false},
+                plugins:{legend:{display:datasets.length>1,position:'bottom',labels:{boxWidth:10,font:{size:10}}}},
+                scales:{
+                    y:{beginAtZero:true,grid:{color:'#f2f2f7'},ticks:{font:{size:10}}},
+                    x:{grid:{display:false},ticks:{font:{size:9},maxTicksLimit:8,maxRotation:0}},
                 },
             },
         });
     }
 
-    function _renderDeliveringTable() {
-        const anomalies = _data.anomalies || [];
-        const container = document.getElementById('delivering-table');
-
-        if (anomalies.length === 0) {
-            container.innerHTML = _emptyState('当前没有异常');
-            return;
-        }
-
-        const rows = anomalies.slice(0, 20).map(a => `
-            <tr>
-                <td><span class="badge ${_badgeClass(a.severity)}">${_sevLabel(a.severity)}</span></td>
-                <td>${_escapeHtml(a.type)}</td>
-                <td>${_escapeHtml(a.shop)}</td>
-                <td><span class="area-tag ${_areaClass(a.area)}">${_escapeHtml(a.area)}</span></td>
-                <td>${_escapeHtml(String(a.elapsed_min))}分钟</td>
-                <td>${_escapeHtml(a.detail)}</td>
-            </tr>
-        `).join('');
-
-        container.innerHTML = `<div class="table-scroll"><table class="data-table">
-            <thead><tr>
-                <th>严重度</th><th>类型</th><th>店铺</th><th>区域</th><th>耗时</th><th>详情</th>
-            </tr></thead>
-            <tbody>${rows}</tbody>
-        </table></div>`;
+    // ===== 分布图 =====
+    function _renderDistChart(){
+        const a=_data.anomalies||[];const by={'分拣超时':0,'投餐超时':0,'配送超时':0,'压单':0};a.forEach(x=>{by[x.type]=(by[x.type]||0)+1;});
+        const ctx=document.getElementById('chart-dist');if(!ctx)return;
+        if(_charts.dist)_charts.dist.destroy();
+        _charts.dist=new Chart(ctx,{type:'bar',data:{labels:['分拣超时','投餐超时','配送超时','压单'],datasets:[{label:'数量',data:[by['分拣超时'],by['投餐超时'],by['配送超时'],by['压单']],backgroundColor:['#ff3b30','#ff9500','#ffcc00','#8e8e93'],borderRadius:6,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{stepSize:1,font:{size:10}},grid:{color:'#f2f2f7'}},x:{grid:{display:false},ticks:{font:{size:10}}}}}});
     }
 
-    // ===== 异常告警 Tab =====
+    // ===== 配送中表格 =====
+    function _renderDeliveringTable(){
+        const a=_data.anomalies||[];const c=document.getElementById('delivering-table');
+        if(!a.length){c.innerHTML=empty('当前没有异常');return;}
+        c.innerHTML=`<div class="table-scroll"><table class="data-table"><thead><tr><th>严重度</th><th>类型</th><th>店铺</th><th>区域</th><th>耗时</th><th>详情</th></tr></thead><tbody>${a.slice(0,20).map(x=>`<tr><td><span class="badge ${badgeCls(x.severity)}">${sevLabel(x.severity)}</span></td><td>${esc(x.type)}</td><td>${esc(x.shop)}</td><td><span class="area-tag ${areaCls(x.area)}">${esc(x.area)}</span></td><td>${esc(String(x.elapsed_min))}分钟</td><td>${esc(x.detail)}</td></tr>`).join('')}</tbody></table></div>`;
+    }
 
-    function _renderAnomalies() {
-        const anomalies = _data.anomalies || [];
-        const summary = document.getElementById('anomaly-summary');
-        const groups = document.getElementById('anomaly-groups');
+    // ===== 异常告警 =====
+    function _renderAnomalies(){
+        const a=_data.anomalies||[];const sm=document.getElementById('anomaly-summary');const gr=document.getElementById('anomaly-groups');
+        const cnt={HIGH:0,MED:0,LOW:0,WARN:0};a.forEach(x=>{cnt[x.severity]=(cnt[x.severity]||0)+1;});
+        sm.innerHTML=[['严重',cnt.HIGH,'badge-high'],['中等',cnt.MED,'badge-med'],['轻微',cnt.LOW,'badge-low'],['警告',cnt.WARN,'badge-warn']].filter(([,n])=>n).map(([l,n,c])=>`<span class="badge ${c}">${l}: ${n}</span>`).join('');
+        const types=['分拣超时','投餐超时','配送超时','压单'];
+        gr.innerHTML=types.map(t=>{const items=a.filter(x=>x.type===t);if(!items.length)return'';return`<div class="anomaly-group"><div class="anomaly-group-title">${esc(t)}<span class="anomaly-count">${items.length}</span></div><div class="table-scroll"><table class="data-table"><thead><tr><th>严重度</th><th>订单</th><th>店铺</th><th>区域</th><th>耗时</th><th>阈值</th><th>详情</th></tr></thead><tbody>${items.map(x=>`<tr><td><span class="badge ${badgeCls(x.severity)}">${sevLabel(x.severity)}</span></td><td>${esc(x.oid)}</td><td>${esc(x.shop)}</td><td><span class="area-tag ${areaCls(x.area)}">${esc(x.area)}</span></td><td>${esc(String(x.elapsed_min))}分钟</td><td>${esc(String(x.threshold||'--'))}分钟</td><td>${esc(x.detail)}</td></tr>`).join('')}</tbody></table></div></div>`;}).join('');
+        if(!a.length)gr.innerHTML=empty('暂无异常');
+    }
 
-        const counts = { HIGH: 0, MED: 0, LOW: 0, WARN: 0 };
-        anomalies.forEach(a => { counts[a.severity] = (counts[a.severity] || 0) + 1; });
-
-        summary.innerHTML = [
-            _summaryPill('严重', counts.HIGH, 'badge-high'),
-            _summaryPill('中等', counts.MED, 'badge-med'),
-            _summaryPill('轻微', counts.LOW, 'badge-low'),
-            _summaryPill('警告', counts.WARN, 'badge-warn'),
-        ].join('');
-
-        const types = ['分拣超时', '投餐超时', '配送超时', '压单'];
-
-        groups.innerHTML = types.map(type => {
-            const items = anomalies.filter(a => a.type === type);
-            if (items.length === 0) return '';
-
-            const rows = items.map(a => `
-                <tr>
-                    <td><span class="badge ${_badgeClass(a.severity)}">${_sevLabel(a.severity)}</span></td>
-                    <td>${_escapeHtml(a.oid)}</td>
-                    <td>${_escapeHtml(a.shop)}</td>
-                    <td><span class="area-tag ${_areaClass(a.area)}">${_escapeHtml(a.area)}</span></td>
-                    <td>${_escapeHtml(String(a.elapsed_min))}分钟</td>
-                    <td>${_escapeHtml(String(a.threshold || '--'))}分钟</td>
-                    <td>${_escapeHtml(a.detail)}</td>
-                </tr>
-            `).join('');
-
-            return `<div class="anomaly-group">
-                <div class="anomaly-group-title">
-                    ${_escapeHtml(type)}
-                    <span class="anomaly-count">${items.length}</span>
-                </div>
-                <div class="table-scroll"><table class="data-table">
-                    <thead><tr>
-                        <th>严重度</th><th>订单号</th><th>店铺</th><th>区域</th>
-                        <th>耗时</th><th>阈值</th><th>详情</th>
-                    </tr></thead>
-                    <tbody>${rows}</tbody>
-                </table></div>
-            </div>`;
+    // ===== 骑手 =====
+    function _renderRiders(){
+        const r=_data.riders||[];const c=document.getElementById('rider-groups');
+        if(!r.length){c.innerHTML=empty('暂无骑手数据');_renderRiderChart([]);return;}
+        const by={};r.forEach(x=>{if(!by[x.area])by[x.area]=[];by[x.area].push(x);});
+        c.innerHTML=Object.entries(by).map(([area,list])=>{
+            return`<div class="rider-area-group"><div class="rider-area-title">${esc(area)}</div>${list.map(r=>{
+                const dims=[{l:'分拣',d:r.sort},{l:'停留',d:r.stay},{l:'配送',d:r.deliver}];
+                return`<div class="rider-card"><div class="rider-name">${esc(r.name)}</div><div class="rider-dims">${dims.map(d=>`<div class="rider-dim ${d.d.rate>20?'high':''}"><div class="rider-dim-label">${esc(d.l)}</div><div class="rider-dim-value">${d.d.rate}%</div><div class="rider-dim-sub">${d.d.overtime}/${d.d.total} 超时 | 均${d.d.avg}分</div></div>`).join('')}</div></div>`;
+            }).join('')}</div>`;
         }).join('');
-
-        if (anomalies.length === 0) {
-            groups.innerHTML = _emptyState('暂无异常');
-        }
+        _renderRiderChart(r);
+    }
+    function _renderRiderChart(riders){
+        const ctx=document.getElementById('chart-riders');if(!ctx)return;if(_charts.riders)_charts.riders.destroy();
+        const sorted=[...riders].sort((a,b)=>(b.sort.total+b.stay.total+b.deliver.total)-(a.sort.total+a.stay.total+a.deliver.total)).slice(0,10);
+        _charts.riders=new Chart(ctx,{type:'bar',data:{labels:sorted.map(r=>r.name),datasets:[{label:'分拣',data:sorted.map(r=>r.sort.rate),backgroundColor:'#ff3b30',borderRadius:4},{label:'停留',data:sorted.map(r=>r.stay.rate),backgroundColor:'#ff9500',borderRadius:4},{label:'配送',data:sorted.map(r=>r.deliver.rate),backgroundColor:'#ffcc00',borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{boxWidth:10,font:{size:10}}}},scales:{y:{beginAtZero:true,max:100,ticks:{callback:v=>v+'%',font:{size:9}},grid:{color:'#f2f2f7'}},x:{grid:{display:false},ticks:{font:{size:9},maxRotation:45}}}}});
     }
 
-    function _summaryPill(label, count, cls) {
-        if (count === 0) return '';
-        return `<span class="badge ${cls}">${_escapeHtml(label)}: ${count}</span>`;
+    // ===== 跳扫码 =====
+    function _renderSkipScan(){
+        const sc=_data.skip_scans||[];const rd=_data.skip_scan_riders||[];const th=(_data.config||{}).skip_scan_threshold||60;
+        const se=document.getElementById('skip-rider-summary');
+        se.innerHTML=rd.length?`<div class="skip-rider-cards">${rd.map(r=>`<div class="skip-rider-card ${r.high_risk?'high-risk':''}"><div class="skip-rider-name">${esc(r.name)}</div><div class="skip-rider-count">${r.count}</div><div class="metric-sub">${r.high_risk?'高风险':'次疑似'}</div></div>`).join('')}</div>`:'';
+        const de=document.getElementById('skip-detail-table');
+        if(!sc.length){de.innerHTML=empty('暂无跳扫码记录');return;}
+        de.innerHTML=`<div class="table-card"><h3>全部记录（阈值: ${th}秒）</h3><div class="table-scroll"><table class="data-table"><thead><tr><th>严重度</th><th>骑手</th><th>订单</th><th>店铺</th><th>投餐</th><th>送达</th><th>间隔</th></tr></thead><tbody>${sc.map(s=>`<tr><td><span class="badge ${badgeCls(s.severity)}">${sevLabel(s.severity)}</span></td><td>${esc(s.rider)}</td><td>${esc(s.oid)}</td><td>${esc(s.shop)}</td><td>${esc(s.place_time)}</td><td>${esc(s.deliver_time)}</td><td><strong>${esc(String(s.gap_seconds))}秒</strong></td></tr>`).join('')}</tbody></table></div></div>`;
     }
 
-    // ===== 骑手统计 Tab =====
-
-    function _renderRiders() {
-        const riders = _data.riders || [];
-        const container = document.getElementById('rider-groups');
-
-        if (riders.length === 0) {
-            container.innerHTML = _emptyState('暂无骑手数据');
-            _renderRiderChart([]);
-            return;
-        }
-
-        const byArea = {};
-        riders.forEach(r => {
-            if (!byArea[r.area]) byArea[r.area] = [];
-            byArea[r.area].push(r);
-        });
-
-        container.innerHTML = Object.entries(byArea).map(([area, list]) => {
-            const cards = list.map(r => {
-                const dims = [
-                    { label: '分拣', data: r.sort, th: _getThreshold(area, 'sort') },
-                    { label: '停留', data: r.stay, th: _getThreshold(area, 'stay') },
-                    { label: '配送', data: r.deliver, th: _getThreshold(area, 'deliver') },
-                ];
-                return `<div class="rider-card">
-                    <div class="rider-name">${_escapeHtml(r.name)}</div>
-                    <div class="rider-dims">
-                        ${dims.map(d => `<div class="rider-dim ${d.data.rate > 20 ? 'high' : ''}">
-                            <div class="rider-dim-label">${_escapeHtml(d.label)}</div>
-                            <div class="rider-dim-value">${_escapeHtml(String(d.data.rate))}%</div>
-                            <div class="rider-dim-sub">${d.data.overtime}/${d.data.total} 超时 | 均${d.data.avg}分钟</div>
-                        </div>`).join('')}
-                    </div>
-                </div>`;
-            }).join('');
-
-            return `<div class="rider-area-group">
-                <div class="rider-area-title">${_escapeHtml(area)}</div>
-                ${cards}
-            </div>`;
-        }).join('');
-
-        _renderRiderChart(riders);
-    }
-
-    function _renderRiderChart(riders) {
-        const ctx = document.getElementById('chart-riders');
-        if (!ctx) return;
-        if (_charts.riders) _charts.riders.destroy();
-
-        const sorted = [...riders].sort((a, b) => {
-            const ta = a.sort.total + a.stay.total + a.deliver.total;
-            const tb = b.sort.total + b.stay.total + b.deliver.total;
-            return tb - ta;
-        }).slice(0, 10);
-
-        _charts.riders = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: sorted.map(r => r.name),
-                datasets: [
-                    { label: '分拣超时率', data: sorted.map(r => r.sort.rate), backgroundColor: '#ff3b30', borderRadius: 4 },
-                    { label: '停留超时率', data: sorted.map(r => r.stay.rate), backgroundColor: '#ff9500', borderRadius: 4 },
-                    { label: '配送超时率', data: sorted.map(r => r.deliver.rate), backgroundColor: '#ffcc00', borderRadius: 4 },
-                ],
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } } },
-                scales: {
-                    y: { beginAtZero: true, max: 100, ticks: { callback: v => v + '%', font: { size: 10 } }, grid: { color: '#f2f2f7' } },
-                    x: { grid: { display: false }, ticks: { font: { size: 10 }, maxRotation: 45 } },
-                },
-            },
-        });
-    }
-
-    // ===== 跳扫码 Tab =====
-
-    function _renderSkipScan() {
-        const scans = _data.skip_scans || [];
-        const riders = _data.skip_scan_riders || [];
-        const threshold = (_data.config || {}).skip_scan_threshold || 60;
-
-        const summaryEl = document.getElementById('skip-rider-summary');
-        if (riders.length > 0) {
-            summaryEl.innerHTML = `<div class="skip-rider-cards">
-                ${riders.map(r => `<div class="skip-rider-card ${r.high_risk ? 'high-risk' : ''}">
-                    <div class="skip-rider-name">${_escapeHtml(r.name)}</div>
-                    <div class="skip-rider-count">${r.count}</div>
-                    <div class="metric-sub">${r.high_risk ? '高风险' : '次疑似'}</div>
-                </div>`).join('')}
-            </div>`;
-        } else {
-            summaryEl.innerHTML = '';
-        }
-
-        const detailEl = document.getElementById('skip-detail-table');
-        if (scans.length === 0) {
-            detailEl.innerHTML = _emptyState('暂无跳扫码记录');
-            return;
-        }
-
-        const rows = scans.map(s => `
-            <tr>
-                <td><span class="badge ${_badgeClass(s.severity)}">${_sevLabel(s.severity)}</span></td>
-                <td>${_escapeHtml(s.rider)}</td>
-                <td>${_escapeHtml(s.oid)}</td>
-                <td>${_escapeHtml(s.shop)}</td>
-                <td>${_escapeHtml(s.place_time)}</td>
-                <td>${_escapeHtml(s.deliver_time)}</td>
-                <td><strong>${_escapeHtml(String(s.gap_seconds))}秒</strong></td>
-            </tr>
-        `).join('');
-
-        detailEl.innerHTML = `<div class="table-section">
-            <h3>全部记录（阈值: ${threshold}秒）</h3>
-            <div class="table-scroll"><table class="data-table">
-                <thead><tr>
-                    <th>严重度</th><th>骑手</th><th>订单号</th><th>店铺</th>
-                    <th>投餐时间</th><th>送达时间</th><th>间隔</th>
-                </tr></thead>
-                <tbody>${rows}</tbody>
-            </table></div>
-        </div>`;
-    }
-
-    // ===== 竞品监控 Tab =====
-
-    function _renderCompetitor() {
-        const comp = _data.competitor;
-        if (!comp || !comp.stores) {
-            document.getElementById('competitor-metrics').innerHTML = _emptyState('暂无竞品数据');
-            return;
-        }
-
-        document.getElementById('competitor-date').textContent = '数据日期: ' + (comp.date || '--');
-
-        const metrics = document.getElementById('competitor-metrics');
-        metrics.innerHTML = [
-            _metricCard('当日销量', comp.total_daily || 0, 'blue'),
-            _metricCard('累计销量', comp.total_cumul || 0, 'green'),
-            _metricCard('活跃店铺', comp.active_stores || 0, 'green'),
-            _metricCard('总店铺数', comp.total_stores || 0, ''),
-        ].join('');
-
-        const stores = comp.stores || [];
-        const top15 = stores.slice(0, 15);
-
-        const ctx = document.getElementById('chart-competitor');
-        if (ctx) {
-            if (_charts.competitor) _charts.competitor.destroy();
-            _charts.competitor = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: top15.map(s => s.name.length > 8 ? s.name.slice(0, 8) + '...' : s.name),
-                    datasets: [{
-                        label: '当日销量',
-                        data: top15.map(s => s.daily),
-                        backgroundColor: '#0071e3',
-                        borderRadius: 6,
-                        borderSkipped: false,
-                    }],
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    indexAxis: 'y',
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        x: { beginAtZero: true, grid: { color: '#f2f2f7' }, ticks: { font: { size: 10 } } },
-                        y: { grid: { display: false }, ticks: { font: { size: 10 } } },
-                    },
-                },
-            });
-        }
-
-        const tableEl = document.getElementById('competitor-table');
-        const rows = stores.map((s, i) => `
-            <tr ${s.daily === 0 ? 'style="opacity:0.5"' : ''}>
-                <td>${i + 1}</td>
-                <td>${_escapeHtml(s.name)}</td>
-                <td><strong>${s.daily}</strong></td>
-                <td>${s.total}</td>
-                <td>${s.yesterday_total}</td>
-                <td>${_escapeHtml(String(s.score || '--'))}</td>
-            </tr>
-        `).join('');
-
-        tableEl.innerHTML = `<div class="table-scroll"><table class="data-table">
-            <thead><tr>
-                <th>#</th><th>店铺</th><th>当日</th><th>累计</th><th>昨日累计</th><th>评分</th>
-            </tr></thead>
-            <tbody>${rows}</tbody>
-        </table></div>`;
+    // ===== 竞品 =====
+    function _renderCompetitor(){
+        const cp=_data.competitor;if(!cp||!cp.stores){document.getElementById('competitor-metrics').innerHTML=empty('暂无竞品数据');return;}
+        document.getElementById('competitor-date').textContent='数据日期: '+(cp.date||'--');
+        document.getElementById('competitor-metrics').innerHTML=[_mCard('当日销量',cp.total_daily||0,'blue',null),_mCard('累计销量',cp.total_cumul||0,'green',null),_mCard('活跃店铺',cp.active_stores||0,'green',null),_mCard('总店铺数',cp.total_stores||0,'',null)].join('');
+        const stores=cp.stores||[];const top15=stores.slice(0,15);
+        const ctx=document.getElementById('chart-competitor');if(ctx){if(_charts.comp)_charts.comp.destroy();_charts.comp=new Chart(ctx,{type:'bar',data:{labels:top15.map(s=>s.name.length>7?s.name.slice(0,7)+'..':s.name),datasets:[{label:'当日销量',data:top15.map(s=>s.daily),backgroundColor:'#0071e3',borderRadius:6,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{beginAtZero:true,grid:{color:'#f2f2f7'},ticks:{font:{size:9}}},y:{grid:{display:false},ticks:{font:{size:9}}}}}});}
+        const te=document.getElementById('competitor-table');
+        te.innerHTML=`<div class="table-scroll"><table class="data-table"><thead><tr><th>#</th><th>店铺</th><th>当日</th><th>累计</th><th>昨日</th><th>评分</th></tr></thead><tbody>${stores.map((s,i)=>`<tr ${s.daily===0?'style="opacity:.45"':''}><td>${i+1}</td><td>${esc(s.name)}</td><td><strong>${s.daily}</strong></td><td>${s.total}</td><td>${s.yesterday_total}</td><td>${esc(String(s.score||'--'))}</td></tr>`).join('')}</tbody></table></div>`;
     }
 
     // ===== 设置 =====
-
-    function openSettings() {
-        document.getElementById('settings-modal').style.display = 'flex';
-        document.getElementById('setting-interval').value = String(_refreshInterval);
-    }
-
-    function closeSettings() {
-        document.getElementById('settings-modal').style.display = 'none';
-    }
-
-    function updateInterval() {
-        _refreshInterval = parseInt(document.getElementById('setting-interval').value, 10);
-        localStorage.setItem('refresh_interval', String(_refreshInterval));
-        _startAutoRefresh();
-    }
+    function openSettings(){document.getElementById('settings-modal').style.display='flex';document.getElementById('setting-interval').value=String(_refreshInterval);}
+    function closeSettings(){document.getElementById('settings-modal').style.display='none';}
+    function updateInterval(){_refreshInterval=parseInt(document.getElementById('setting-interval').value,10);localStorage.setItem('refresh_interval',String(_refreshInterval));_startRefresh();}
 
     // ===== 初始化 =====
+    document.getElementById('gate-input').addEventListener('keydown',e=>{if(e.key==='Enter')checkPassword();});
+    if(!PASSWORD_HASH){document.getElementById('gate').style.display='none';document.getElementById('app').style.display='block';_loadAll();_startRefresh();}
 
-    document.getElementById('gate-input').addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') checkPassword();
-    });
-
-    if (!PASSWORD_HASH) {
-        document.getElementById('gate').style.display = 'none';
-        document.getElementById('app').style.display = 'block';
-        _loadData();
-        _startAutoRefresh();
-    }
-
-    return { checkPassword, refreshData, switchTab, openSettings, closeSettings, updateInterval };
+    return{checkPassword,refreshData,switchTab,openSettings,closeSettings,updateInterval};
 })();
