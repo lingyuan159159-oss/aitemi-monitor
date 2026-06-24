@@ -11,6 +11,15 @@
   "skip_scan_threshold": 60,
   "high_risk_count": 3,
   "press_order_threshold": 30,
+  "scan_intervals": {
+    "sort_timeout": 5,
+    "stay_timeout": 5,
+    "deliver_timeout": 5,
+    "backlog": 5,
+    "rider_stats": 5,
+    "skip_scan": 5,
+    "competitor": 1440
+  },
   "exclude_shops": [
     "贝贝店铺测试(不用接单)",
     "贝贝店铺测试（不用接单）",

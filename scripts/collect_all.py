@@ -2,27 +2,20 @@
 """
 艾特米数据采集主入口
 
-GitHub Actions 定时调用此脚本，完成：
-1. 验证 session
-2. 拉取订单/骑手/店铺数据
-3. 运行异常检测 + 跳扫码检测
-4. 计算骑手统计
-5. 拉取竞品数据
-6. 输出 JSON 到 data/latest.json
-
-环境变量：
-  AITEMI_PHPSESSID     艾特米后台 PHPSESSID
-  AITEMI_ADMINSESSION  艾特米后台 adminsession
-  COMPETITOR_SESSION   一技生活圈 PHPSESSID
+支持：
+- 每个采集环节独立间隔（config.scan_intervals）
+- 异常去重（同一订单+类型不重复提醒）
+- 命令行 --date=YYYY-MM-DD 指定日期
+- 命令行 --force 强制全部采集
 """
 
 import json
 import os
 import sys
+import time
 from datetime import datetime
 from pathlib import Path
 
-# 让 scripts/ 目录可被 import
 SCRIPT_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(SCRIPT_DIR))
 
@@ -37,17 +30,12 @@ LATEST_PATH = DATA_DIR / 'latest.json'
 STATUS_PATH = DATA_DIR / 'status.json'
 HISTORY_PATH = DATA_DIR / 'competitor_history.json'
 HISTORY_TRACK_PATH = DATA_DIR / 'history.json'
-BASELINE_PATH = DATA_DIR / 'baseline.json'
-MAX_HISTORY = 288  # 24小时 × 每5分钟一条
+RUNTIME_PATH = DATA_DIR / 'runtime_state.json'
+MAX_HISTORY = 288
 
-# 竞品数据为空时的默认结构
 EMPTY_COMPETITOR = {
-    'date': '',
-    'total_daily': 0,
-    'total_cumul': 0,
-    'active_stores': 0,
-    'total_stores': 0,
-    'stores': [],
+    'date': '', 'total_daily': 0, 'total_cumul': 0,
+    'active_stores': 0, 'total_stores': 0, 'stores': [],
 }
 
 
@@ -74,95 +62,155 @@ def write_json(path, data):
         json.dump(data, f, ensure_ascii=False, indent=2)
 
 
+def load_json(path, default=None):
+    if path.exists():
+        try:
+            return json.loads(path.read_text())
+        except Exception:
+            pass
+    return default if default is not None else {}
+
+
+def load_runtime():
+    return load_json(RUNTIME_PATH, {})
+
+
+def save_runtime(state):
+    write_json(RUNTIME_PATH, state)
+
+
+def should_run(state, component, interval_min):
+    """判断某个组件是否该运行了。"""
+    if interval_min <= 0:
+        return False
+    last = state.get('last_run', {}).get(component, 0)
+    return (time.time() - last) >= interval_min * 60
+
+
+def mark_run(state, component):
+    """标记组件已运行。"""
+    if 'last_run' not in state:
+        state['last_run'] = {}
+    state['last_run'][component] = time.time()
+
+
+def dedup_anomalies(new_anomalies, seen_keys):
+    """去重：已见过的订单+类型不再提醒。返回 (去重后列表, 更新后的seen_keys)。"""
+    result = []
+    for a in new_anomalies:
+        key = f"{a.get('oid', '')}_{a.get('type', '')}"
+        if key not in seen_keys:
+            result.append(a)
+            seen_keys[key] = time.time()
+    # 清理超过24小时的旧记录
+    cutoff = time.time() - 86400
+    seen_keys = {k: v for k, v in seen_keys.items() if v > cutoff}
+    return result, seen_keys
+
+
 def main():
     now = datetime.now()
     now_str = now.strftime('%Y-%m-%dT%H:%M:%S')
     print(f"=== 艾特米数据采集 {now_str} ===", file=sys.stderr)
 
-    # 加载配置
-    try:
-        config = load_config()
-    except Exception as e:
-        print(f"  FATAL: config.json 加载失败: {e}", file=sys.stderr)
-        write_json(STATUS_PATH, {'session_valid': False, 'updated_at': now_str, 'error': str(e)})
-        sys.exit(1)
-
-    # 1. 加载 session
-    session = get_session_from_env()
-    if not session:
-        print("  ERROR: 环境变量 AITEMI_PHPSESSID / AITEMI_ADMINSESSION 未设置", file=sys.stderr)
-        write_json(STATUS_PATH, {
-            'session_valid': False, 'updated_at': now_str, 'error': 'env_vars_missing',
-        })
-        # 仍然尝试采集竞品
-        _collect_competitor(config, now_str)
-        sys.exit(1)
-
-    # 2. 验证 session
-    print("=== 验证 Session ===", file=sys.stderr)
-    valid, cookie = validate_session(session, BASE_URL)
-    if not valid:
-        print("  SESSION EXPIRED", file=sys.stderr)
-        write_json(STATUS_PATH, {
-            'session_valid': False, 'updated_at': now_str, 'error': 'session_expired',
-        })
-        _collect_competitor(config, now_str)
-        sys.exit(1)
-
-    print("  Session valid", file=sys.stderr)
-
-    # 支持命令行指定日期
+    config = load_config()
+    runtime = load_runtime()
+    intervals = config.get('scan_intervals', {})
+    force = '--force' in sys.argv
     date_str = None
     for arg in sys.argv[1:]:
         if arg.startswith('--date='):
             date_str = arg.split('=', 1)[1]
 
-    # 3. 拉取数据
-    print(f"\n=== 拉取骑手操作 ({date_str or '今天'}) ===", file=sys.stderr)
-    ops = load_all_ops(BASE_URL, cookie, date_str)
+    session = get_session_from_env()
+    if not session:
+        print("  ERROR: 环境变量未设置", file=sys.stderr)
+        write_json(STATUS_PATH, {'session_valid': False, 'updated_at': now_str, 'error': 'env_vars_missing'})
+        sys.exit(1)
 
-    print(f"\n=== 拉取订单 ({date_str or '今天'}) ===", file=sys.stderr)
-    orders = load_all_orders(BASE_URL, cookie, date_str)
+    print("=== 验证 Session ===", file=sys.stderr)
+    valid, cookie = validate_session(session, BASE_URL)
+    if not valid:
+        print("  SESSION EXPIRED", file=sys.stderr)
+        write_json(STATUS_PATH, {'session_valid': False, 'updated_at': now_str, 'error': 'session_expired'})
+        sys.exit(1)
+    print("  Session valid", file=sys.stderr)
 
-    print("\n=== 拉取店铺区域 ===", file=sys.stderr)
-    shop_areas_api = load_shop_area(BASE_URL, cookie)
+    # 判断哪些组件需要运行
+    need_fetch = force or date_str or should_run(runtime, 'fetch', intervals.get('sort_timeout', 5))
+    need_competitor = force or should_run(runtime, 'competitor', intervals.get('competitor', 1440))
 
-    # 4. 异常检测
-    print("\n=== 异常检测 ===", file=sys.stderr)
-    anomalies = detect_anomalies(orders, ops, config, str(BASELINE_PATH), shop_areas_api)
-    print(f"  异常: {len(anomalies)}", file=sys.stderr)
+    # 加载上次的结果（用于未运行的组件保持旧数据）
+    prev = load_json(LATEST_PATH, {})
 
-    # 5. 跳扫码检测
-    print("\n=== 跳扫码检测 ===", file=sys.stderr)
-    skip_scans, skip_riders = detect_skip_scans(orders, ops, config)
-    print(f"  跳扫码: {len(skip_scans)}", file=sys.stderr)
+    # ===== 数据采集 =====
+    if need_fetch:
+        print(f"\n=== 拉取数据 ({date_str or '今天'}) ===", file=sys.stderr)
+        ops = load_all_ops(BASE_URL, cookie, date_str)
+        orders = load_all_orders(BASE_URL, cookie, date_str)
+        shop_areas_api = load_shop_area(BASE_URL, cookie)
 
-    # 6. 骑手统计
-    print("\n=== 骑手统计 ===", file=sys.stderr)
-    rider_stats = compute_rider_stats(orders, ops, config, shop_areas_api)
-    print(f"  骑手: {len(rider_stats)}", file=sys.stderr)
+        print("\n=== 异常检测 ===", file=sys.stderr)
+        anomalies = detect_anomalies(orders, ops, config, 'data/baseline.json', shop_areas_api)
 
-    # 7. 订单概览
-    delivering = [o for o in orders if o.get('is_delivering') and not o.get('is_complete') and not o.get('is_aftersale')]
-    completed = [o for o in orders if o.get('is_complete')]
-    aftersale = [o for o in orders if o.get('is_aftersale')]
+        print("\n=== 跳扫码检测 ===", file=sys.stderr)
+        skip_scans, skip_riders = detect_skip_scans(orders, ops, config)
 
-    # 8. 竞品数据
-    competitor = _collect_competitor(config, now_str)
+        print("\n=== 骑手统计 ===", file=sys.stderr)
+        rider_stats = compute_rider_stats(orders, ops, config, shop_areas_api)
 
-    # 9. 汇总输出
-    result = {
-        'updated_at': now_str,
-        'session_valid': True,
-        'summary': {
+        # 去重
+        seen = runtime.get('seen_anomalies', {})
+        deduped, seen = dedup_anomalies(anomalies, seen)
+        runtime['seen_anomalies'] = seen
+        dup_count = len(anomalies) - len(deduped)
+        print(f"  去重: {dup_count} 条已见过，新增 {len(deduped)} 条", file=sys.stderr)
+
+        delivering = [o for o in orders if o.get('is_delivering') and not o.get('is_complete') and not o.get('is_aftersale')]
+        completed = [o for o in orders if o.get('is_complete')]
+        aftersale = [o for o in orders if o.get('is_aftersale')]
+
+        summary = {
             'total_orders': len(orders),
             'delivering': len(delivering),
             'completed': len(completed),
             'aftersale': len(aftersale),
-            'anomaly_count': len(anomalies),
+            'anomaly_count': len(deduped),
             'skip_scan_count': len(skip_scans),
-        },
-        'anomalies': anomalies,
+        }
+
+        # 记录原始异常数（用于历史趋势）
+        anomaly_breakdown = {}
+        for a in anomalies:
+            key = {'分拣超时': 'sort_timeout', '投餐超时': 'stay_timeout', '配送超时': 'deliver_timeout', '压单': 'backlog'}.get(a.get('type', ''), '')
+            if key:
+                anomaly_breakdown[key] = anomaly_breakdown.get(key, 0) + 1
+
+        mark_run(runtime, 'fetch')
+    else:
+        # 使用上次的数据
+        print("\n=== 跳过数据采集（未到间隔） ===", file=sys.stderr)
+        deduped = prev.get('anomalies', [])
+        skip_scans = prev.get('skip_scans', [])
+        skip_riders = prev.get('skip_scan_riders', [])
+        rider_stats = prev.get('riders', [])
+        summary = prev.get('summary', {})
+        anomaly_breakdown = {}
+
+    # ===== 竞品采集 =====
+    if need_competitor:
+        print("\n=== 竞品采集 ===", file=sys.stderr)
+        competitor = _collect_competitor(config, now_str)
+        mark_run(runtime, 'competitor')
+    else:
+        competitor = prev.get('competitor', EMPTY_COMPETITOR)
+
+    # ===== 输出 =====
+    result = {
+        'updated_at': now_str,
+        'session_valid': True,
+        'summary': summary,
+        'anomalies': deduped,
         'skip_scans': skip_scans,
         'skip_scan_riders': skip_riders,
         'riders': rider_stats,
@@ -172,76 +220,55 @@ def main():
 
     write_json(LATEST_PATH, result)
     write_json(STATUS_PATH, {
-        'session_valid': True,
-        'updated_at': now_str,
-        'orders': len(orders),
-        'anomalies': len(anomalies),
-        'skip_scans': len(skip_scans),
+        'session_valid': True, 'updated_at': now_str,
+        'orders': summary.get('total_orders', 0),
+        'anomalies': summary.get('anomaly_count', 0),
+        'skip_scans': summary.get('skip_scan_count', 0),
     })
+    save_runtime(runtime)
 
-    # 10. 追加历史趋势数据（按异常类型拆分）
-    breakdown = {}
-    for a in anomalies:
-        key = {'分拣超时': 'sort_timeout', '投餐超时': 'stay_timeout', '配送超时': 'deliver_timeout', '压单': 'backlog'}.get(a.get('type', ''), '')
-        if key:
-            breakdown[key] = breakdown.get(key, 0) + 1
-    _append_history(now_str, len(orders), len(delivering), len(anomalies), len(skip_scans), competitor, breakdown)
+    # 追加历史
+    if need_fetch:
+        _append_history(now_str, summary, competitor, anomaly_breakdown)
 
     print(f"\n=== 完成 ===", file=sys.stderr)
-    print(f"  订单: {len(orders)} | 异常: {len(anomalies)} | 跳扫码: {len(skip_scans)}", file=sys.stderr)
-    print(f"  输出: {LATEST_PATH}", file=sys.stderr)
+    print(f"  订单: {summary.get('total_orders', 0)} | 异常: {summary.get('anomaly_count', 0)} | 跳扫码: {summary.get('skip_scan_count', 0)}", file=sys.stderr)
 
 
 def _collect_competitor(config, now_str):
-    """采集竞品数据，失败时返回空结构体而非 None。"""
     session_id = get_competitor_session()
     if not session_id:
-        print("  COMPETITOR_SESSION 未设置，跳过竞品采集", file=sys.stderr)
+        print("  COMPETITOR_SESSION 未设置，跳过", file=sys.stderr)
         return EMPTY_COMPETITOR
-
-    print("\n=== 竞品采集 ===", file=sys.stderr)
     try:
         stores = fetch_all_stores(session_id)
         if stores:
             competitor = compute_competitor_data(stores, str(HISTORY_PATH))
-            print(f"  竞品: {competitor.get('total_stores', 0)} 店铺, 当日 {competitor.get('total_daily', 0)} 单", file=sys.stderr)
+            print(f"  竞品: {competitor.get('total_stores', 0)} 店铺", file=sys.stderr)
             return competitor
-        else:
-            print("  竞品数据为空", file=sys.stderr)
-            return EMPTY_COMPETITOR
+        return EMPTY_COMPETITOR
     except Exception as e:
         print(f"  竞品采集失败: {e}", file=sys.stderr)
         return EMPTY_COMPETITOR
 
 
-def _append_history(now_str, total_orders, delivering, anomaly_count, skip_scan_count, competitor, anomaly_breakdown=None):
-    """追加当前指标到历史趋势文件，保留最近 MAX_HISTORY 条。"""
-    history = []
-    if HISTORY_TRACK_PATH.exists():
-        try:
-            history = json.loads(HISTORY_TRACK_PATH.read_text())
-        except Exception:
-            history = []
-
+def _append_history(now_str, summary, competitor, breakdown):
+    history = load_json(HISTORY_TRACK_PATH, [])
     entry = {
         'time': now_str[:16],
-        'orders': total_orders,
-        'delivering': delivering,
-        'anomalies': anomaly_count,
-        'skip_scans': skip_scan_count,
+        'orders': summary.get('total_orders', 0),
+        'delivering': summary.get('delivering', 0),
+        'anomalies': summary.get('anomaly_count', 0),
+        'skip_scans': summary.get('skip_scan_count', 0),
         'competitor_daily': competitor.get('total_daily', 0) if competitor else 0,
     }
-    # 按异常类型拆分
-    if anomaly_breakdown:
-        entry.update(anomaly_breakdown)
+    if breakdown:
+        entry.update(breakdown)
     history.append(entry)
-
-    # 只保留最近 MAX_HISTORY 条
     if len(history) > MAX_HISTORY:
         history = history[-MAX_HISTORY:]
-
     write_json(HISTORY_TRACK_PATH, history)
-    print(f"  历史: {len(history)} 条记录", file=sys.stderr)
+    print(f"  历史: {len(history)} 条", file=sys.stderr)
 
 
 if __name__ == '__main__':

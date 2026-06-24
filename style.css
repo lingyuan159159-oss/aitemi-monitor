@@ -82,11 +82,23 @@ body { font-family: var(--font); color: var(--text); background: var(--bg); line
 .subtitle { color: var(--text2); font-size: .83rem; }
 
 /* Collect Info */
-.collect-info { display: flex; gap: 16px; margin: 8px 0; font-size: .8rem; color: var(--text2); }
-.collect-info span { display: flex; align-items: center; gap: 4px; }
-.collect-info .dot { width: 6px; height: 6px; border-radius: 50%; }
-.collect-info .dot.green { background: var(--green); }
-.collect-info .dot.blue { background: var(--blue); }
+.collect-info { background: var(--card); border-radius: 16px; padding: 18px; margin-bottom: 16px; box-shadow: 0 1px 4px rgba(0,0,0,.05); font-size: .88rem; line-height: 1.8; }
+.collect-info .collect-header { font-size: 1rem; font-weight: 600; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+.collect-info .collect-header .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+.collect-info .collect-header .dot.green { background: var(--green); }
+.collect-info .collect-header .dot.blue { background: var(--blue); }
+.collect-info .collect-line { padding: 3px 0; }
+.collect-info .collect-line strong { font-weight: 600; }
+.collect-info .collect-line.red strong { color: var(--red); }
+.collect-info .collect-line.orange strong { color: var(--orange); }
+.collect-info .collect-line.yellow strong { color: #a16207; }
+.collect-info .collect-line.gray strong { color: var(--gray); }
+.collect-info .collect-line.purple strong { color: #7c3aed; }
+.collect-info .collect-riders { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+.collect-info .collect-riders-title { font-size: .82rem; color: var(--text2); margin-bottom: 6px; }
+.collect-info .rider-tag { display: inline-block; padding: 3px 10px; margin: 2px 4px 2px 0; background: #fef2f2; color: var(--red); border-radius: 8px; font-size: .8rem; font-weight: 500; }
+.collect-info .rider-tag.orange { background: #fff7ed; color: var(--orange); }
+.collect-info .no-anomaly { color: var(--green); font-weight: 600; font-size: 1rem; }
 
 /* ===== Metrics Grid ===== */
 .metrics-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px; }
@@ -218,13 +230,17 @@ body { font-family: var(--font); color: var(--text); background: var(--bg); line
 .detail-detail-text { margin-top: 8px; padding: 10px 12px; background: var(--bg); border-radius: var(--r-sm); font-size: .82rem; color: var(--text2); line-height: 1.5; }
 
 /* ===== Settings Modal ===== */
-.modal-card { position: relative; background: var(--card); border-radius: var(--r); padding: 24px; box-shadow: var(--shadow-md); max-width: 400px; width: 100%; max-height: 90vh; overflow-y: auto; animation: modalIn .25s ease; z-index: 1; }
+.modal-card { position: relative; background: var(--card); border-radius: 20px; padding: 24px; box-shadow: 0 20px 60px rgba(0,0,0,.2); max-width: 400px; width: 100%; max-height: 85vh; overflow-y: auto; animation: modalIn .25s ease; z-index: 1; }
 @keyframes modalIn { from { opacity: 0; transform: scale(.96); } }
-.modal-card h3 { font-size: 1.05rem; font-weight: 600; margin-bottom: 16px; }
-.setting-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border); }
+.modal-card h3 { font-size: 1.05rem; font-weight: 700; margin-bottom: 16px; }
+.settings-section { margin-bottom: 14px; }
+.settings-section-title { font-size: .72rem; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+.setting-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f2f2f7; }
 .setting-row label { font-size: .88rem; flex: 1; }
 .setting-row:last-of-type { border-bottom: none; }
-.setting-row select { padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--r-sm); font-family: var(--font); font-size: .85rem; background: var(--bg); min-height: 44px; }
+.setting-row select { padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px; font-family: var(--font); font-size: .85rem; background: var(--bg); min-height: 40px; }
+.setting-input { width: 80px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; font-family: var(--font); font-size: .88rem; text-align: center; background: var(--bg); min-height: 40px; }
+.setting-input:focus { outline: none; border-color: var(--blue); }
 .modal-card .btn-primary { margin-top: 18px; }
 
 /* ===== Session Expired Modal ===== */

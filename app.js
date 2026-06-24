@@ -275,19 +275,62 @@ const App = (() => {
             _mCard('已完成', s.completed || 0, 'green', null, 'completed'),
         ].join('');
 
-        // 采集时间总结
+        // 采集总结卡片
         var ci = document.getElementById('collect-info');
         if (ci && _data.updated_at) {
             var upd = new Date(_toMs(_data.updated_at));
             var nxt = new Date(upd.getTime() + 5 * 60000);
             var fmt = function(d) {
-                return (d.getMonth()+1) + '/' + d.getDate() + ' ' +
-                    d.getHours().toString().padStart(2,'0') + ':' +
+                return d.getHours().toString().padStart(2,'0') + ':' +
                     d.getMinutes().toString().padStart(2,'0');
             };
-            ci.innerHTML =
-                '<span><span class="dot green"></span>本次采集: ' + fmt(upd) + '</span>' +
-                '<span><span class="dot blue"></span>下次采集: ' + fmt(nxt) + '</span>';
+            var anomalyList = _data.anomalies || [];
+            var typeCnt = {};
+            anomalyList.forEach(function(x) { typeCnt[x.type] = (typeCnt[x.type] || 0) + 1; });
+            var skipCnt = (_data.skip_scans || []).length;
+            var totalAnomaly = anomalyList.length + skipCnt;
+
+            var html = '<div class="collect-header"><span class="dot green"></span>采集时间 ' + fmt(upd) + '　|　下次 ' + fmt(nxt) + '</div>';
+
+            if (totalAnomaly === 0) {
+                html += '<div class="no-anomaly">本次采集无异常，一切正常</div>';
+            } else {
+                html += '<div class="collect-line red">分拣超时 <strong>' + (typeCnt['分拣超时'] || 0) + '</strong> 单</div>';
+                html += '<div class="collect-line orange">投餐超时 <strong>' + (typeCnt['投餐超时'] || 0) + '</strong> 单</div>';
+                html += '<div class="collect-line yellow">配送超时 <strong>' + (typeCnt['配送超时'] || 0) + '</strong> 单</div>';
+                html += '<div class="collect-line gray">压单 <strong>' + (typeCnt['压单'] || 0) + '</strong> 单</div>';
+                html += '<div class="collect-line purple">跳扫码 <strong>' + skipCnt + '</strong> 单</div>';
+
+                // 统计责任人
+                var riderFault = {};
+                anomalyList.forEach(function(x) {
+                    var r = x.rider || '';
+                    if (!r) return;
+                    if (!riderFault[r]) riderFault[r] = {count: 0, types: {}};
+                    riderFault[r].count++;
+                    riderFault[r].types[x.type] = (riderFault[r].types[x.type] || 0) + 1;
+                });
+                (_data.skip_scans || []).forEach(function(x) {
+                    var r = x.rider || '';
+                    if (!r) return;
+                    if (!riderFault[r]) riderFault[r] = {count: 0, types: {}};
+                    riderFault[r].count++;
+                    riderFault[r].types['跳扫码'] = (riderFault[r].types['跳扫码'] || 0) + 1;
+                });
+
+                var faultList = Object.keys(riderFault).sort(function(a, b) { return riderFault[b].count - riderFault[a].count; });
+                if (faultList.length > 0) {
+                    html += '<div class="collect-riders"><div class="collect-riders-title">涉及骑手（按问题数排序）</div>';
+                    faultList.forEach(function(r) {
+                        var info = riderFault[r];
+                        var typeSummary = Object.keys(info.types).map(function(t) { return t + info.types[t] + '单'; }).join('、');
+                        var cls = info.count >= 3 ? '' : ' orange';
+                        html += '<span class="rider-tag' + cls + '">' + esc(r) + ' ' + info.count + '单（' + typeSummary + '）</span>';
+                    });
+                    html += '</div>';
+                }
+            }
+            ci.innerHTML = html;
         }
 
         _prevSummary = { ...s };
@@ -847,6 +890,13 @@ const App = (() => {
     function openSettings() {
         document.getElementById('settings-modal').style.display = 'flex';
         document.getElementById('setting-refresh').value = String(_refreshInterval);
+        // 加载采集间隔
+        var si = (_data && _data.config && _data.config.scan_intervals) || {};
+        var fields = ['sort_timeout', 'stay_timeout', 'deliver_timeout', 'backlog', 'rider_stats', 'skip_scan', 'competitor'];
+        fields.forEach(function(f) {
+            var el = document.getElementById('si-' + f);
+            if (el) el.value = si[f] || 5;
+        });
     }
 
     function closeSettings() {
@@ -858,6 +908,21 @@ const App = (() => {
         localStorage.setItem('refresh_interval', String(_refreshInterval));
         _startRefresh();
         _showToast(_refreshInterval > 0 ? '刷新间隔已更新' : '自动刷新已关闭');
+    }
+
+    function saveSettings() {
+        // 保存刷新间隔
+        updateRefresh();
+        // 保存采集间隔到 localStorage（下次采集时生效）
+        var fields = ['sort_timeout', 'stay_timeout', 'deliver_timeout', 'backlog', 'rider_stats', 'skip_scan', 'competitor'];
+        var intervals = {};
+        fields.forEach(function(f) {
+            var el = document.getElementById('si-' + f);
+            if (el) intervals[f] = parseInt(el.value, 10) || 5;
+        });
+        localStorage.setItem('scan_intervals', JSON.stringify(intervals));
+        _showToast('设置已保存，下次采集生效');
+        closeSettings();
     }
 
     // ===== 初始化 =====
@@ -875,7 +940,7 @@ const App = (() => {
 
     return {
         checkPassword, refreshData, switchTab,
-        openSettings, closeSettings, updateRefresh,
+        openSettings, closeSettings, updateRefresh, saveSettings,
         showOrderDetail, closeOrderModal,
         showOrders, closeListModal
     };
