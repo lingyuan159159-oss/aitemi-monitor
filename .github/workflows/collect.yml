@@ -1,0 +1,46 @@
+name: Collect Aitemi Data
+
+on:
+  schedule:
+    # 每30分钟运行（工作时间 7:00-23:30 CST = 23:00-15:30 UTC）
+    - cron: '*/30 23 * * *'
+    - cron: '*/30 0-15 * * *'
+  workflow_dispatch:  # 手动触发
+
+# 防止并发运行导致 git push 冲突
+concurrency:
+  group: collect-data
+  cancel-in-progress: false
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install requests
+        run: pip install requests
+
+      - name: Run collection
+        env:
+          AITEMI_PHPSESSID: ${{ secrets.AITEMI_PHPSESSID }}
+          AITEMI_ADMINSESSION: ${{ secrets.AITEMI_ADMINSESSION }}
+          COMPETITOR_SESSION: ${{ secrets.COMPETITOR_SESSION }}
+        run: python scripts/collect_all.py
+
+      - name: Commit and push data
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/latest.json data/status.json data/competitor_history.json
+          timestamp=$(TZ='Asia/Shanghai' date '+%Y-%m-%d %H:%M CST')
+          git diff --staged --quiet || git commit -m "data update ${timestamp}"
+          git push

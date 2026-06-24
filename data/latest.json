@@ -1,0 +1,187 @@
+{
+  "updated_at": "2026-06-24T18:30:00",
+  "session_valid": true,
+  "summary": {
+    "total_orders": 342,
+    "delivering": 18,
+    "completed": 310,
+    "aftersale": 14,
+    "anomaly_count": 5,
+    "skip_scan_count": 2
+  },
+  "anomalies": [
+    {
+      "type": "配送超时",
+      "oid": "732456",
+      "shop": "益禾堂",
+      "area": "一饭堂",
+      "elapsed_min": 22.5,
+      "threshold": 15,
+      "severity": "HIGH",
+      "detail": "投餐12:15已23min未送达",
+      "dorm": "A3105",
+      "delivery_seq": "1089"
+    },
+    {
+      "type": "投餐超时",
+      "oid": "732461",
+      "shop": "茶悦日记",
+      "area": "商业街",
+      "elapsed_min": 18.3,
+      "threshold": 15,
+      "severity": "MED",
+      "detail": "分拣12:08已18min未投餐",
+      "dorm": "B2203",
+      "delivery_seq": "1092"
+    },
+    {
+      "type": "分拣超时",
+      "oid": "732470",
+      "shop": "荷叶蒸饭",
+      "area": "一饭堂",
+      "elapsed_min": 25.1,
+      "threshold": 20,
+      "severity": "LOW",
+      "detail": "下单25min未处理",
+      "dorm": "C1502",
+      "delivery_seq": "1095"
+    },
+    {
+      "type": "压单",
+      "oid": "732445",
+      "shop": "蜜雪冰城",
+      "area": "商业街",
+      "elapsed_min": 35.0,
+      "threshold": 15,
+      "severity": "HIGH",
+      "detail": "分拣11:50投餐12:25 停留35min",
+      "dorm": "A2301",
+      "delivery_seq": "1085"
+    },
+    {
+      "type": "配送超时",
+      "oid": "732480",
+      "shop": "馋嘴猫（卤肉饭）",
+      "area": "一饭堂",
+      "elapsed_min": 16.2,
+      "threshold": 15,
+      "severity": "WARN",
+      "detail": "投餐12:20已16min未送达",
+      "dorm": "D4108",
+      "delivery_seq": "1098"
+    }
+  ],
+  "skip_scans": [
+    {
+      "type": "跳扫码",
+      "oid": "732430",
+      "shop": "兰州拉面",
+      "rider": "梁智森",
+      "gap_seconds": 8.5,
+      "severity": "HIGH",
+      "place_time": "11:45:12",
+      "deliver_time": "11:45:20",
+      "dorm": "B3106",
+      "delivery_seq": "1080"
+    },
+    {
+      "type": "跳扫码",
+      "oid": "732455",
+      "shop": "潮汕牛肉粿",
+      "rider": "梁智森",
+      "gap_seconds": 22.0,
+      "severity": "MED",
+      "place_time": "12:10:05",
+      "deliver_time": "12:10:27",
+      "dorm": "A1205",
+      "delivery_seq": "1088"
+    }
+  ],
+  "skip_scan_riders": [
+    {
+      "name": "梁智森",
+      "count": 4,
+      "high_risk": true,
+      "orders": [
+        {"oid": "732430", "shop": "兰州拉面", "dorm": "B3106", "gap": 8.5},
+        {"oid": "732455", "shop": "潮汕牛肉粿", "dorm": "A1205", "gap": 22.0}
+      ]
+    }
+  ],
+  "riders": [
+    {
+      "name": "梁智森",
+      "area": "一饭堂",
+      "sort": {"total": 22, "overtime": 3, "rate": 13.6, "avg": 15.2},
+      "stay": {"total": 22, "overtime": 1, "rate": 4.5, "avg": 10.8},
+      "deliver": {"total": 22, "overtime": 2, "rate": 9.1, "avg": 8.3}
+    },
+    {
+      "name": "陈浩然",
+      "area": "商业街",
+      "sort": {"total": 18, "overtime": 5, "rate": 27.8, "avg": 22.1},
+      "stay": {"total": 18, "overtime": 2, "rate": 11.1, "avg": 12.5},
+      "deliver": {"total": 18, "overtime": 0, "rate": 0, "avg": 7.2}
+    },
+    {
+      "name": "张嘉文",
+      "area": "一饭堂",
+      "sort": {"total": 15, "overtime": 0, "rate": 0, "avg": 11.0},
+      "stay": {"total": 15, "overtime": 0, "rate": 0, "avg": 9.5},
+      "deliver": {"total": 15, "overtime": 1, "rate": 6.7, "avg": 10.1}
+    },
+    {
+      "name": "李明辉",
+      "area": "商业街",
+      "sort": {"total": 12, "overtime": 1, "rate": 8.3, "avg": 16.5},
+      "stay": {"total": 12, "overtime": 3, "rate": 25.0, "avg": 14.2},
+      "deliver": {"total": 12, "overtime": 0, "rate": 0, "avg": 6.8}
+    },
+    {
+      "name": "王志远",
+      "area": "一饭堂",
+      "sort": {"total": 20, "overtime": 2, "rate": 10.0, "avg": 13.8},
+      "stay": {"total": 20, "overtime": 0, "rate": 0, "avg": 8.2},
+      "deliver": {"total": 20, "overtime": 4, "rate": 20.0, "avg": 12.5}
+    }
+  ],
+  "competitor": {
+    "date": "2026-06-24",
+    "total_daily": 1256,
+    "total_cumul": 45890,
+    "active_stores": 52,
+    "total_stores": 66,
+    "stores": [
+      {"id": "1", "name": "荷叶蒸饭", "total": 5670, "yesterday_total": 5581, "daily": 89, "score": 4.8},
+      {"id": "2", "name": "蜜雪冰城", "total": 4320, "yesterday_total": 4250, "daily": 70, "score": 4.9},
+      {"id": "3", "name": "茶悦日记", "total": 3890, "yesterday_total": 3835, "daily": 55, "score": 4.7},
+      {"id": "4", "name": "益禾堂", "total": 3200, "yesterday_total": 3160, "daily": 40, "score": 4.6},
+      {"id": "5", "name": "兰州拉面", "total": 2980, "yesterday_total": 2950, "daily": 30, "score": 4.5},
+      {"id": "6", "name": "家乐堡（技师店）", "total": 2450, "yesterday_total": 2428, "daily": 22, "score": 4.4},
+      {"id": "7", "name": "潮汕牛肉粿", "total": 2100, "yesterday_total": 2085, "daily": 15, "score": 4.3},
+      {"id": "8", "name": "馋嘴猫（卤肉饭）", "total": 1890, "yesterday_total": 1878, "daily": 12, "score": 4.2},
+      {"id": "9", "name": "食知味.烧腊", "total": 1650, "yesterday_total": 1640, "daily": 10, "score": 4.1},
+      {"id": "10", "name": "沙县小吃", "total": 1420, "yesterday_total": 1412, "daily": 8, "score": 4.0},
+      {"id": "11", "name": "老上海", "total": 1200, "yesterday_total": 1195, "daily": 5, "score": 3.9},
+      {"id": "12", "name": "骨汤麻辣烫，麻辣香锅", "total": 980, "yesterday_total": 980, "daily": 0, "score": 3.8},
+      {"id": "13", "name": "一楼自选餐（大众餐）", "total": 870, "yesterday_total": 865, "daily": 5, "score": 3.7},
+      {"id": "14", "name": "小锅猪肚鸡", "total": 760, "yesterday_total": 758, "daily": 2, "score": 4.0},
+      {"id": "15", "name": "原味汤粉皇", "total": 650, "yesterday_total": 648, "daily": 2, "score": 3.6}
+    ]
+  },
+  "config": {
+    "thresholds": {
+      "一饭堂": {"sort": 20, "stay": 15, "deliver": 15},
+      "商业街": {"sort": 30, "stay": 15, "deliver": 15},
+      "航天食堂二楼": {"sort": 30, "stay": 15, "deliver": 15},
+      "第二饭堂": {"sort": 20, "stay": 15, "deliver": 15},
+      "第四饭堂": {"sort": 20, "stay": 15, "deliver": 15},
+      "第三饭堂": {"sort": 20, "stay": 15, "deliver": 15},
+      "_default": {"sort": 20, "stay": 15, "deliver": 15}
+    },
+    "skip_scan_threshold": 60,
+    "high_risk_count": 3,
+    "press_order_threshold": 30,
+    "fetch_interval": 1800
+  }
+}
