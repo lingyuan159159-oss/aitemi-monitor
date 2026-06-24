@@ -77,22 +77,22 @@ const App = (() => {
     }
 
     function empty(t) {
-        return '<div class="empty-state">' +
-            '<svg width="40" height="40" viewBox="0 0 40 40" fill="none">' +
-            '<rect x="6" y="8" width="28" height="24" rx="3" stroke="#86868b" stroke-width="1.5" fill="none"/>' +
-            '<line x1="12" y1="16" x2="28" y2="16" stroke="#86868b" stroke-width="1.5" stroke-linecap="round"/>' +
-            '<line x1="12" y1="22" x2="22" y2="22" stroke="#86868b" stroke-width="1.5" stroke-linecap="round"/>' +
-            '<line x1="12" y1="28" x2="18" y2="28" stroke="#86868b" stroke-width="1.5" stroke-linecap="round"/>' +
-            '</svg><p>' + esc(t) + '</p></div>';
+        return '<div class="text-center py-10 text-base-content/40">' +
+            '<svg width="40" height="40" viewBox="0 0 40 40" fill="none" class="mx-auto mb-3 opacity-40">' +
+            '<rect x="6" y="8" width="28" height="24" rx="3" stroke="currentColor" stroke-width="1.5" fill="none"/>' +
+            '<line x1="12" y1="16" x2="28" y2="16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>' +
+            '<line x1="12" y1="22" x2="22" y2="22" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>' +
+            '<line x1="12" y1="28" x2="18" y2="28" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>' +
+            '</svg><p class="text-sm">' + esc(t) + '</p></div>';
     }
 
     function chartEmpty(t) {
-        return '<div class="chart-empty">' +
-            '<svg width="32" height="32" viewBox="0 0 32 32" fill="none">' +
-            '<rect x="4" y="14" width="6" height="14" rx="1.5" stroke="#aeaeb2" stroke-width="1.2"/>' +
-            '<rect x="13" y="8" width="6" height="20" rx="1.5" stroke="#aeaeb2" stroke-width="1.2"/>' +
-            '<rect x="22" y="4" width="6" height="24" rx="1.5" stroke="#aeaeb2" stroke-width="1.2"/>' +
-            '</svg><p>' + esc(t) + '</p></div>';
+        return '<div class="flex flex-col items-center justify-center h-full text-base-content/40">' +
+            '<svg width="32" height="32" viewBox="0 0 32 32" fill="none" class="mb-2 opacity-40">' +
+            '<rect x="4" y="14" width="6" height="14" rx="1.5" stroke="currentColor" stroke-width="1.2"/>' +
+            '<rect x="13" y="8" width="6" height="20" rx="1.5" stroke="currentColor" stroke-width="1.2"/>' +
+            '<rect x="22" y="4" width="6" height="24" rx="1.5" stroke="currentColor" stroke-width="1.2"/>' +
+            '</svg><p class="text-sm">' + esc(t) + '</p></div>';
     }
 
     function trendArrow(cur, prev) {
@@ -379,18 +379,18 @@ const App = (() => {
         if (!_history || _history.length < 2) {
             // 不替换 canvas，只在 canvas 上方显示提示
             if (!oc.parentElement.querySelector('.chart-empty-overlay')) {
-                oc.insertAdjacentHTML('afterend', '<div class="chart-empty-overlay" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#aeaeb2;font-size:13px;pointer-events:none;">暂无历史数据，等待采集...</div>');
+                oc.insertAdjacentHTML('afterend', '<div class="absolute inset-0 flex items-center justify-center text-base-content/30 text-sm pointer-events-none">暂无历史数据，等待采集...</div>');
                 oc.parentElement.style.position = 'relative';
             }
-            if (!ac.parentElement.querySelector('.chart-empty-overlay')) {
-                ac.insertAdjacentHTML('afterend', '<div class="chart-empty-overlay" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#aeaeb2;font-size:13px;pointer-events:none;">暂无历史数据，等待采集...</div>');
+            if (!ac.parentElement.querySelector('.absolute')) {
+                ac.insertAdjacentHTML('afterend', '<div class="absolute inset-0 flex items-center justify-center text-base-content/30 text-sm pointer-events-none">暂无历史数据，等待采集...</div>');
                 ac.parentElement.style.position = 'relative';
             }
             return;
         }
 
         // 有数据了，移除空状态提示
-        document.querySelectorAll('.chart-empty-overlay').forEach(el => el.remove());
+        document.querySelectorAll('.absolute.inset-0').forEach(el => el.remove());
 
         const labels = _history.map(h => {
             const d = new Date(h.time);
@@ -658,7 +658,7 @@ const App = (() => {
         const a = _data.anomalies || [];
         const sm = document.getElementById('anomaly-summary');
         const gr = document.getElementById('anomaly-groups');
-        const ci = document.getElementById('collect-info');
+        const ci = document.getElementById('collect-info-anomaly');
 
         // 采集时间显示
         if (ci && _data.updated_at) {
@@ -686,17 +686,17 @@ const App = (() => {
 
         // 分组展示
         const types = [
-            {name: '分拣超时', cls: 'type-sort'},
-            {name: '投餐超时', cls: 'type-stay'},
-            {name: '配送超时', cls: 'type-deliver'},
-            {name: '压单', cls: 'type-backlog'}
+            {name: '分拣超时', cls: 'border-l-4 border-error'},
+            {name: '投餐超时', cls: 'border-l-4 border-warning'},
+            {name: '配送超时', cls: 'border-l-4 border-info'},
+            {name: '压单', cls: 'border-l-4 border-base-content/20'}
         ];
         gr.innerHTML = types.map(tp => {
             const t = tp.name;
             const items = a.filter(x => x.type === t);
             if (!items.length) return '';
-            return '<div class="card bg-base-100 shadow-sm p-4 relative overflow-hidden border-l-4 border-base-300 ' + tp.cls + '"><div class="card bg-base-100 shadow-sm p-4 relative overflow-hidden border-l-4 border-base-300-title">' +
-                esc(t) + '<span class="anomaly-count">' + items.length + '</span></div>' +
+            return '<div class="card bg-base-100 shadow-sm p-4 relative overflow-hidden ' + tp.cls + '"><div class="font-semibold text-sm mb-3 flex items-center gap-2">' +
+                esc(t) + '<span class="badge badge-sm">' + items.length + '</span></div>' +
                 '<div class="overflow-x-auto"><table class="table table-zebra table-sm"><thead><tr>' +
                 '<th>严重度</th><th>配送单号</th><th>订单号</th><th>店名</th><th>耗时</th><th>骑手</th><th>弹簧指标</th><th>详情</th>' +
                 '</tr></thead><tbody>' +
@@ -729,7 +729,7 @@ const App = (() => {
         const by = {};
         r.forEach(x => { if (!by[x.area]) by[x.area] = []; by[x.area].push(x); });
         c.innerHTML = Object.entries(by).map(([area, list]) => {
-            return '<div class="card bg-base-100 shadow-sm p-4"><div class="rider-area-title">' + esc(area) + '</div>' +
+            return '<div class="card bg-base-100 shadow-sm p-4"><div class="font-semibold text-sm mb-3">' + esc(area) + '</div>' +
                 list.map(r => {
                     const dims = [
                         { l: '分拣', d: r.sort },
@@ -784,9 +784,9 @@ const App = (() => {
         const se = document.getElementById('skip-rider-summary');
         se.innerHTML = rd.length ?
             '<div class="card bg-base-100 shadow-sm p-3s">' + rd.map(r =>
-                '<div class="card bg-base-100 shadow-sm p-3 ' + (r.high_risk ? 'high-risk' : '') + '">' +
-                '<div class="skip-rider-name">' + esc(r.name) + '</div>' +
-                '<div class="skip-rider-count">' + r.count + '</div>' +
+                '<div class="card bg-base-100 shadow-sm p-3 ' + (r.high_risk ? 'border-l-4 border-error' : '') + '">' +
+                '<div class="font-semibold text-sm">' + esc(r.name) + '</div>' +
+                '<div class="text-2xl font-bold ' + (r.high_risk ? 'text-error' : '') + '">' + r.count + '</div>' +
                 '<div class="metric-sub">' + (r.high_risk ? '高风险' : '次疑似') + '</div></div>'
             ).join('') + '</div>' : '';
 
