@@ -167,6 +167,13 @@ const App = (() => {
             _setStatus('warn', 'Session 已过期');
         }
 
+        // Session 过期全屏弹窗
+        const expiredModal = document.getElementById('session-expired-modal');
+        if (expiredModal) {
+            expiredModal.style.display = valid ? 'none' : 'flex';
+        }
+
+        // 顶部小警告条（保留，作为次要提示）
         const warn = document.getElementById('session-warning');
         warn.style.display = valid ? 'none' : 'flex';
 
