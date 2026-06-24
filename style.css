@@ -5,7 +5,7 @@
     --text: #1d1d1f;
     --text2: #86868b;
     --text3: #aeaeb2;
-    --bg: #f5f5f7;
+    --bg: #f2f2f7;
     --card: #fff;
     --border: #e5e5ea;
     --blue: #0071e3;
@@ -90,10 +90,16 @@ body { font-family: var(--font); color: var(--text); background: var(--bg); line
 
 /* ===== Metrics Grid ===== */
 .metrics-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px; }
-.metric-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--r); padding: 16px; box-shadow: var(--shadow); cursor: default; transition: transform .15s, box-shadow .15s; min-height: 44px; }
+.metric-card { background: var(--card); border: none; border-radius: 16px; padding: 18px; box-shadow: 0 1px 4px rgba(0,0,0,.05); cursor: default; transition: transform .15s, box-shadow .15s; min-height: 44px; }
 .metric-card.clickable { cursor: pointer; }
-.metric-card.clickable:hover { transform: translateY(-1px); box-shadow: var(--shadow-md); }
-.metric-card.clickable:active { transform: translateY(0); box-shadow: var(--shadow); }
+.metric-card.clickable:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,.1); }
+.metric-card.clickable:active { transform: translateY(0); box-shadow: 0 1px 4px rgba(0,0,0,.05); }
+.metric-icon { width: 32px; height: 32px; border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-bottom: 10px; }
+.metric-icon svg { width: 16px; height: 16px; }
+.metric-icon.blue { background: #e8f2ff; color: var(--blue); }
+.metric-icon.green { background: #e8f8ee; color: var(--green); }
+.metric-icon.red { background: #fef2f2; color: var(--red); }
+.metric-icon.orange { background: #fff7ed; color: var(--orange); }
 .metric-label { font-size: .72rem; color: var(--text2); letter-spacing: .03em; margin-bottom: 6px; }
 .metric-value { font-size: 1.65rem; font-weight: 700; letter-spacing: -.03em; line-height: 1.1; }
 .metric-sub { font-size: .72rem; color: var(--text2); margin-top: 3px; display: flex; align-items: center; gap: 3px; }
@@ -108,7 +114,7 @@ body { font-family: var(--font); color: var(--text); background: var(--bg); line
 
 /* ===== Charts ===== */
 .charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
-.chart-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--r); padding: 16px; box-shadow: var(--shadow); margin-bottom: 10px; }
+.chart-card { background: var(--card); border: none; border-radius: 16px; padding: 18px; box-shadow: 0 1px 4px rgba(0,0,0,.05); margin-bottom: 10px; }
 .chart-card h3 { font-size: .88rem; font-weight: 600; margin-bottom: 12px; }
 .chart-wrap { position: relative; width: 100%; height: 220px; }
 .chart-narrow { height: 180px; }
@@ -119,7 +125,7 @@ body { font-family: var(--font); color: var(--text); background: var(--bg); line
 .chart-empty p { font-size: .82rem; }
 
 /* ===== Tables ===== */
-.table-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--r); padding: 16px; box-shadow: var(--shadow); margin-bottom: 10px; }
+.table-card { background: var(--card); border: none; border-radius: 16px; padding: 18px; box-shadow: 0 1px 4px rgba(0,0,0,.05); margin-bottom: 10px; }
 .table-card h3 { font-size: .88rem; font-weight: 600; margin-bottom: 12px; }
 .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 .data-table { width: 100%; border-collapse: collapse; font-size: .82rem; }
@@ -147,12 +153,17 @@ body { font-family: var(--font); color: var(--text); background: var(--bg); line
 
 /* ===== Anomaly Groups ===== */
 .anomaly-summary { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
-.anomaly-group { background: var(--card); border: 1px solid var(--border); border-radius: var(--r); padding: 14px 16px; box-shadow: var(--shadow); margin-bottom: 10px; }
+.anomaly-group { background: var(--card); border: none; border-radius: 16px; padding: 14px 18px 14px 22px; box-shadow: 0 1px 4px rgba(0,0,0,.05); margin-bottom: 10px; position: relative; overflow: hidden; }
+.anomaly-group::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; }
+.anomaly-group.type-sort::before { background: var(--red); }
+.anomaly-group.type-stay::before { background: var(--orange); }
+.anomaly-group.type-deliver::before { background: var(--yellow); }
+.anomaly-group.type-backlog::before { background: var(--gray); }
 .anomaly-group-title { font-size: .88rem; font-weight: 600; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
 .anomaly-count { background: var(--bg); padding: 2px 7px; border-radius: 5px; font-size: .72rem; color: var(--text2); }
 
 /* ===== Rider ===== */
-.rider-area-group { background: var(--card); border: 1px solid var(--border); border-radius: var(--r); padding: 16px; box-shadow: var(--shadow); margin-bottom: 12px; }
+.rider-area-group { background: var(--card); border: none; border-radius: 16px; padding: 18px; box-shadow: 0 1px 4px rgba(0,0,0,.05); margin-bottom: 12px; }
 .rider-area-title { font-size: .95rem; font-weight: 600; margin-bottom: 12px; }
 .rider-card { display: grid; grid-template-columns: 120px 1fr; gap: 12px; padding: 12px 0; border-bottom: 1px solid #f2f2f7; }
 .rider-card:last-child { border-bottom: none; }
@@ -166,10 +177,10 @@ body { font-family: var(--font); color: var(--text); background: var(--bg); line
 
 /* ===== Skip Scan ===== */
 .skip-rider-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; margin-bottom: 16px; }
-.skip-rider-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--r); padding: 14px; box-shadow: var(--shadow); }
+.skip-rider-card { background: var(--card); border: none; border-radius: 16px; padding: 14px; box-shadow: 0 1px 4px rgba(0,0,0,.05); }
 .skip-rider-name { font-weight: 600; font-size: .85rem; margin-bottom: 3px; }
 .skip-rider-count { font-size: 1.5rem; font-weight: 700; }
-.skip-rider-card.high-risk { border-color: var(--red); }
+.skip-rider-card.high-risk { border-left: 4px solid var(--red); }
 .skip-rider-card.high-risk .skip-rider-count { color: var(--red); }
 
 /* ===== Empty State ===== */

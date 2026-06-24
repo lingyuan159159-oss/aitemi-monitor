@@ -219,6 +219,7 @@ def detect_anomalies(orders, ops, config, baseline_path, shop_areas_api=None):
                         'detail': f"投餐{last_place.strftime('%H:%M')}已{mins:.0f}min未送达",
                         'dorm': o.get('dorm', ''),
                         'rider': rider,
+                        'delivery_seq': str(o.get('delivery_seq', '')),
                     })
             continue
 
@@ -252,6 +253,7 @@ def detect_anomalies(orders, ops, config, baseline_path, shop_areas_api=None):
                         'detail': f"分拣{last_sort.strftime('%H:%M')}已{mins:.0f}min未投餐",
                         'dorm': o.get('dorm', ''),
                         'rider': rider,
+                        'delivery_seq': str(o.get('delivery_seq', '')),
                     })
             continue
 

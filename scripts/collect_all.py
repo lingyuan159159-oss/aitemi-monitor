@@ -111,12 +111,18 @@ def main():
 
     print("  Session valid", file=sys.stderr)
 
-    # 3. 拉取数据
-    print("\n=== 拉取骑手操作 ===", file=sys.stderr)
-    ops = load_all_ops(BASE_URL, cookie)
+    # 支持命令行指定日期
+    date_str = None
+    for arg in sys.argv[1:]:
+        if arg.startswith('--date='):
+            date_str = arg.split('=', 1)[1]
 
-    print("\n=== 拉取订单 ===", file=sys.stderr)
-    orders = load_all_orders(BASE_URL, cookie)
+    # 3. 拉取数据
+    print(f"\n=== 拉取骑手操作 ({date_str or '今天'}) ===", file=sys.stderr)
+    ops = load_all_ops(BASE_URL, cookie, date_str)
+
+    print(f"\n=== 拉取订单 ({date_str or '今天'}) ===", file=sys.stderr)
+    orders = load_all_orders(BASE_URL, cookie, date_str)
 
     print("\n=== 拉取店铺区域 ===", file=sys.stderr)
     shop_areas_api = load_shop_area(BASE_URL, cookie)
@@ -173,8 +179,13 @@ def main():
         'skip_scans': len(skip_scans),
     })
 
-    # 10. 追加历史趋势数据
-    _append_history(now_str, len(orders), len(delivering), len(anomalies), len(skip_scans), competitor)
+    # 10. 追加历史趋势数据（按异常类型拆分）
+    breakdown = {}
+    for a in anomalies:
+        key = {'分拣超时': 'sort_timeout', '投餐超时': 'stay_timeout', '配送超时': 'deliver_timeout', '压单': 'backlog'}.get(a.get('type', ''), '')
+        if key:
+            breakdown[key] = breakdown.get(key, 0) + 1
+    _append_history(now_str, len(orders), len(delivering), len(anomalies), len(skip_scans), competitor, breakdown)
 
     print(f"\n=== 完成 ===", file=sys.stderr)
     print(f"  订单: {len(orders)} | 异常: {len(anomalies)} | 跳扫码: {len(skip_scans)}", file=sys.stderr)
@@ -203,7 +214,7 @@ def _collect_competitor(config, now_str):
         return EMPTY_COMPETITOR
 
 
-def _append_history(now_str, total_orders, delivering, anomaly_count, skip_scan_count, competitor):
+def _append_history(now_str, total_orders, delivering, anomaly_count, skip_scan_count, competitor, anomaly_breakdown=None):
     """追加当前指标到历史趋势文件，保留最近 MAX_HISTORY 条。"""
     history = []
     if HISTORY_TRACK_PATH.exists():
@@ -213,13 +224,16 @@ def _append_history(now_str, total_orders, delivering, anomaly_count, skip_scan_
             history = []
 
     entry = {
-        'time': now_str[:16],  # 精确到分钟
+        'time': now_str[:16],
         'orders': total_orders,
         'delivering': delivering,
         'anomalies': anomaly_count,
         'skip_scans': skip_scan_count,
         'competitor_daily': competitor.get('total_daily', 0) if competitor else 0,
     }
+    # 按异常类型拆分
+    if anomaly_breakdown:
+        entry.update(anomaly_breakdown)
     history.append(entry)
 
     # 只保留最近 MAX_HISTORY 条

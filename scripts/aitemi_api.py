@@ -17,7 +17,8 @@ import urllib.request
 import urllib.parse
 from datetime import datetime
 
-TODAY = datetime.now().strftime('%Y-%m-%d')
+def _today():
+    return datetime.now().strftime('%Y-%m-%d')
 
 
 def validate_session(session, base_url):
@@ -44,16 +45,16 @@ def _fetch(url, cookie, timeout=20):
     return urllib.request.urlopen(req, timeout=timeout).read().decode('utf-8')
 
 
-def load_all_ops(base_url, cookie):
-    """拉取全量骑手操作记录（翻页，最多7页）。
-    返回 {order_id: [{time, rider, type, status, shop}, ...]}
-    """
+def load_all_ops(base_url, cookie, date_str=None):
+    """拉取全量骑手操作记录（翻页，最多7页）。"""
+    if date_str is None:
+        date_str = _today()
     ops = {}
     for pg in range(1, 8):
         url = (
             f"{base_url}/?m=delivery&c=rider_order_process_operate_list"
             f"&noframe=1&action=search"
-            f"&start_date={TODAY}&end_date={TODAY}"
+            f"&start_date={date_str}&end_date={date_str}"
             f"&page={pg}&eachnum=500"
         )
         html = _fetch(url, cookie)
@@ -82,16 +83,16 @@ def load_all_ops(base_url, cookie):
     return ops
 
 
-def load_all_orders(base_url, cookie):
-    """拉取全量订单（翻页，最多7页）。
-    返回订单列表，每个订单为 dict。
-    """
+def load_all_orders(base_url, cookie, date_str=None):
+    """拉取全量订单（翻页，最多7页）。"""
+    if date_str is None:
+        date_str = _today()
     orders = []
     for pg in range(1, 8):
         url = (
             f"{base_url}/?m=order&c=order_product_list"
             f"&noframe=1&action=search"
-            f"&start_date={TODAY}&end_date={TODAY}"
+            f"&start_date={date_str}&end_date={date_str}"
             f"&page={pg}&eachnum=500"
         )
         html = _fetch(url, cookie)

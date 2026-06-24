@@ -274,6 +274,22 @@ const App = (() => {
             _mCard('售后', s.aftersale || 0, 'orange', null, 'aftersale'),
             _mCard('已完成', s.completed || 0, 'green', null, 'completed'),
         ].join('');
+
+        // 采集时间总结
+        var ci = document.getElementById('collect-info');
+        if (ci && _data.updated_at) {
+            var upd = new Date(_toMs(_data.updated_at));
+            var nxt = new Date(upd.getTime() + 5 * 60000);
+            var fmt = function(d) {
+                return (d.getMonth()+1) + '/' + d.getDate() + ' ' +
+                    d.getHours().toString().padStart(2,'0') + ':' +
+                    d.getMinutes().toString().padStart(2,'0');
+            };
+            ci.innerHTML =
+                '<span><span class="dot green"></span>本次采集: ' + fmt(upd) + '</span>' +
+                '<span><span class="dot blue"></span>下次采集: ' + fmt(nxt) + '</span>';
+        }
+
         _prevSummary = { ...s };
         _renderTrendCharts();
         _renderDistChart();
@@ -283,7 +299,17 @@ const App = (() => {
     function _mCard(l, v, c, prev, clickType) {
         const cls = clickType ? 'clickable' : '';
         const onclick = clickType ? ' onclick="App.showOrders(\'' + clickType + '\')"' : '';
+        const icons = {
+            '总订单': '<svg viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="10" rx="2" stroke="currentColor" stroke-width="1.3"/><path d="M5 7h6M5 10h4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>',
+            '配送中': '<svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.3"/><polyline points="8,4 8,8 11,10" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+            '异常': '<svg viewBox="0 0 16 16" fill="none"><path d="M8 2L1 14h14L8 2z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><line x1="8" y1="6.5" x2="8" y2="9.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><circle cx="8" cy="11.5" r="0.6" fill="currentColor"/></svg>',
+            '跳扫码': '<svg viewBox="0 0 16 16" fill="none"><path d="M2 12L6 4 10 9 14 2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+            '售后': '<svg viewBox="0 0 16 16" fill="none"><path d="M8 3C4.7 3 2 5.2 2 8c0 1.7 1 3.2 2.5 4M8 3c3.3 0 6 2.2 6 5 0 1.7-1 3.2-2.5 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><path d="M6 13h4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>',
+            '已完成': '<svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.3"/><polyline points="5.5,8 7.5,10 10.5,6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+        };
+        const icon = icons[l] || '';
         return '<div class="metric-card ' + c + ' ' + cls + '"' + onclick + '>' +
+            (icon ? '<div class="metric-icon ' + c + '">' + icon + '</div>' : '') +
             '<div class="metric-label">' + esc(l) + '</div>' +
             '<div class="metric-value">' + v + '</div>' +
             '<div class="metric-sub">' + trendArrow(v, prev) + '</div></div>';
@@ -293,17 +319,24 @@ const App = (() => {
     function _renderTrendCharts() {
         const oc = document.getElementById('chart-orders-trend');
         const ac = document.getElementById('chart-anomaly-trend');
+        if (!oc || !ac) return;
+
         if (!_history || _history.length < 2) {
-            if (oc) {
-                if (_charts.ot) _charts.ot.destroy();
-                oc.parentElement.innerHTML = '<div class="chart-wrap">' + chartEmpty('暂无历史数据，等待下次采集') + '</div>';
+            // 不替换 canvas，只在 canvas 上方显示提示
+            if (!oc.parentElement.querySelector('.chart-empty-overlay')) {
+                oc.insertAdjacentHTML('afterend', '<div class="chart-empty-overlay" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#aeaeb2;font-size:13px;pointer-events:none;">暂无历史数据，等待采集...</div>');
+                oc.parentElement.style.position = 'relative';
             }
-            if (ac) {
-                if (_charts.at) _charts.at.destroy();
-                ac.parentElement.innerHTML = '<div class="chart-wrap">' + chartEmpty('暂无历史数据，等待下次采集') + '</div>';
+            if (!ac.parentElement.querySelector('.chart-empty-overlay')) {
+                ac.insertAdjacentHTML('afterend', '<div class="chart-empty-overlay" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#aeaeb2;font-size:13px;pointer-events:none;">暂无历史数据，等待采集...</div>');
+                ac.parentElement.style.position = 'relative';
             }
             return;
         }
+
+        // 有数据了，移除空状态提示
+        document.querySelectorAll('.chart-empty-overlay').forEach(el => el.remove());
+
         const labels = _history.map(h => {
             const d = new Date(h.time);
             return d.getHours().toString().padStart(2, '0') + ':' + d.getMinutes().toString().padStart(2, '0');
@@ -313,8 +346,8 @@ const App = (() => {
             { label: '配送中', data: _history.map(h => h.delivering), color: '#34c759' }
         ]);
         _lineChart('chart-anomaly-trend', 'at', labels, [
-            { label: '异常', data: _history.map(h => h.anomalies), color: '#ff3b30' },
-            { label: '跳扫码', data: _history.map(h => h.skip_scans), color: '#ff9500' }
+            { label: '异常', data: _history.map(h => h.anomalies || 0), color: '#ff3b30' },
+            { label: '跳扫码', data: _history.map(h => h.skip_scans || 0), color: '#ff9500' }
         ]);
     }
 
@@ -322,15 +355,21 @@ const App = (() => {
         const ctx = document.getElementById(id);
         if (!ctx) return;
         if (_charts[key]) _charts[key].destroy();
+        const c = ctx.getContext('2d');
         _charts[key] = new Chart(ctx, {
             type: 'line',
             data: {
                 labels: labels,
-                datasets: datasets.map(d => ({
-                    label: d.label, data: d.data, borderColor: d.color,
-                    backgroundColor: d.color + '18', borderWidth: 2,
-                    pointRadius: 0, pointHoverRadius: 4, fill: true, tension: .3
-                }))
+                datasets: datasets.map(d => {
+                    const grad = c.createLinearGradient(0, 0, 0, ctx.parentElement.clientHeight || 220);
+                    grad.addColorStop(0, d.color + '30');
+                    grad.addColorStop(1, d.color + '02');
+                    return {
+                        label: d.label, data: d.data, borderColor: d.color,
+                        backgroundColor: grad, borderWidth: 2,
+                        pointRadius: 0, pointHoverRadius: 4, fill: true, tension: .35
+                    };
+                })
             },
             options: {
                 responsive: true, maintainAspectRatio: false,
@@ -386,14 +425,14 @@ const App = (() => {
         const c = document.getElementById('delivering-table');
         if (!a.length) { c.innerHTML = empty('当前没有异常'); return; }
         c.innerHTML = '<div class="table-scroll"><table class="data-table"><thead><tr>' +
-            '<th>严重度</th><th>订单号</th><th>所属饭堂</th><th>耗时</th><th>骑手</th><th>弹簧指标</th><th>详情</th>' +
+            '<th>严重度</th><th>配送单号</th><th>订单号</th><th>店名</th><th>耗时</th><th>骑手</th><th>弹簧指标</th><th>详情</th>' +
             '</tr></thead><tbody>' +
             a.slice(0, 20).map((x, i) => {
-                const area = (x.area || '').replace('区域', '');
                 return '<tr class="clickable" data-idx="' + i + '" data-src="anomalies">' +
                     '<td><span class="badge ' + badgeCls(x.severity) + '">' + sevLabel(x.severity) + '</span></td>' +
+                    '<td><strong>' + esc(String(x.delivery_seq || '--')) + '</strong></td>' +
                     '<td>' + esc(x.oid) + '</td>' +
-                    '<td><span class="area-tag ' + areaCls(x.area) + '">' + esc(area || '--') + '</span></td>' +
+                    '<td><strong>' + esc(x.shop || '--') + '</strong></td>' +
                     '<td>' + esc(String(x.elapsed_min)) + '分钟</td>' +
                     '<td>' + esc(x.rider || '--') + '</td>' +
                     '<td><span class="spring-data"><strong>基线' + esc(String(x.baseline || '--')) + '</strong> 斜率' + (x.slope != null ? (x.slope >= 0 ? '+' : '') + esc(String(x.slope)) : '--') + '</span></td>' +
@@ -420,7 +459,6 @@ const App = (() => {
         const content = document.getElementById('order-modal-content');
         title.textContent = cat + '详情';
 
-        const area = (item.area || '').replace('区域', '');
         const stages = [];
         if (item.sort_min != null) stages.push({ label: '分拣', value: item.sort_min });
         if (item.stay_min != null) stages.push({ label: '投餐', value: item.stay_min });
@@ -538,14 +576,14 @@ const App = (() => {
         }
 
         tc.innerHTML = '<div class="table-scroll"><table class="data-table"><thead><tr>' +
-            '<th>严重度</th><th>订单号</th><th>所属饭堂</th><th>耗时</th><th>骑手</th><th>弹簧指标</th>' +
+            '<th>严重度</th><th>订单号</th><th>店名</th><th>耗时</th><th>骑手</th><th>弹簧指标</th>' +
             '</tr></thead><tbody>' +
             items.map(x => {
-                const area = (x.area || '').replace('区域', '');
                 return '<tr>' +
                     '<td><span class="badge ' + badgeCls(x.severity) + '">' + sevLabel(x.severity) + '</span></td>' +
+                    '<td><strong>' + esc(String(x.delivery_seq || '--')) + '</strong></td>' +
                     '<td>' + esc(x.oid) + '</td>' +
-                    '<td><span class="area-tag ' + areaCls(x.area) + '">' + esc(area || '--') + '</span></td>' +
+                    '<td><strong>' + esc(x.shop || '--') + '</strong></td>' +
                     '<td>' + esc(x._elapsed) + '</td>' +
                     '<td>' + esc(x.rider || '--') + '</td>' +
                     '<td><span class="spring-data"><strong>基线' + esc(String(x.baseline || '--')) + '</strong> 斜率' + (x.slope != null ? (x.slope >= 0 ? '+' : '') + esc(String(x.slope)) : '--') + '</span></td>' +
@@ -569,11 +607,16 @@ const App = (() => {
 
         // 采集时间显示
         if (ci && _data.updated_at) {
-            const nextMs = _toMs(_data.updated_at) + 5 * 60000;
-            const nextStr = new Date(nextMs).toISOString().slice(0, 19);
+            var upd2 = new Date(_toMs(_data.updated_at));
+            var nxt2 = new Date(upd2.getTime() + 5 * 60000);
+            var fmt2 = function(d) {
+                return (d.getMonth()+1) + '/' + d.getDate() + ' ' +
+                    d.getHours().toString().padStart(2,'0') + ':' +
+                    d.getMinutes().toString().padStart(2,'0');
+            };
             ci.innerHTML =
-                '<span><span class="dot green"></span>本次采集: ' + fmtTime(_data.updated_at) + '</span>' +
-                '<span><span class="dot blue"></span>下次采集: ' + fmtTime(nextStr) + '</span>';
+                '<span><span class="dot green"></span>本次采集: ' + fmt2(upd2) + '</span>' +
+                '<span><span class="dot blue"></span>下次采集: ' + fmt2(nxt2) + '</span>';
         }
 
         // 摘要 badges
@@ -587,22 +630,28 @@ const App = (() => {
         ].filter(([, n]) => n).map(([l, n, c]) => '<span class="badge ' + c + '">' + l + ': ' + n + '</span>').join('');
 
         // 分组展示
-        const types = ['分拣超时', '投餐超时', '配送超时', '压单'];
-        gr.innerHTML = types.map(t => {
+        const types = [
+            {name: '分拣超时', cls: 'type-sort'},
+            {name: '投餐超时', cls: 'type-stay'},
+            {name: '配送超时', cls: 'type-deliver'},
+            {name: '压单', cls: 'type-backlog'}
+        ];
+        gr.innerHTML = types.map(tp => {
+            const t = tp.name;
             const items = a.filter(x => x.type === t);
             if (!items.length) return '';
-            return '<div class="anomaly-group"><div class="anomaly-group-title">' +
+            return '<div class="anomaly-group ' + tp.cls + '"><div class="anomaly-group-title">' +
                 esc(t) + '<span class="anomaly-count">' + items.length + '</span></div>' +
                 '<div class="table-scroll"><table class="data-table"><thead><tr>' +
-                '<th>严重度</th><th>订单号</th><th>所属饭堂</th><th>耗时</th><th>骑手</th><th>弹簧指标</th><th>详情</th>' +
+                '<th>严重度</th><th>配送单号</th><th>订单号</th><th>店名</th><th>耗时</th><th>骑手</th><th>弹簧指标</th><th>详情</th>' +
                 '</tr></thead><tbody>' +
                 items.map(x => {
                     const idx = a.indexOf(x);
-                    const area = (x.area || '').replace('区域', '');
                     return '<tr class="clickable" data-idx="' + idx + '" data-src="anomalies">' +
                         '<td><span class="badge ' + badgeCls(x.severity) + '">' + sevLabel(x.severity) + '</span></td>' +
+                        '<td><strong>' + esc(String(x.delivery_seq || '--')) + '</strong></td>' +
                         '<td>' + esc(x.oid) + '</td>' +
-                        '<td><span class="area-tag ' + areaCls(x.area) + '">' + esc(area || '--') + '</span></td>' +
+                        '<td><strong>' + esc(x.shop || '--') + '</strong></td>' +
                         '<td>' + esc(String(x.elapsed_min)) + '分钟</td>' +
                         '<td>' + esc(x.rider || '--') + '</td>' +
                         '<td><span class="spring-data"><strong>基线' + esc(String(x.baseline || '--')) + '</strong> 斜率' + (x.slope != null ? (x.slope >= 0 ? '+' : '') + esc(String(x.slope)) : '--') + '</span></td>' +
@@ -690,15 +739,13 @@ const App = (() => {
         if (!sc.length) { de.innerHTML = empty('暂无跳扫码记录'); return; }
         de.innerHTML = '<div class="table-card"><h3>全部记录 (阈值: ' + th + '秒)</h3>' +
             '<div class="table-scroll"><table class="data-table"><thead><tr>' +
-            '<th>严重度</th><th>骑手</th><th>订单号</th><th>所属饭堂</th><th>投餐</th><th>送达</th><th>间隔</th><th>详情</th>' +
+            '<th>严重度</th><th>骑手</th><th>订单号</th><th>投餐</th><th>送达</th><th>间隔</th><th>详情</th>' +
             '</tr></thead><tbody>' +
             sc.map((s, i) => {
-                const area = (s.area || '').replace('区域', '');
                 return '<tr class="clickable" data-idx="' + i + '" data-src="skip_scans">' +
                     '<td><span class="badge ' + badgeCls(s.severity) + '">' + sevLabel(s.severity) + '</span></td>' +
                     '<td>' + esc(s.rider) + '</td>' +
                     '<td>' + esc(s.oid) + '</td>' +
-                    '<td><span class="area-tag ' + areaCls(s.area) + '">' + esc(area || '--') + '</span></td>' +
                     '<td>' + esc(s.place_time) + '</td>' +
                     '<td>' + esc(s.deliver_time) + '</td>' +
                     '<td><strong>' + esc(String(s.gap_seconds)) + '秒</strong></td>' +
