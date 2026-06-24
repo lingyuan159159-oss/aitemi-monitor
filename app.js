@@ -56,7 +56,13 @@ const App = (() => {
         if(_data.updated_at){document.getElementById('last-update').textContent=fmtRel(_data.updated_at)+'前更新';}
     }
     function _setStatus(t,s){document.getElementById('status-badge').className='status-badge '+t;document.getElementById('status-text').textContent=s;}
-    function refreshData(){_loadAll();}
+    function refreshData(){
+        _showToast('正在采集...');
+        fetch('/api/collect').then(r=>r.json()).then(d=>{
+            if(d.status==='ok'){_showToast('采集完成');setTimeout(_loadAll,1000);}
+            else{_showToast('采集失败');_loadAll();}
+        }).catch(()=>{_showToast('API 不可用，刷新页面数据');_loadAll();});
+    }
     function _startRefresh(){_stopRefresh();if(_refreshInterval>0)_refreshTimer=setInterval(_loadAll,_refreshInterval*1000);}
     function _stopRefresh(){if(_refreshTimer){clearInterval(_refreshTimer);_refreshTimer=null;}}
 
