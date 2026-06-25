@@ -56,6 +56,34 @@ export function CompetitorPanel({ data }: Props) {
         <MetricCard icon={Store} label="总店铺数" value={comp.total_stores} color="bg-[#86868b]/10 text-[#86868b]" />
       </div>
 
+      {/* Daily Summary */}
+      <Card>
+        <CardContent className="p-5">
+          <div className="text-[15px] font-semibold text-[#1d1d1f] mb-3">当日总结</div>
+          <div className="space-y-2 text-[13px] text-[#1d1d1f]">
+            <div>今日平台总销量 <strong className="text-[17px]">{comp.total_daily.toLocaleString()}</strong> 单，覆盖 {comp.active_stores} 家活跃店铺</div>
+            {comp.stores.length > 0 && (
+              <div>
+                销量前三：
+                {comp.stores.slice(0, 3).map((s, i) => (
+                  <span key={s.id} className="ml-2">
+                    <span className="text-[#86868b]">{i + 1}.</span> {s.name} <strong>{s.daily}</strong>单
+                  </span>
+                ))}
+              </div>
+            )}
+            {comp.stores.length > 0 && (
+              <div>
+                店均日销 <strong>{Math.round(comp.total_daily / comp.active_stores)}</strong> 单
+                {comp.stores.filter(s => s.daily === 0).length > 0 && (
+                  <span className="text-[#86868b]">，{comp.stores.filter(s => s.daily === 0).length} 家店铺今日零单</span>
+                )}
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
       {/* TOP 15 Bar Chart */}
       <Card>
         <CardHeader className="pb-0">

@@ -18,7 +18,7 @@
     "backlog": 5,
     "rider_stats": 5,
     "skip_scan": 5,
-    "competitor": 1440
+    "competitor": 60
   },
   "exclude_shops": [
     "贝贝店铺测试(不用接单)",
