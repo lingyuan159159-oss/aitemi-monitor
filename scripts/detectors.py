@@ -215,6 +215,7 @@ def detect_anomalies(orders, ops, config, baseline_path, shop_areas_api=None):
                         'dorm': o.get('dorm', ''),
                         'rider': rider,
                         'delivery_seq': str(o.get('delivery_seq', '')),
+                        'scan_time': last_place.strftime('%H:%M:%S'),
                     })
             continue
 
@@ -244,7 +245,7 @@ def detect_anomalies(orders, ops, config, baseline_path, shop_areas_api=None):
                         'dorm': o.get('dorm', ''),
                         'rider': '',
                         'delivery_seq': str(o.get('delivery_seq', '')),
-                        'delivery_seq': str(o.get('delivery_seq', '')),
+                        'scan_time': last_sort.strftime('%H:%M:%S'),
                     })
             continue
 
@@ -269,6 +270,8 @@ def detect_anomalies(orders, ops, config, baseline_path, shop_areas_api=None):
                     'detail': f"下单{mins:.0f}min未处理",
                     'dorm': o.get('dorm', ''),
                     'rider': '',
+                    'delivery_seq': str(o.get('delivery_seq', '')),
+                    'scan_time': o.get('order_time', '')[-8:] if o.get('order_time', '') else '',
                 })
 
     # ④ 压单检测：分拣→投餐间隔过长（已完成订单的历史压单）
@@ -312,6 +315,8 @@ def detect_anomalies(orders, ops, config, baseline_path, shop_areas_api=None):
                 'detail': f"分拣{last_sort.strftime('%H:%M')}→投餐{first_place.strftime('%H:%M')} 停留{gap:.0f}min",
                 'dorm': o.get('dorm', ''),
                 'rider': '',
+                'delivery_seq': str(o.get('delivery_seq', '')),
+                'scan_time': last_sort.strftime('%H:%M:%S'),
             })
 
     # 保存基线

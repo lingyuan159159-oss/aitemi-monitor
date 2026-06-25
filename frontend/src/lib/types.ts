@@ -14,6 +14,7 @@ export interface Anomaly {
   dorm: string;
   rider: string;
   delivery_seq: string;
+  scan_time?: string;
 }
 
 export interface SkipScan {

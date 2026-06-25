@@ -77,6 +77,7 @@ export function AnomalyPanel({ data, formatTime }: Props) {
                     <TableHead>订单号</TableHead>
                     <TableHead>店名</TableHead>
                     <TableHead>宿舍</TableHead>
+                    <TableHead>扫码时间</TableHead>
                     <TableHead>耗时</TableHead>
                     <TableHead>阈值</TableHead>
                     <TableHead>骑手</TableHead>
@@ -95,6 +96,7 @@ export function AnomalyPanel({ data, formatTime }: Props) {
                       <TableCell className="text-[13px]">{a.oid}</TableCell>
                       <TableCell className="font-medium text-[13px]">{a.shop}</TableCell>
                       <TableCell className="text-[13px]">{a.dorm || '--'}</TableCell>
+                      <TableCell className="text-[13px]">{a.scan_time || '--'}</TableCell>
                       <TableCell className="text-[13px]">{a.elapsed_min}分钟</TableCell>
                       <TableCell className="text-[13px]">{a.threshold}分钟</TableCell>
                       <TableCell className="text-[13px]">{a.rider || '--'}</TableCell>
