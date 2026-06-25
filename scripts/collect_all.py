@@ -94,15 +94,53 @@ def mark_run(state, component):
     state['last_run'][component] = time.time()
 
 
-def dedup_anomalies(new_anomalies, seen_keys):
-    """去重：已见过的订单+类型不再提醒。返回 (去重后列表, 更新后的seen_keys)。"""
+def dedup_anomalies(new_anomalies, seen_keys, orders_map=None):
+    """去重：只有订单已完成送达才去重。
+    - 订单仍在配送中 → 每次都显示
+    - 订单已完成送达 → 不再重复提醒
+
+    orders_map: {oid: order_dict} 用于检查订单完成状态
+    """
     result = []
     for a in new_anomalies:
         key = f"{a.get('oid', '')}_{a.get('type', '')}"
-        if key not in seen_keys:
+        oid = a.get('oid', '')
+
+        # 检查订单是否已完成
+        is_complete = False
+        if orders_map and oid in orders_map:
+            o = orders_map[oid]
+            is_complete = o.get('is_complete', False) or o.get('is_aftersale', False)
+
+        if is_complete:
+            # 订单已完成，标记为已处理，后续不再提醒
+            seen_keys[key] = {'completed': True, 'time': time.time()}
+        elif key in seen_keys and seen_keys[key].get('completed'):
+            # 已完成的订单，跳过
+            continue
+        else:
+            # 订单仍在配送中，每次都要显示（不入 seen_keys）
             result.append(a)
-            seen_keys[key] = time.time()
+
     # 清理超过24小时的旧记录
+    cutoff = time.time() - 86400
+    seen_keys = {k: v for k, v in seen_keys.items()
+                 if isinstance(v, dict) and v.get('time', 0) > cutoff}
+    return result, seen_keys
+
+
+def dedup_skip_scans(new_scans, seen_keys):
+    """跳扫码去重：同理，订单完成才去重。"""
+    result = []
+    for s in new_scans:
+        key = f"{s.get('oid', '')}_{s.get('rider', '')}"
+        oid = s.get('oid', '')
+        # 跳扫码数据没有 is_complete，所以跳扫码始终显示
+        # 只按 oid+rider 去重（同一骑手同一单不重复）
+        if key not in seen_keys:
+            result.append(s)
+            seen_keys[key] = time.time()
+
     cutoff = time.time() - 86400
     seen_keys = {k: v for k, v in seen_keys.items() if v > cutoff}
     return result, seen_keys
@@ -175,12 +213,24 @@ def main():
         print("\n=== 骑手统计 ===", file=sys.stderr)
         rider_stats = compute_rider_stats(orders, ops, config, shop_areas_api)
 
-        # 去重
+        # 构建订单映射（用于去重判断）
+        orders_map = {o['oid']: o for o in orders if o.get('oid')}
+
+        # 去重（只有订单完成才去重）
         seen = runtime.get('seen_anomalies', {})
-        deduped, seen = dedup_anomalies(anomalies, seen)
+        deduped, seen = dedup_anomalies(anomalies, seen, orders_map)
         runtime['seen_anomalies'] = seen
         dup_count = len(anomalies) - len(deduped)
-        print(f"  去重: {dup_count} 条已见过，新增 {len(deduped)} 条", file=sys.stderr)
+        print(f"  去重: {dup_count} 条已完成，保留 {len(deduped)} 条活跃异常", file=sys.stderr)
+
+        # 跳扫码去重（同一骑手同一单不重复）
+        skip_seen = runtime.get('seen_skip_scans', {})
+        deduped_skip, skip_seen = dedup_skip_scans(skip_scans, skip_seen)
+        runtime['seen_skip_scans'] = skip_seen
+        skip_dup_count = len(skip_scans) - len(deduped_skip)
+        skip_scans = deduped_skip
+        if skip_dup_count > 0:
+            print(f"  跳扫去重: {skip_dup_count} 条已见过，保留 {len(skip_scans)} 条", file=sys.stderr)
 
         delivering = [o for o in orders if o.get('is_delivering') and not o.get('is_complete') and not o.get('is_aftersale')]
         completed = [o for o in orders if o.get('is_complete')]
