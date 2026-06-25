@@ -27,6 +27,7 @@ const typeColors: Record<string, string> = {
 export function AnomalyPanel({ data, formatTime }: Props) {
   if (!data) return null;
   const anomalies = data.anomalies;
+  const allAnomalies = data.all_anomalies || anomalies; // all_anomalies 包含今日所有异常
 
   const cnt: Record<string, number> = { HIGH: 0, MED: 0, LOW: 0, WARN: 0 };
   anomalies.forEach(a => { cnt[a.severity] = (cnt[a.severity] || 0) + 1; });
@@ -48,7 +49,7 @@ export function AnomalyPanel({ data, formatTime }: Props) {
         {cnt.HIGH > 0 && <Badge className="bg-[#ff3b30]/10 text-[#ff3b30]">严重: {cnt.HIGH}</Badge>}
         {cnt.MED > 0 && <Badge className="bg-[#ff9500]/10 text-[#ff9500]">中等: {cnt.MED}</Badge>}
         {cnt.LOW > 0 && <Badge className="bg-[#ffcc00]/10 text-[#9a6700]">轻微: {cnt.LOW}</Badge>}
-        {cnt.WARN > 0 && <Badge variant="secondary">警告: {cnt.WARN}</Badge>}
+        {cnt.WARN > 0 && <Badge className="bg-[#86868b]/10 text-[#86868b]">警告: {cnt.WARN}</Badge>}
       </div>
 
       {/* Grouped Display */}
@@ -64,6 +65,7 @@ export function AnomalyPanel({ data, formatTime }: Props) {
               </CardTitle>
             </CardHeader>
             <CardContent>
+              <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -98,12 +100,52 @@ export function AnomalyPanel({ data, formatTime }: Props) {
                   ))}
                 </TableBody>
               </Table>
+              </div>
             </CardContent>
           </Card>
         );
       })}
 
-      {anomalies.length === 0 && (
+      {/* Today's History */}
+      {allAnomalies.length > anomalies.length && (
+        <Card>
+          <CardHeader className="pb-0">
+            <CardTitle className="text-[13px] font-medium text-[#1d1d1f]">
+              今日历史（共 {allAnomalies.length} 条，已去重 {allAnomalies.length - anomalies.length} 条）
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>严重度</TableHead>
+                  <TableHead>类型</TableHead>
+                  <TableHead>订单号</TableHead>
+                  <TableHead>店名</TableHead>
+                  <TableHead>耗时</TableHead>
+                  <TableHead>骑手</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {allAnomalies.map((a, i) => (
+                  <TableRow key={i} className={cn(anomalies.find(x => x.oid === a.oid && x.type === a.type) ? '' : 'opacity-50')}>
+                    <TableCell><Badge className={severityColors[a.severity] || severityColors.WARN}>{severityLabels[a.severity] || a.severity}</Badge></TableCell>
+                    <TableCell>{a.type}</TableCell>
+                    <TableCell>{a.oid}</TableCell>
+                    <TableCell className="font-medium text-[13px]">{a.shop}</TableCell>
+                    <TableCell>{a.elapsed_min}分钟</TableCell>
+                    <TableCell>{a.rider || '--'}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {anomalies.length === 0 && allAnomalies.length === 0 && (
         <Card>
           <CardContent className="p-10 text-center">
             <div className="text-[#86868b] text-sm">暂无异常</div>

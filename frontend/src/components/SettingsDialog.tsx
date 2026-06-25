@@ -12,6 +12,8 @@ interface Props {
   refreshInterval: number;
   onIntervalChange: (val: number) => void;
   scanIntervals?: Record<string, number>;
+  scanTimeRange?: { start: string; end: string };
+  onTimeRangeChange?: (range: { start: string; end: string }) => void;
 }
 
 const intervalLabels: Record<string, string> = {
@@ -24,15 +26,21 @@ const intervalLabels: Record<string, string> = {
   competitor: '竞品监控',
 };
 
-export function SettingsDialog({ open, onOpenChange, refreshInterval, onIntervalChange, scanIntervals }: Props) {
+export function SettingsDialog({ open, onOpenChange, refreshInterval, onIntervalChange, scanIntervals, scanTimeRange, onTimeRangeChange }: Props) {
   const [localIntervals, setLocalIntervals] = useState<Record<string, number>>({});
+  const [timeRange, setTimeRange] = useState({ start: '11:00', end: '23:00' });
 
   useEffect(() => {
     if (scanIntervals) setLocalIntervals({ ...scanIntervals });
   }, [scanIntervals]);
 
+  useEffect(() => {
+    if (scanTimeRange) setTimeRange({ ...scanTimeRange });
+  }, [scanTimeRange]);
+
   const handleSave = () => {
     localStorage.setItem('scan_intervals', JSON.stringify(localIntervals));
+    if (onTimeRangeChange) onTimeRangeChange(timeRange);
     onOpenChange(false);
   };
 
@@ -59,6 +67,34 @@ export function SettingsDialog({ open, onOpenChange, refreshInterval, onInterval
                 <SelectItem value="0">关闭</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+
+          <Separator className="bg-black/[0.06]" />
+
+          <div>
+            <Label className="text-xs text-[#86868b] font-medium uppercase tracking-wider">采集时间范围</Label>
+            <div className="flex items-center gap-2 mt-2">
+              <div className="flex-1 space-y-1">
+                <Label className="text-xs text-[#1d1d1f]">开始时间</Label>
+                <Input
+                  type="time"
+                  value={timeRange.start}
+                  className="h-9 text-sm rounded-xl border-black/[0.06] bg-[#f5f5f7]"
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTimeRange(prev => ({ ...prev, start: e.target.value }))}
+                />
+              </div>
+              <span className="text-[#86868b] mt-5">至</span>
+              <div className="flex-1 space-y-1">
+                <Label className="text-xs text-[#1d1d1f]">结束时间</Label>
+                <Input
+                  type="time"
+                  value={timeRange.end}
+                  className="h-9 text-sm rounded-xl border-black/[0.06] bg-[#f5f5f7]"
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTimeRange(prev => ({ ...prev, end: e.target.value }))}
+                />
+              </div>
+            </div>
+            <p className="text-[11px] text-[#86868b] mt-1.5">超出时间范围将自动暂停采集</p>
           </div>
 
           <Separator className="bg-black/[0.06]" />

@@ -83,6 +83,7 @@ export interface MonitorData {
   session_valid: boolean;
   summary: Summary;
   anomalies: Anomaly[];
+  all_anomalies?: Anomaly[];
   skip_scans: SkipScan[];
   skip_scan_riders: SkipScanRider[];
   riders: Rider[];
@@ -92,6 +93,7 @@ export interface MonitorData {
     skip_scan_threshold: number;
     fetch_interval: number;
     scan_intervals?: Record<string, number>;
+    scan_time_range?: { start: string; end: string };
   };
 }
 

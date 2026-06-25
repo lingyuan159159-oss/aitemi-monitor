@@ -25,6 +25,7 @@ export default function App() {
   const { data, history, loading, error, triggerCollect } = useMonitorData(refreshInterval);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [currentTab, setCurrentTab] = useState('overview');
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -35,6 +36,10 @@ export default function App() {
   const handleIntervalChange = (val: number) => {
     setRefreshInterval(val);
     localStorage.setItem('refresh_interval', String(val));
+  };
+
+  const handleTimeRangeChange = (range: { start: string; end: string }) => {
+    localStorage.setItem('scan_time_range', JSON.stringify(range));
   };
 
   const formatTime = (ts: string) => {
@@ -74,7 +79,7 @@ export default function App() {
     <div className="min-h-screen bg-[#f5f5f7]">
       {/* Glassmorphism Navbar */}
       <header className="sticky top-0 z-50 border-b border-black/[0.06] bg-white/70 backdrop-blur-xl backdrop-saturate-150">
-        <div className="max-w-6xl mx-auto flex h-[52px] items-center justify-between px-4">
+        <div className="max-w-6xl mx-auto flex h-[64px] items-center justify-between px-4">
           <div className="flex items-center gap-3">
             <h1 className="text-[17px] font-semibold tracking-tight text-[#1d1d1f]">艾特米监控</h1>
             <Badge
@@ -134,7 +139,7 @@ export default function App() {
 
       {/* Main Content */}
       <main className="max-w-6xl mx-auto px-4 py-4">
-        <Tabs defaultValue="overview" className="space-y-5">
+        <Tabs value={currentTab} onValueChange={setCurrentTab} className="space-y-5">
           <TabsList className="w-full sm:w-auto flex overflow-x-auto no-scrollbar">
             <TabsTrigger value="overview" className="gap-1.5 text-[13px] px-3">
               <LayoutDashboard className="h-3.5 w-3.5" />总览
@@ -157,7 +162,7 @@ export default function App() {
           </TabsList>
 
           <TabsContent value="overview">
-            <OverviewPanel data={data} formatTime={formatTime} />
+            <OverviewPanel data={data} history={history} formatTime={formatTime} onTabChange={setCurrentTab} />
           </TabsContent>
           <TabsContent value="anomalies">
             <AnomalyPanel data={data} formatTime={formatTime} />
@@ -183,6 +188,8 @@ export default function App() {
         refreshInterval={refreshInterval}
         onIntervalChange={handleIntervalChange}
         scanIntervals={data?.config?.scan_intervals}
+        scanTimeRange={data?.config?.scan_time_range}
+        onTimeRangeChange={handleTimeRangeChange}
       />
     </div>
   );

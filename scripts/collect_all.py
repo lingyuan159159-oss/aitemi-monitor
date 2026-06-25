@@ -122,6 +122,22 @@ def main():
         if arg.startswith('--date='):
             date_str = arg.split('=', 1)[1]
 
+    # 检查采集时间范围
+    time_range = config.get('scan_time_range', {'start': '11:00', 'end': '23:00'})
+    if not force and not date_str:
+        current_time = now.strftime('%H:%M')
+        start_time = time_range.get('start', '11:00')
+        end_time = time_range.get('end', '23:00')
+        if start_time <= end_time:
+            # 正常范围，如 11:00 - 23:00
+            in_range = start_time <= current_time <= end_time
+        else:
+            # 跨午夜范围，如 23:00 - 07:00
+            in_range = current_time >= start_time or current_time <= end_time
+        if not in_range:
+            print(f"  当前时间 {current_time} 不在采集范围 {start_time}-{end_time}，跳过", file=sys.stderr)
+            sys.exit(0)
+
     session = get_session_from_env()
     if not session:
         print("  ERROR: 环境变量未设置", file=sys.stderr)
@@ -211,6 +227,7 @@ def main():
         'session_valid': True,
         'summary': summary,
         'anomalies': deduped,
+        'all_anomalies': anomalies if need_fetch else prev.get('all_anomalies', []),
         'skip_scans': skip_scans,
         'skip_scan_riders': skip_riders,
         'riders': rider_stats,

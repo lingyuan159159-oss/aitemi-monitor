@@ -138,5 +138,9 @@
     "麻辣烫·干锅": "商业街",
     "贝贝店铺测试(不用接单)": "商业街"
   },
-  "fetch_interval": 300
+  "fetch_interval": 300,
+  "scan_time_range": {
+    "start": "11:00",
+    "end": "23:00"
+  }
 }
