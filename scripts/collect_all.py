@@ -9,6 +9,7 @@
 - 命令行 --force 强制全部采集
 """
 
+import hashlib
 import json
 import os
 import sys
@@ -22,6 +23,8 @@ sys.path.insert(0, str(SCRIPT_DIR))
 from aitemi_api import validate_session, load_all_ops, load_all_orders, load_shop_area
 from detectors import detect_anomalies, detect_skip_scans, compute_rider_stats
 from competitor import fetch_all_stores, compute_competitor_data
+from notify import process_alerts, send_daily_report, notify_failure, notify_session_expired, flush_pending_summaries
+from ai_report import generate_daily_report
 
 BASE_URL = 'https://admshop.mengshimei.shop'
 DATA_DIR = SCRIPT_DIR.parent / 'data'
@@ -37,6 +40,28 @@ EMPTY_COMPETITOR = {
     'date': '', 'total_daily': 0, 'total_cumul': 0,
     'active_stores': 0, 'total_stores': 0, 'stores': [],
 }
+
+DATA_VERSION = '2.0.0'
+
+
+def normalize_shop_name(name):
+    """统一店铺名：括号转全角、去多余空格。"""
+    if not name:
+        return name
+    name = name.replace('(', '（').replace(')', '）')
+    # 去掉括号前后的多余空格
+    import re
+    name = re.sub(r'\s*（', '（', name)
+    name = re.sub(r'）\s*', '）', name)
+    # 去掉店铺名和括号之间的多余空格
+    name = re.sub(r'\s+', ' ', name).strip()
+    return name
+
+
+def _config_hash(config):
+    """计算 config 的短 hash，用于嵌入 latest.json。"""
+    raw = json.dumps(config, sort_keys=True, ensure_ascii=False)
+    return hashlib.md5(raw.encode()).hexdigest()[:12]
 
 
 def load_config():
@@ -140,7 +165,8 @@ def dedup_skip_scans(new_scans, seen_keys):
 
 def main():
     now = datetime.now()
-    now_str = now.strftime('%Y-%m-%dT%H:%M:%S')
+    now_str = now.strftime('%Y-%m-%dT%H:%M:%S+08:00')
+    collect_start = time.time()
     print(f"=== 艾特米数据采集 {now_str} ===", file=sys.stderr)
 
     config = load_config()
@@ -178,6 +204,7 @@ def main():
     valid, cookie = validate_session(session, BASE_URL)
     if not valid:
         print("  SESSION EXPIRED", file=sys.stderr)
+        notify_session_expired()
         write_json(STATUS_PATH, {'session_valid': False, 'updated_at': now_str, 'error': 'session_expired'})
         sys.exit(1)
     print("  Session valid", file=sys.stderr)
@@ -188,6 +215,7 @@ def main():
 
     # 加载上次的结果（用于未运行的组件保持旧数据）
     prev = load_json(LATEST_PATH, {})
+    prev_status = load_json(STATUS_PATH, {})
 
     # ===== 数据采集 =====
     if need_fetch:
@@ -196,8 +224,12 @@ def main():
         orders = load_all_orders(BASE_URL, cookie, date_str)
         shop_areas_api = load_shop_area(BASE_URL, cookie)
 
+        # 统一店铺名格式
+        for o in orders:
+            o['shop'] = normalize_shop_name(o['shop'])
+
         print("\n=== 异常检测 ===", file=sys.stderr)
-        anomalies = detect_anomalies(orders, ops, config, 'data/baseline.json', shop_areas_api)
+        anomalies = detect_anomalies(orders, ops, config, str(DATA_DIR / 'baseline.json'), shop_areas_api)
 
         print("\n=== 跳扫码检测 ===", file=sys.stderr)
         skip_scans, skip_riders = detect_skip_scans(orders, ops, config)
@@ -269,6 +301,7 @@ def main():
         competitor = prev.get('competitor', EMPTY_COMPETITOR)
 
     # ===== 输出 =====
+    collect_duration = round(time.time() - collect_start, 1)
     result = {
         'updated_at': now_str,
         'session_valid': True,
@@ -279,21 +312,54 @@ def main():
         'skip_scan_riders': skip_riders,
         'riders': rider_stats,
         'competitor': competitor,
-        'config': config,
+        'config_hash': _config_hash(config),
     }
 
     write_json(LATEST_PATH, result)
+
+    # 高危骑手数
+    high_risk_riders = sum(1 for r in skip_riders if r.get('high_risk', False))
+
     write_json(STATUS_PATH, {
-        'session_valid': True, 'updated_at': now_str,
+        'session_valid': True,
+        'updated_at': now_str,
         'orders': summary.get('total_orders', 0),
         'anomalies': summary.get('anomaly_count', 0),
         'skip_scans': summary.get('skip_scan_count', 0),
+        'competitor_stores': competitor.get('total_stores', 0) if competitor else 0,
+        'last_competitor_at': now_str if need_competitor else prev_status.get('last_competitor_at'),
+        'rider_count': len(rider_stats) if need_fetch else prev_status.get('rider_count', 0),
+        'high_risk_riders': high_risk_riders,
+        'collection_duration_sec': collect_duration,
+        'error': None,
+        'version': DATA_VERSION,
     })
     save_runtime(runtime)
 
     # 追加历史
     if need_fetch:
         _append_history(now_str, summary, competitor, anomaly_breakdown)
+
+    # ===== 告警推送 =====
+    if need_fetch and deduped:
+        try:
+            process_alerts(str(DATA_DIR), deduped)
+        except Exception as e:
+            print(f"  [NOTIFY] 告警处理失败: {e}", file=sys.stderr)
+
+    # ===== 每日日报（22:30 自动生成）=====
+    current_hour_min = now.strftime('%H:%M')
+    daily_report_done = runtime.get('daily_report_date') == now.strftime('%Y-%m-%d')
+    if '22:20' <= current_hour_min <= '22:40' and not daily_report_done:
+        print("\n=== 生成每日日报 ===", file=sys.stderr)
+        try:
+            flush_pending_summaries(str(DATA_DIR))
+            ai_text = generate_daily_report(summary, deduped, rider_stats, skip_scans, competitor, [])
+            send_daily_report(str(DATA_DIR), summary, competitor, deduped, ai_text)
+            runtime['daily_report_date'] = now.strftime('%Y-%m-%d')
+            save_runtime(runtime)
+        except Exception as e:
+            print(f"  日报生成失败: {e}", file=sys.stderr)
 
     print(f"\n=== 完成 ===", file=sys.stderr)
     print(f"  订单: {summary.get('total_orders', 0)} | 异常: {summary.get('anomaly_count', 0)} | 跳扫码: {summary.get('skip_scan_count', 0)}", file=sys.stderr)
@@ -319,7 +385,7 @@ def _collect_competitor(config, now_str):
 def _append_history(now_str, summary, competitor, breakdown):
     history = load_json(HISTORY_TRACK_PATH, [])
     entry = {
-        'time': now_str[:16],
+        'time': now_str[:16],  # 保留到分钟，含时区前缀
         'orders': summary.get('total_orders', 0),
         'delivering': summary.get('delivering', 0),
         'anomalies': summary.get('anomaly_count', 0),
@@ -328,6 +394,18 @@ def _append_history(now_str, summary, competitor, breakdown):
     }
     if breakdown:
         entry.update(breakdown)
+
+    # 突变校验：订单数超过上次5倍，标记异常不追加
+    if history:
+        last_orders = history[-1].get('orders', 0)
+        current_orders = entry.get('orders', 0)
+        if last_orders > 0 and current_orders > last_orders * 5:
+            print(f"  ⚠ 历史突变: orders {last_orders}→{current_orders}（{current_orders/last_orders:.1f}x），跳过追加", file=sys.stderr)
+            return
+        if last_orders == 0 and current_orders > 1000:
+            print(f"  ⚠ 历史突变: orders 0→{current_orders}，跳过追加", file=sys.stderr)
+            return
+
     history.append(entry)
     if len(history) > MAX_HISTORY:
         history = history[-MAX_HISTORY:]
@@ -340,9 +418,13 @@ if __name__ == '__main__':
         main()
     except Exception as e:
         print(f"FATAL: {e}", file=sys.stderr)
+        try:
+            notify_failure(str(e))
+        except Exception:
+            pass
         write_json(STATUS_PATH, {
             'session_valid': False,
-            'updated_at': datetime.now().strftime('%Y-%m-%dT%H:%M:%S'),
+            'updated_at': datetime.now().strftime('%Y-%m-%dT%H:%M:%S+08:00'),
             'error': str(e),
         })
         sys.exit(1)

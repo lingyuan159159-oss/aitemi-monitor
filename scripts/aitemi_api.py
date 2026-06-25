@@ -39,10 +39,23 @@ def validate_session(session, base_url):
         return False, cookie
 
 
-def _fetch(url, cookie, timeout=20):
-    """发送带 cookie 的 GET 请求，返回 HTML 文本。"""
-    req = urllib.request.Request(url, headers={'Cookie': cookie})
-    return urllib.request.urlopen(req, timeout=timeout).read().decode('utf-8')
+def _fetch(url, cookie, timeout=20, max_retries=3):
+    """发送带 cookie 的 GET 请求，返回 HTML 文本。自动重试最多 max_retries 次。"""
+    last_err = None
+    for attempt in range(1, max_retries + 1):
+        try:
+            req = urllib.request.Request(url, headers={'Cookie': cookie})
+            resp = urllib.request.urlopen(req, timeout=timeout)
+            # 限制读取大小，防止错误页返回超大内容吃掉内存
+            content = resp.read(5 * 1024 * 1024)  # 最多 5MB
+            return content.decode('utf-8')
+        except Exception as e:
+            last_err = e
+            if attempt < max_retries:
+                import time
+                time.sleep(1 * attempt)  # 递增等待 1s, 2s
+                print(f"  [RETRY {attempt}/{max_retries}] {url[:80]}... err={e}", file=sys.stderr)
+    raise last_err
 
 
 def load_all_ops(base_url, cookie, date_str=None):

@@ -5,16 +5,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import type { MonitorData } from '@/lib/types';
+import { SEVERITY_BADGE_CLASSES, SEVERITY_LABEL_MAP } from '@/lib/constants';
 
 interface Props { data: MonitorData | null; }
-
-const severityColors: Record<string, string> = {
-  HIGH: 'bg-[#ff3b30]/10 text-[#ff3b30]',
-  MED: 'bg-[#ff9500]/10 text-[#ff9500]',
-  LOW: 'bg-[#ffcc00]/10 text-[#9a6700]',
-  WARN: 'bg-[#86868b]/10 text-[#86868b]',
-};
-const severityLabels: Record<string, string> = { HIGH: '严重', MED: '中等', LOW: '轻微', WARN: '警告' };
 
 export function SkipScanPanel({ data }: Props) {
   const [selectedRider, setSelectedRider] = useState<string | null>(null);
@@ -85,7 +78,7 @@ export function SkipScanPanel({ data }: Props) {
                 {scans.map((s, i) => (
                   <TableRow key={i}>
                     <TableCell>
-                      <Badge className={severityColors[s.severity] || 'bg-[#86868b]/10 text-[#86868b]'}>{severityLabels[s.severity] || s.severity}</Badge>
+                      <Badge className={SEVERITY_BADGE_CLASSES[s.severity] || 'bg-[#86868b]/10 text-[#86868b]'}>{SEVERITY_LABEL_MAP[s.severity] || s.severity}</Badge>
                     </TableCell>
                     <TableCell className="font-medium text-[13px] cursor-pointer text-[#0071e3] hover:underline" onClick={() => setSelectedRider(s.rider)}>{s.rider}</TableCell>
                     <TableCell className="text-[13px]">{s.oid}</TableCell>
@@ -130,7 +123,7 @@ export function SkipScanPanel({ data }: Props) {
               <TableBody>
                 {selectedOrders.map((s, i) => (
                   <TableRow key={i}>
-                    <TableCell><Badge className={severityColors[s.severity] || severityColors.LOW}>{severityLabels[s.severity] || s.severity}</Badge></TableCell>
+                    <TableCell><Badge className={SEVERITY_BADGE_CLASSES[s.severity] || SEVERITY_BADGE_CLASSES.LOW}>{SEVERITY_LABEL_MAP[s.severity] || s.severity}</Badge></TableCell>
                     <TableCell>{s.oid}</TableCell>
                     <TableCell>{s.shop}</TableCell>
                     <TableCell>{s.place_time}</TableCell>

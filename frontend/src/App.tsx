@@ -25,7 +25,25 @@ export default function App() {
   const [loginKey, setLoginKey] = useState('');
   const [loginError, setLoginError] = useState('');
 
-  const ACCESS_KEY = 'aitemi2026'; // 访问密钥
+  // NOTE: Hooks 必须在条件 return 之前调用，否则违反 React Hooks 规则
+  const [refreshInterval, setRefreshInterval] = useState(() => {
+    const saved = localStorage.getItem('refresh_interval');
+    return saved ? parseInt(saved, 10) : 300;
+  });
+  const { data, history, loading, error, triggerCollect } = useMonitorData(authenticated ? refreshInterval : 0);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [currentTab, setCurrentTab] = useState('overview');
+  const [thresholds, setThresholds] = useState<Record<string, number>>(() => {
+    try {
+      const saved = localStorage.getItem('thresholds');
+      return saved ? JSON.parse(saved) : { sort_timeout: 20, deliver_timeout: 15, backlog: 30, skip_scan: 60 };
+    } catch {
+      return { sort_timeout: 20, deliver_timeout: 15, backlog: 30, skip_scan: 60 };
+    }
+  });
+
+  const ACCESS_KEY = 'aitemi2026'; // TODO: 移到后端验证
 
   const handleLogin = () => {
     if (loginKey === ACCESS_KEY) {
@@ -67,19 +85,6 @@ export default function App() {
       </div>
     );
   }
-
-  const [refreshInterval, setRefreshInterval] = useState(() => {
-    const saved = localStorage.getItem('refresh_interval');
-    return saved ? parseInt(saved, 10) : 300;
-  });
-  const { data, history, loading, error, triggerCollect } = useMonitorData(refreshInterval);
-  const [settingsOpen, setSettingsOpen] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
-  const [currentTab, setCurrentTab] = useState('overview');
-  const [thresholds, setThresholds] = useState<Record<string, number>>(() => {
-    const saved = localStorage.getItem('thresholds');
-    return saved ? JSON.parse(saved) : { sort_timeout: 20, deliver_timeout: 15, backlog: 30, skip_scan: 60 };
-  });
 
   const handleRefresh = async () => {
     setRefreshing(true);

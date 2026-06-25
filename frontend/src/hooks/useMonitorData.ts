@@ -10,12 +10,13 @@ export function useMonitorData(refreshInterval: number = 300) {
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [warning, setWarning] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     try {
       const [dataRes, configRes] = await Promise.all([
         fetch(DATA_URL + '?t=' + Date.now()),
-        fetch(CONFIG_URL),
+        fetch(CONFIG_URL + '?t=' + Date.now()),
       ]);
 
       if (!dataRes.ok) throw new Error('数据加载失败');
@@ -39,9 +40,12 @@ export function useMonitorData(refreshInterval: number = 300) {
       if (res.ok) {
         const h = await res.json();
         setHistory(Array.isArray(h) ? h : []);
+        setWarning(null);
+      } else {
+        setWarning(`历史数据加载失败 (${res.status})`);
       }
     } catch {
-      // 静默失败
+      setWarning('历史数据加载失败，请检查网络');
     }
   }, []);
 
@@ -60,9 +64,13 @@ export function useMonitorData(refreshInterval: number = 300) {
   }, [fetchData]);
 
   useEffect(() => {
+    if (refreshInterval <= 0) {
+      setLoading(false);
+      return;
+    }
     fetchData();
     fetchHistory();
-  }, [fetchData, fetchHistory]);
+  }, [fetchData, fetchHistory, refreshInterval]);
 
   useEffect(() => {
     if (refreshInterval <= 0) return;
@@ -73,5 +81,5 @@ export function useMonitorData(refreshInterval: number = 300) {
     return () => clearInterval(timer);
   }, [refreshInterval, fetchData, fetchHistory]);
 
-  return { data, history, loading, error, refresh: fetchData, triggerCollect };
+  return { data, history, loading, error, warning, refresh: fetchData, triggerCollect };
 }

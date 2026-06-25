@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
@@ -23,16 +23,15 @@ export function RiderPanel({ data }: Props) {
   }
 
   // 计算每个骑手的问题总数（超时数之和）和快速送达数
-  const ridersWithIssues = data.riders.map(r => {
+  const ridersWithIssues = useMemo(() => data.riders.map(r => {
     const totalOvertime = r.sort.overtime + r.stay.overtime + r.deliver.overtime;
     const totalOrders = r.sort.total + r.stay.total + r.deliver.total;
     const maxRate = Math.max(r.sort.rate, r.stay.rate, r.deliver.rate);
-    // 快速送达：配送平均时间 < 阈值50% 的次数（rate低说明快）
     const fastDeliver = r.deliver.total > 0 && r.deliver.rate < 50
       ? Math.round(r.deliver.total * (1 - r.deliver.rate / 100))
       : 0;
     return { ...r, totalOvertime, totalOrders, maxRate, fastDeliver };
-  }).sort((a, b) => b.totalOvertime - a.totalOvertime);
+  }).sort((a, b) => b.totalOvertime - a.totalOvertime), [data.riders]);
 
   const totalRiders = ridersWithIssues.length;
   const problemRiders = ridersWithIssues.filter(r => r.totalOvertime > 0).length;
@@ -119,7 +118,7 @@ export function RiderPanel({ data }: Props) {
           <div className="space-y-2.5">
             {ridersWithIssues.map(r => (
               <div
-                key={r.name}
+                key={`${r.name}-${r.area}`}
                 className={cn(
                   'flex items-center gap-4 p-3.5 rounded-2xl bg-[#f5f5f7] cursor-pointer hover:bg-[#ebebed] transition-colors',
                   r.totalOvertime > 0 && 'border-l-[3px] border-l-[#ff3b30]',

@@ -85,9 +85,15 @@ def _update_baseline(baselines, key, current):
     # 趋势斜率
     slope = 0.0
     if len(history) >= 4:
-        recent3 = history[-3:]
-        old3 = history[-6:-3] if len(history) >= 6 else history[:3]
-        slope = (sum(recent3) / len(recent3)) - (sum(old3) / len(old3))
+        # 取最近和更早的数据段，避免重叠
+        half = len(history) // 2
+        if half >= 2:
+            old_segment = history[:half]
+            recent_segment = history[half:]
+        else:
+            recent_segment = history[-3:]
+            old_segment = history[:-3] if len(history) > 3 else history[:1]
+        slope = (sum(recent_segment) / len(recent_segment)) - (sum(old_segment) / len(old_segment))
 
     # 写回
     rec['history'] = history
@@ -196,11 +202,17 @@ def detect_anomalies(orders, ops, config, baseline_path, shop_areas_api=None):
                     bl_key = f"{shop}|配送超时"
                     baseline, slope = _update_baseline(baselines, bl_key, mins)
                     sev = _classify_with_baseline(mins, th, baseline, slope)
-                    # 配送超时：找负责配送的骑手
+                    # 配送超时：优先找投餐/送达操作的骑手
                     rider = ''
-                    for op in order_ops:
-                        if op.get('rider'):
+                    for op in reversed(order_ops):
+                        if op.get('rider') and op['type'] in ('投餐', '送达'):
                             rider = op['rider']
+                            break
+                    if not rider:
+                        for op in reversed(order_ops):
+                            if op.get('rider'):
+                                rider = op['rider']
+                                break
                     anomalies.append({
                         'type': '配送超时',
                         'oid': oid,
@@ -215,7 +227,7 @@ def detect_anomalies(orders, ops, config, baseline_path, shop_areas_api=None):
                         'dorm': o.get('dorm', ''),
                         'rider': rider,
                         'delivery_seq': str(o.get('delivery_seq', '')),
-                        'scan_time': last_place.strftime('%H:%M:%S'),
+                        'scan_time': last_place.strftime('%Y-%m-%dT%H:%M:%S+08:00'),
                     })
             continue
 
@@ -245,12 +257,15 @@ def detect_anomalies(orders, ops, config, baseline_path, shop_areas_api=None):
                         'dorm': o.get('dorm', ''),
                         'rider': '',
                         'delivery_seq': str(o.get('delivery_seq', '')),
-                        'scan_time': last_sort.strftime('%H:%M:%S'),
+                        'scan_time': last_sort.strftime('%Y-%m-%dT%H:%M:%S+08:00'),
                     })
             continue
 
         # ③ 既无分拣也无投餐 -> 分拣超时（商家/分拣员没处理）
         if not sort_ok and not place_ok:
+            # 无操作记录可能只是数据缺失，不一定是真超时
+            if not order_ops:
+                continue
             th = _get_threshold(area, '分拣超时', thresholds)
             mins = (now - order_t).total_seconds() / 60
             if mins > th:
@@ -271,7 +286,7 @@ def detect_anomalies(orders, ops, config, baseline_path, shop_areas_api=None):
                     'dorm': o.get('dorm', ''),
                     'rider': '',
                     'delivery_seq': str(o.get('delivery_seq', '')),
-                    'scan_time': o.get('order_time', '')[-8:] if o.get('order_time', '') else '',
+                    'scan_time': o.get('order_time', '').replace(' ', 'T') + '+08:00' if o.get('order_time', '') else '',
                 })
 
     # ④ 压单检测：分拣→投餐间隔过长（已完成订单的历史压单）
@@ -316,7 +331,7 @@ def detect_anomalies(orders, ops, config, baseline_path, shop_areas_api=None):
                 'dorm': o.get('dorm', ''),
                 'rider': '',
                 'delivery_seq': str(o.get('delivery_seq', '')),
-                'scan_time': last_sort.strftime('%H:%M:%S'),
+                'scan_time': last_sort.strftime('%Y-%m-%dT%H:%M:%S+08:00'),
             })
 
     # 保存基线
@@ -362,6 +377,9 @@ def detect_skip_scans(orders, ops, config):
         if not order_ops:
             continue
 
+        # 获取店铺区域
+        order_area = get_area(o['shop'], config_areas, config.get('shop_areas', {}))
+
         rider_ops = {}
         for op in order_ops:
             t = parse_ts(op['time'])
@@ -394,7 +412,7 @@ def detect_skip_scans(orders, ops, config):
                     'type': '跳扫码',
                     'oid': oid,
                     'shop': o['shop'],
-                    'area': '',
+                    'area': order_area,
                     'rider': rider_name,
                     'gap_seconds': round(gap_seconds, 1),
                     'severity': sev,

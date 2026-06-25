@@ -173,18 +173,24 @@ def compute_competitor_data(stores, history_path=None):
     for s in stores:
         sid = str(s.get("id", ""))
         if sid:
-            today_map[sid] = {
-                "name": s.get("title", "?"),
-                "sailed": int(s.get("sailed", 0)),
-                "score": float(s.get("score", 0)),
-                "address": s.get("address", ""),
-            }
+            try:
+                sailed_raw = s.get("sailed", 0)
+                score_raw = s.get("score", 0)
+                today_map[sid] = {
+                    "name": s.get("title", "?"),
+                    "sailed": int(sailed_raw) if str(sailed_raw).strip().isdigit() else 0,
+                    "score": float(score_raw) if score_raw not in (None, '', 'N/A') else 0.0,
+                    "address": s.get("address", ""),
+                }
+            except (ValueError, TypeError):
+                continue
 
     # 加载历史（按小时存储）
     history = {}
     if history_path and os.path.exists(history_path):
         try:
-            history = json.loads(open(history_path).read())
+            with open(history_path, 'r', encoding='utf-8') as f:
+                history = json.load(f)
         except Exception:
             history = {}
 
@@ -228,7 +234,7 @@ def compute_competitor_data(stores, history_path=None):
     history = {k: history[k] for k in keep_keys}
     if history_path:
         os.makedirs(os.path.dirname(history_path), exist_ok=True)
-        with open(history_path, 'w') as f:
+        with open(history_path, 'w', encoding='utf-8') as f:
             json.dump(history, f, ensure_ascii=False)
 
     total_hourly = sum(r["hourly"] for r in results)
@@ -241,19 +247,6 @@ def compute_competitor_data(stores, history_path=None):
         "hour": now.hour,
         "total_daily": total_daily,
         "total_hourly": total_hourly,
-        "total_cumul": total_cumul,
-        "active_stores": active,
-        "total_stores": len(results),
-        "stores": results,
-    }
-
-    total_daily = sum(r["daily"] for r in results)
-    total_cumul = sum(r["total"] for r in results)
-    active = sum(1 for r in results if r["daily"] > 0)
-
-    return {
-        "date": today_str,
-        "total_daily": total_daily,
         "total_cumul": total_cumul,
         "active_stores": active,
         "total_stores": len(results),

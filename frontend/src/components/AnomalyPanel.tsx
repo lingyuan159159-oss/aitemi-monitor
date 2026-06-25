@@ -3,23 +3,12 @@ import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
 import type { MonitorData } from '@/lib/types';
+import { SEVERITY_BADGE_CLASSES, SEVERITY_LABEL_MAP } from '@/lib/constants';
 
 interface Props {
   data: MonitorData | null;
   formatTime: (ts: string) => string;
 }
-
-const severityColors: Record<string, string> = {
-  HIGH: 'bg-[#ff3b30]/10 text-[#ff3b30]',
-  MED: 'bg-[#ff9500]/10 text-[#ff9500]',
-  LOW: 'bg-[#ffcc00]/10 text-[#9a6700]',
-  WARN: 'bg-[#86868b]/10 text-[#86868b]',
-  '严重': 'bg-[#ff3b30]/10 text-[#ff3b30]',
-  '中等': 'bg-[#ff9500]/10 text-[#ff9500]',
-  '轻微': 'bg-[#ffcc00]/10 text-[#9a6700]',
-  '警告': 'bg-[#86868b]/10 text-[#86868b]',
-};
-const severityLabels: Record<string, string> = { HIGH: '严重', MED: '中等', LOW: '轻微', WARN: '警告', '严重': '严重', '中等': '中等', '轻微': '轻微', '警告': '警告' };
 
 const typeColors: Record<string, string> = {
   '分拣超时': 'border-l-[3px] border-l-[#ff3b30]',
@@ -35,7 +24,10 @@ const typeTextColors: Record<string, string> = {
 export function AnomalyPanel({ data, formatTime }: Props) {
   if (!data) return null;
   const anomalies = data.anomalies;
-  const allAnomalies = data.all_anomalies || anomalies; // all_anomalies 包含今日所有异常
+  const allAnomalies = data.all_anomalies || anomalies;
+
+  // Build a Set of active anomaly keys for fast O(1) lookup
+  const activeAnomalyKeys = new Set(anomalies.map(a => `${a.oid}::${a.type}`));
 
   const cnt: Record<string, number> = { HIGH: 0, MED: 0, LOW: 0, WARN: 0 };
   anomalies.forEach(a => { cnt[a.severity] = (cnt[a.severity] || 0) + 1; });
@@ -73,7 +65,7 @@ export function AnomalyPanel({ data, formatTime }: Props) {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="overflow-x-auto">
+              <div className="max-h-[500px] overflow-y-auto overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -93,8 +85,8 @@ export function AnomalyPanel({ data, formatTime }: Props) {
                   {items.map((a, i) => (
                     <TableRow key={i}>
                       <TableCell>
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${severityColors[a.severity] || severityColors.WARN}`}>
-                          {severityLabels[a.severity] || a.severity}
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${SEVERITY_BADGE_CLASSES[a.severity] || SEVERITY_BADGE_CLASSES.WARN}`}>
+                          {SEVERITY_LABEL_MAP[a.severity] || a.severity}
                         </span>
                       </TableCell>
                       <TableCell className="font-medium text-[13px]">{a.delivery_seq || '--'}</TableCell>
@@ -127,7 +119,7 @@ export function AnomalyPanel({ data, formatTime }: Props) {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="overflow-x-auto">
+            <div className="max-h-[500px] overflow-y-auto overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -141,9 +133,9 @@ export function AnomalyPanel({ data, formatTime }: Props) {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {allAnomalies.map((a, i) => (
-                  <TableRow key={i} className={cn(anomalies.find(x => x.oid === a.oid && x.type === a.type) ? '' : 'opacity-50')}>
-                    <TableCell><span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${severityColors[a.severity] || severityColors.WARN}`}>{severityLabels[a.severity] || a.severity}</span></TableCell>
+                {allAnomalies.map((a) => (
+                  <TableRow key={`${a.oid}-${a.type}`} className={activeAnomalyKeys.has(`${a.oid}::${a.type}`) ? '' : 'opacity-50'}>
+                    <TableCell><span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${SEVERITY_BADGE_CLASSES[a.severity] || SEVERITY_BADGE_CLASSES.WARN}`}>{SEVERITY_LABEL_MAP[a.severity] || a.severity}</span></TableCell>
                     <TableCell>{a.type}</TableCell>
                     <TableCell>{a.oid}</TableCell>
                     <TableCell className="font-medium text-[13px]">{a.shop}</TableCell>

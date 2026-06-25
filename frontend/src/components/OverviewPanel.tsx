@@ -1,30 +1,21 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
-import type { MonitorData } from '@/lib/types';
-import { Package, Truck, AlertTriangle, Clock, RotateCcw, CheckCircle2, TrendingUp, TrendingDown, ChevronRight } from 'lucide-react';
+import type { MonitorData, HistoryEntry } from '@/lib/types';
+import { SEVERITY_BADGE_CLASSES, SEVERITY_LABEL_MAP } from '@/lib/constants';
+import { Package, Truck, AlertTriangle, Clock, RotateCcw, CheckCircle2, TrendingUp, TrendingDown, ChevronRight, ArrowRight } from 'lucide-react';
 
 interface Props {
   data: MonitorData | null;
-  history?: any[];
+  history?: HistoryEntry[];
   formatTime: (ts: string) => string;
   onTabChange?: (tab: string) => void;
 }
-
-const severityColors: Record<string, string> = {
-  HIGH: 'bg-[#ff3b30]/10 text-[#ff3b30]',
-  MED: 'bg-[#ff9500]/10 text-[#ff9500]',
-  LOW: 'bg-[#ffcc00]/10 text-[#9a6700]',
-  WARN: 'bg-[#86868b]/10 text-[#86868b]',
-};
-
-const severityLabels: Record<string, string> = {
-  HIGH: '严重', MED: '中等', LOW: '轻微', WARN: '警告',
-};
 
 function MetricCard({ icon: Icon, label, value, color, prev, onClick }: {
   icon: React.ElementType; label: string; value: number; color: string; prev?: number | null; onClick?: () => void;
@@ -57,31 +48,46 @@ export function OverviewPanel({ data, history = [], formatTime: _formatTime, onT
   if (!data) return null;
   const s = data.summary;
 
-  const distData = [
+  const distData = useMemo(() => [
     { name: '分拣', count: data.anomalies.filter(a => a.type === '分拣超时').length, fill: '#ff3b30' },
     { name: '配送', count: data.anomalies.filter(a => a.type === '配送超时').length, fill: '#ffcc00' },
     { name: '压单', count: data.anomalies.filter(a => a.type === '压单').length, fill: '#86868b' },
     { name: '跳扫', count: data.skip_scans.length, fill: '#af52de' },
-  ];
+  ], [data.anomalies, data.skip_scans]);
 
   const typeCnt: Record<string, number> = {};
   data.anomalies.forEach(a => { typeCnt[a.type] = (typeCnt[a.type] || 0) + 1; });
   const skipCnt = data.skip_scans.length;
 
-  const riderFault: Record<string, { count: number; types: Record<string, number> }> = {};
-  data.anomalies.forEach(a => {
-    if (!a.rider) return;
-    if (!riderFault[a.rider]) riderFault[a.rider] = { count: 0, types: {} };
-    riderFault[a.rider].count++;
-    riderFault[a.rider].types[a.type] = (riderFault[a.rider].types[a.type] || 0) + 1;
-  });
-  data.skip_scans.forEach(s => {
-    if (!s.rider) return;
-    if (!riderFault[s.rider]) riderFault[s.rider] = { count: 0, types: {} };
-    riderFault[s.rider].count++;
-    riderFault[s.rider].types['跳扫码'] = (riderFault[s.rider].types['跳扫码'] || 0) + 1;
-  });
-  const faultList = Object.entries(riderFault).sort((a, b) => b[1].count - a[1].count);
+  const { faultList } = useMemo(() => {
+    const rf: Record<string, { count: number; types: Record<string, number> }> = {};
+    data.anomalies.forEach(a => {
+      if (!a.rider) return;
+      if (!rf[a.rider]) rf[a.rider] = { count: 0, types: {} };
+      rf[a.rider].count++;
+      rf[a.rider].types[a.type] = (rf[a.rider].types[a.type] || 0) + 1;
+    });
+    data.skip_scans.forEach(s => {
+      if (!s.rider) return;
+      if (!rf[s.rider]) rf[s.rider] = { count: 0, types: {} };
+      rf[s.rider].count++;
+      rf[s.rider].types['跳扫码'] = (rf[s.rider].types['跳扫码'] || 0) + 1;
+    });
+    const fl = Object.entries(rf).sort((a, b) => b[1].count - a[1].count);
+    return { riderFault: rf, faultList: fl };
+  }, [data.anomalies, data.skip_scans]);
+
+  const trendData = useMemo(() => {
+    const buckets: Record<string, number> = {};
+    history.forEach((h) => {
+      const d = new Date(h.time);
+      const h2 = String(d.getHours()).padStart(2, '0');
+      const m = d.getMinutes() < 30 ? '00' : '30';
+      const key = `${h2}:${m}`;
+      buckets[key] = (buckets[key] || 0) + (h.orders || 0);
+    });
+    return Object.entries(buckets).sort((a, b) => a[0].localeCompare(b[0])).map(([time, orders]) => ({ time, orders }));
+  }, [history]);
 
   const customTooltipStyle = {
     backgroundColor: 'rgba(255, 255, 255, 0.9)',
@@ -191,8 +197,8 @@ export function OverviewPanel({ data, history = [], formatTime: _formatTime, onT
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {data.skip_scans.map((sc, i) => (
-                      <TableRow key={i}>
+                    {data.skip_scans.map((sc) => (
+                      <TableRow key={sc.oid}>
                         <TableCell className="font-medium text-[13px]">{sc.rider}</TableCell>
                         <TableCell className="text-[13px]">{sc.oid}</TableCell>
                         <TableCell className="text-[13px]">{sc.shop}</TableCell>
@@ -224,11 +230,11 @@ export function OverviewPanel({ data, history = [], formatTime: _formatTime, onT
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filtered.map((a, i) => (
-                      <TableRow key={i}>
+                    {filtered.map((a) => (
+                      <TableRow key={`${a.oid}-${a.type}`}>
                         <TableCell>
-                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${severityColors[a.severity] || severityColors.WARN}`}>
-                            {severityLabels[a.severity] || a.severity}
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${SEVERITY_BADGE_CLASSES[a.severity] || SEVERITY_BADGE_CLASSES.WARN}`}>
+                            {SEVERITY_LABEL_MAP[a.severity] || a.severity}
                           </span>
                         </TableCell>
                         <TableCell className="text-[13px]">{a.oid}</TableCell>
@@ -276,17 +282,7 @@ export function OverviewPanel({ data, history = [], formatTime: _formatTime, onT
           </CardHeader>
           <CardContent className="pt-2">
             <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={(() => {
-                const buckets: Record<string, number> = {};
-                history.forEach((h: any) => {
-                  const d = new Date(h.time);
-                  const h2 = String(d.getHours()).padStart(2, '0');
-                  const m = d.getMinutes() < 30 ? '00' : '30';
-                  const key = `${h2}:${m}`;
-                  buckets[key] = (buckets[key] || 0) + (h.orders || 0);
-                });
-                return Object.entries(buckets).sort((a, b) => a[0].localeCompare(b[0])).map(([time, orders]) => ({ time, orders }));
-              })()}>
+              <BarChart data={trendData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.04)" vertical={false} />
                 <XAxis dataKey="time" tick={{ fontSize: 10, fill: '#86868b' }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 10, fill: '#86868b' }} axisLine={false} tickLine={false} />
@@ -318,11 +314,11 @@ export function OverviewPanel({ data, history = [], formatTime: _formatTime, onT
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {data.anomalies.slice(0, 20).map((a, i) => (
-                  <TableRow key={i}>
+                {data.anomalies.slice(0, 20).map((a) => (
+                  <TableRow key={`${a.oid}-${a.type}`}>
                     <TableCell>
-                      <Badge className={severityColors[a.severity] || severityColors.WARN}>
-                        {severityLabels[a.severity] || a.severity}
+                      <Badge className={SEVERITY_BADGE_CLASSES[a.severity] || SEVERITY_BADGE_CLASSES.WARN}>
+                        {SEVERITY_LABEL_MAP[a.severity] || a.severity}
                       </Badge>
                     </TableCell>
                     <TableCell className="font-medium text-[13px]">{a.delivery_seq || '--'}</TableCell>
@@ -335,6 +331,19 @@ export function OverviewPanel({ data, history = [], formatTime: _formatTime, onT
               </TableBody>
             </Table>
             </div>
+            {data.anomalies.length > 20 && (
+              <div className="mt-3 flex justify-center">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="gap-1.5 text-[13px] text-[#0071e3] hover:text-[#0077ed] hover:bg-[#0071e3]/5"
+                  onClick={() => onTabChange?.('anomalies')}
+                >
+                  查看全部 {data.anomalies.length} 条
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}

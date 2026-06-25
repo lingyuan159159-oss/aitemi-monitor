@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
@@ -31,7 +32,8 @@ export function CompetitorPanel({ data }: Props) {
     );
   }
   const comp = data.competitor;
-  const top15 = comp.stores.slice(0, 15);
+  const top15 = useMemo(() => comp.stores.slice(0, 15), [comp.stores]);
+  const sortedByHourly = useMemo(() => [...comp.stores].sort((a, b) => (b.hourly || 0) - (a.hourly || 0)), [comp.stores]);
 
   const customTooltipStyle = {
     backgroundColor: 'rgba(255, 255, 255, 0.9)',
@@ -66,7 +68,7 @@ export function CompetitorPanel({ data }: Props) {
             {comp.stores.length > 0 && (
               <div>
                 小时增量前三：
-                {[...comp.stores].sort((a, b) => (b.hourly || 0) - (a.hourly || 0)).slice(0, 3).map((s, i) => (
+                {sortedByHourly.slice(0, 3).map((s, i) => (
                   <span key={s.id} className="ml-2">
                     <span className="text-[#86868b]">{i + 1}.</span> {s.name} <strong>+{s.hourly || 0}</strong>
                   </span>
@@ -75,7 +77,7 @@ export function CompetitorPanel({ data }: Props) {
             )}
             {comp.stores.length > 0 && (
               <div>
-                店均日销 <strong>{Math.round(comp.total_daily / comp.active_stores)}</strong> 单
+                店均日销 <strong>{comp.active_stores > 0 ? Math.round(comp.total_daily / comp.active_stores) : '--'}</strong> 单
                 {comp.stores.filter(s => s.daily === 0).length > 0 && (
                   <span className="text-[#86868b]">，{comp.stores.filter(s => s.daily === 0).length} 家店铺今日零单</span>
                 )}
@@ -109,6 +111,7 @@ export function CompetitorPanel({ data }: Props) {
           <CardTitle className="text-[13px] font-medium text-[#1d1d1f]">全部排名</CardTitle>
         </CardHeader>
         <CardContent>
+          <div className="max-h-[500px] overflow-y-auto">
           <Table>
             <TableHeader>
               <TableRow>
@@ -133,6 +136,7 @@ export function CompetitorPanel({ data }: Props) {
               ))}
             </TableBody>
           </Table>
+          </div>
         </CardContent>
       </Card>
     </div>

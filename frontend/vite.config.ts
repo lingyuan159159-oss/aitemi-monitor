@@ -10,4 +10,15 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id: string) {
+          if (id.includes('node_modules/recharts')) return 'recharts';
+          if (id.includes('node_modules/react-dom')) return 'react-vendor';
+          if (id.includes('node_modules/react/')) return 'react-vendor';
+        },
+      },
+    },
+  },
 })
