@@ -45,10 +45,10 @@ export function AnomalyPanel({ data, formatTime }: Props) {
 
       {/* Severity Summary */}
       <div className="flex flex-wrap gap-1.5">
-        {cnt.HIGH > 0 && <Badge className="bg-[#ff3b30]/10 text-[#ff3b30]">严重: {cnt.HIGH}</Badge>}
-        {cnt.MED > 0 && <Badge className="bg-[#ff9500]/10 text-[#ff9500]">中等: {cnt.MED}</Badge>}
-        {cnt.LOW > 0 && <Badge className="bg-[#ffcc00]/10 text-[#9a6700]">轻微: {cnt.LOW}</Badge>}
-        {cnt.WARN > 0 && <Badge className="bg-[#86868b]/10 text-[#86868b]">警告: {cnt.WARN}</Badge>}
+        {cnt.HIGH > 0 && <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-[#ff3b30]/10 text-[#ff3b30]">严重: {cnt.HIGH}</span>}
+        {cnt.MED > 0 && <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-[#ff9500]/10 text-[#ff9500]">中等: {cnt.MED}</span>}
+        {cnt.LOW > 0 && <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-[#ffcc00]/10 text-[#9a6700]">轻微: {cnt.LOW}</span>}
+        {cnt.WARN > 0 && <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-[#86868b]/10 text-[#86868b]">警告: {cnt.WARN}</span>}
       </div>
 
       {/* Grouped Display */}
@@ -83,9 +83,9 @@ export function AnomalyPanel({ data, formatTime }: Props) {
                   {items.map((a, i) => (
                     <TableRow key={i}>
                       <TableCell>
-                        <Badge className={severityColors[a.severity] || severityColors.WARN}>
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${severityColors[a.severity] || severityColors.WARN}`}>
                           {severityLabels[a.severity] || a.severity}
-                        </Badge>
+                        </span>
                       </TableCell>
                       <TableCell className="font-medium text-[13px]">{a.delivery_seq || '--'}</TableCell>
                       <TableCell className="text-[13px]">{a.oid}</TableCell>
@@ -132,7 +132,7 @@ export function AnomalyPanel({ data, formatTime }: Props) {
               <TableBody>
                 {allAnomalies.map((a, i) => (
                   <TableRow key={i} className={cn(anomalies.find(x => x.oid === a.oid && x.type === a.type) ? '' : 'opacity-50')}>
-                    <TableCell><Badge className={severityColors[a.severity] || severityColors.WARN}>{severityLabels[a.severity] || a.severity}</Badge></TableCell>
+                    <TableCell><span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${severityColors[a.severity] || severityColors.WARN}`}>{severityLabels[a.severity] || a.severity}</span></TableCell>
                     <TableCell>{a.type}</TableCell>
                     <TableCell>{a.oid}</TableCell>
                     <TableCell className="font-medium text-[13px]">{a.shop}</TableCell>
