@@ -105,7 +105,6 @@ export interface HistoryEntry {
   skip_scans: number;
   competitor_daily: number;
   sort_timeout?: number;
-  stay_timeout?: number;
   deliver_timeout?: number;
   backlog?: number;
 }

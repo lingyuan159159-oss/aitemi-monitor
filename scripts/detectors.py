@@ -202,7 +202,7 @@ def detect_anomalies(orders, ops, config, baseline_path, shop_areas_api=None):
                     bl_key = f"{shop}|配送超时"
                     baseline, slope = _update_baseline(baselines, bl_key, mins)
                     sev = _classify_with_baseline(mins, th, baseline, slope)
-                    # 从所有操作中找骑手（送达未发生，从投餐/分拣操作中找）
+                    # 配送超时：找负责配送的骑手
                     rider = ''
                     for op in order_ops:
                         if op.get('rider'):
@@ -224,41 +224,36 @@ def detect_anomalies(orders, ops, config, baseline_path, shop_areas_api=None):
                     })
             continue
 
-        # ② 分拣已发生但未投餐 -> 投餐超时
+        # ② 分拣已发生但未投餐 -> 压单（没有骑手取餐）
         if sort_ok and not place_ok:
-            th = _get_threshold(area, '投餐超时', thresholds)
             st = [parse_ts(op['time']) for op in order_ops
                   if op['type'] == '分拣' and op['status'] == '完成']
             st = [t for t in st if t]
             if st:
                 last_sort = max(st)
                 mins = (now - last_sort).total_seconds() / 60
-                if mins > th:
-                    bl_key = f"{shop}|投餐超时"
+                if mins > press_threshold:
+                    bl_key = f"{shop}|压单"
                     baseline, slope = _update_baseline(baselines, bl_key, mins)
-                    sev = _classify_with_baseline(mins, th, baseline, slope)
-                    rider = ''
-                    for op in order_ops:
-                        if op['type'] == '投餐' and op.get('rider'):
-                            rider = op['rider']
+                    sev = _classify_with_baseline(mins, press_threshold, baseline, slope, '压单')
                     anomalies.append({
-                        'type': '投餐超时',
+                        'type': '压单',
                         'oid': oid,
                         'shop': shop,
                         'area': area,
                         'elapsed_min': round(mins, 1),
-                        'threshold': th,
+                        'threshold': press_threshold,
                         'severity': sev,
                         'baseline': round(baseline, 1),
                         'slope': round(slope, 1),
-                        'detail': f"分拣{last_sort.strftime('%H:%M')}已{mins:.0f}min未投餐",
+                        'detail': f"分拣{last_sort.strftime('%H:%M')}已{mins:.0f}min无骑手取餐",
                         'dorm': o.get('dorm', ''),
-                        'rider': rider,
+                        'rider': '',
                         'delivery_seq': str(o.get('delivery_seq', '')),
                     })
             continue
 
-        # ③ 既无分拣也无投餐 -> 分拣超时
+        # ③ 既无分拣也无投餐 -> 分拣超时（商家/分拣员没处理）
         if not sort_ok and not place_ok:
             th = _get_threshold(area, '分拣超时', thresholds)
             mins = (now - order_t).total_seconds() / 60
@@ -281,7 +276,7 @@ def detect_anomalies(orders, ops, config, baseline_path, shop_areas_api=None):
                     'rider': '',
                 })
 
-    # ④ 压单检测：分拣→投餐间隔过长
+    # ④ 压单检测：分拣→投餐间隔过长（已完成订单的历史压单）
     for o in orders:
         if o.get('is_aftersale'):
             continue
@@ -309,10 +304,6 @@ def detect_anomalies(orders, ops, config, baseline_path, shop_areas_api=None):
             bl_key = f"{o['shop']}|压单"
             baseline, slope = _update_baseline(baselines, bl_key, gap)
             sev = _classify_with_baseline(gap, press_threshold, baseline, slope, '压单')
-            rider = ''
-            for op in order_ops:
-                if op['type'] == '投餐' and op.get('rider'):
-                    rider = op['rider']
             anomalies.append({
                 'type': '压单',
                 'oid': oid,
@@ -325,7 +316,7 @@ def detect_anomalies(orders, ops, config, baseline_path, shop_areas_api=None):
                 'slope': round(slope, 1),
                 'detail': f"分拣{last_sort.strftime('%H:%M')}→投餐{first_place.strftime('%H:%M')} 停留{gap:.0f}min",
                 'dorm': o.get('dorm', ''),
-                'rider': rider,
+                'rider': '',
             })
 
     # 保存基线

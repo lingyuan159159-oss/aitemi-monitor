@@ -59,7 +59,6 @@ export function OverviewPanel({ data, history = [], formatTime: _formatTime, onT
 
   const distData = [
     { name: '分拣', count: data.anomalies.filter(a => a.type === '分拣超时').length, fill: '#ff3b30' },
-    { name: '投餐', count: data.anomalies.filter(a => a.type === '投餐超时').length, fill: '#ff9500' },
     { name: '配送', count: data.anomalies.filter(a => a.type === '配送超时').length, fill: '#ffcc00' },
     { name: '压单', count: data.anomalies.filter(a => a.type === '压单').length, fill: '#86868b' },
     { name: '跳扫', count: data.skip_scans.length, fill: '#af52de' },
@@ -130,12 +129,6 @@ export function OverviewPanel({ data, history = [], formatTime: _formatTime, onT
               {typeCnt['分拣超时'] ? (
                 <div className="flex items-center justify-between text-[#ff3b30] cursor-pointer hover:bg-[#ff3b30]/5 rounded-lg px-2 py-1 -mx-2" onClick={(e) => { e.stopPropagation(); setAnomalyModalType('分拣超时'); }}>
                   <span>分拣超时 <strong className="text-[17px]">{typeCnt['分拣超时']}</strong> 单</span>
-                  <ChevronRight className="h-4 w-4 opacity-40" />
-                </div>
-              ) : null}
-              {typeCnt['投餐超时'] ? (
-                <div className="flex items-center justify-between text-[#ff9500] cursor-pointer hover:bg-[#ff9500]/5 rounded-lg px-2 py-1 -mx-2" onClick={(e) => { e.stopPropagation(); setAnomalyModalType('投餐超时'); }}>
-                  <span>投餐超时 <strong className="text-[17px]">{typeCnt['投餐超时']}</strong> 单</span>
                   <ChevronRight className="h-4 w-4 opacity-40" />
                 </div>
               ) : null}

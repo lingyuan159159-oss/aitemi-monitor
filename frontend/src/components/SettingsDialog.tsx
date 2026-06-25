@@ -18,7 +18,6 @@ interface Props {
 
 const intervalLabels: Record<string, string> = {
   sort_timeout: '分拣超时',
-  stay_timeout: '投餐超时',
   deliver_timeout: '配送超时',
   backlog: '压单',
   rider_stats: '骑手统计',

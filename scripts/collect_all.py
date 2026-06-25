@@ -240,7 +240,7 @@ def main():
         # 记录原始异常数（用于历史趋势）
         anomaly_breakdown = {}
         for a in anomalies:
-            key = {'分拣超时': 'sort_timeout', '投餐超时': 'stay_timeout', '配送超时': 'deliver_timeout', '压单': 'backlog'}.get(a.get('type', ''), '')
+            key = {'分拣超时': 'sort_timeout', '配送超时': 'deliver_timeout', '压单': 'backlog'}.get(a.get('type', ''), '')
             if key:
                 anomaly_breakdown[key] = anomaly_breakdown.get(key, 0) + 1
 

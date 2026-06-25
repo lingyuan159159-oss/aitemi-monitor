@@ -19,7 +19,6 @@ const severityLabels: Record<string, string> = { HIGH: '严重', MED: '中等', 
 
 const typeColors: Record<string, string> = {
   '分拣超时': 'border-l-[3px] border-l-[#ff3b30]',
-  '投餐超时': 'border-l-[3px] border-l-[#ff9500]',
   '配送超时': 'border-l-[3px] border-l-[#ffcc00]',
   '压单': 'border-l-[3px] border-l-[#86868b]',
 };
@@ -32,7 +31,7 @@ export function AnomalyPanel({ data, formatTime }: Props) {
   const cnt: Record<string, number> = { HIGH: 0, MED: 0, LOW: 0, WARN: 0 };
   anomalies.forEach(a => { cnt[a.severity] = (cnt[a.severity] || 0) + 1; });
 
-  const types = ['分拣超时', '投餐超时', '配送超时', '压单'];
+  const types = ['分拣超时', '配送超时', '压单'];
 
   return (
     <div className="space-y-4">
