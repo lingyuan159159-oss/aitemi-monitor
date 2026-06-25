@@ -7,9 +7,9 @@ interface Props { history: HistoryEntry[]; }
 export function HistoryPanel({ history }: Props) {
   if (!history || history.length < 2) {
     return (
-      <Card>
+      <Card className="dark:bg-[#1c1c1e]">
         <CardContent className="p-10 text-center">
-          <div className="text-[#86868b] text-sm">暂无历史数据，等待采集...</div>
+          <div className="text-[#86868b] dark:text-[#98989d] text-sm">暂无历史数据，等待采集...</div>
         </CardContent>
       </Card>
     );
@@ -23,17 +23,22 @@ export function HistoryPanel({ history }: Props) {
     skip_scans: h.skip_scans,
   }));
 
+  const isDark = document.documentElement.classList.contains('dark');
   const customTooltipStyle = {
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    backgroundColor: isDark ? 'rgba(28, 28, 30, 0.92)' : 'rgba(255, 255, 255, 0.9)',
     backdropFilter: 'blur(8px)',
     border: 'none',
     borderRadius: '12px',
-    boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
-    padding: '8px 12px',
-    fontSize: '12px',
+    boxShadow: isDark ? '0 2px 12px rgba(0,0,0,0.4)' : '0 2px 12px rgba(0,0,0,0.08)',
+    padding: '6px 10px',
+    fontSize: '11px',
+    color: isDark ? '#ffffff' : '#1d1d1f',
   };
 
-  const legendStyle = { fontSize: '11px', color: '#86868b' };
+  const legendStyle = { fontSize: '10px', color: isDark ? '#98989d' : '#86868b' };
+
+  // Auto-interval for X axis labels
+  const xInterval = chartData.length > 12 ? Math.floor(chartData.length / 6) : 'preserveStartEnd';
 
   // 生成总结文字
   const latest = chartData[chartData.length - 1];
@@ -57,61 +62,61 @@ export function HistoryPanel({ history }: Props) {
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card>
-          <CardHeader className="pb-0">
-            <CardTitle className="text-[13px] font-medium text-[#1d1d1f]">订单量 (24小时)</CardTitle>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
+        <Card className="dark:bg-[#1c1c1e]">
+          <CardHeader className="pb-0 px-3 sm:px-6 pt-3 sm:pt-6">
+            <CardTitle className="text-[12px] sm:text-[13px] font-medium text-[#1d1d1f] dark:text-white">订单量 (24小时)</CardTitle>
           </CardHeader>
-          <CardContent className="pt-2">
-            <ResponsiveContainer width="100%" height={220}>
-              <LineChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.04)" vertical={false} />
-                <XAxis dataKey="time" tick={{ fontSize: 10, fill: '#86868b' }} interval="preserveStartEnd" axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 10, fill: '#86868b' }} axisLine={false} tickLine={false} />
+          <CardContent className="pt-1 sm:pt-2 px-1 sm:px-6">
+            <ResponsiveContainer width="100%" height={200}>
+              <LineChart data={chartData} margin={{ top: 4, right: 8, left: -12, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke={isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)'} vertical={false} />
+                <XAxis dataKey="time" tick={{ fontSize: 10, fill: isDark ? '#98989d' : '#86868b' }} interval={xInterval} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 10, fill: isDark ? '#98989d' : '#86868b' }} axisLine={false} tickLine={false} width={30} />
                 <Tooltip contentStyle={customTooltipStyle} />
                 <Legend wrapperStyle={legendStyle} />
                 <Line type="monotone" dataKey="orders" stroke="#0071e3" strokeWidth={2} dot={false} name="总订单" />
                 <Line type="monotone" dataKey="delivering" stroke="#34c759" strokeWidth={2} dot={false} name="配送中" />
               </LineChart>
             </ResponsiveContainer>
-            <p className="text-[12px] text-[#86868b] mt-2 px-1 leading-relaxed">{orderSummary}</p>
+            <p className="text-[11px] sm:text-[12px] text-[#86868b] dark:text-[#98989d] mt-2 px-1 leading-relaxed">{orderSummary}</p>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="pb-0">
-            <CardTitle className="text-[13px] font-medium text-[#1d1d1f]">异常数 (24小时)</CardTitle>
+        <Card className="dark:bg-[#1c1c1e]">
+          <CardHeader className="pb-0 px-3 sm:px-6 pt-3 sm:pt-6">
+            <CardTitle className="text-[12px] sm:text-[13px] font-medium text-[#1d1d1f] dark:text-white">异常数 (24小时)</CardTitle>
           </CardHeader>
-          <CardContent className="pt-2">
-            <ResponsiveContainer width="100%" height={220}>
-              <LineChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.04)" vertical={false} />
-                <XAxis dataKey="time" tick={{ fontSize: 10, fill: '#86868b' }} interval="preserveStartEnd" axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 10, fill: '#86868b' }} axisLine={false} tickLine={false} />
+          <CardContent className="pt-1 sm:pt-2 px-1 sm:px-6">
+            <ResponsiveContainer width="100%" height={200}>
+              <LineChart data={chartData} margin={{ top: 4, right: 8, left: -12, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke={isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)'} vertical={false} />
+                <XAxis dataKey="time" tick={{ fontSize: 10, fill: isDark ? '#98989d' : '#86868b' }} interval={xInterval} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 10, fill: isDark ? '#98989d' : '#86868b' }} axisLine={false} tickLine={false} width={30} />
                 <Tooltip contentStyle={customTooltipStyle} />
                 <Legend wrapperStyle={legendStyle} />
                 <Line type="monotone" dataKey="anomalies" stroke="#ff3b30" strokeWidth={2} dot={false} name="异常" />
               </LineChart>
             </ResponsiveContainer>
-            <p className="text-[12px] text-[#86868b] mt-2 px-1 leading-relaxed">{anomalySummary}</p>
+            <p className="text-[11px] sm:text-[12px] text-[#86868b] dark:text-[#98989d] mt-2 px-1 leading-relaxed">{anomalySummary}</p>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="pb-0">
-            <CardTitle className="text-[13px] font-medium text-[#1d1d1f]">跳扫码 (24小时)</CardTitle>
+        <Card className="dark:bg-[#1c1c1e] md:col-span-2">
+          <CardHeader className="pb-0 px-3 sm:px-6 pt-3 sm:pt-6">
+            <CardTitle className="text-[12px] sm:text-[13px] font-medium text-[#1d1d1f] dark:text-white">跳扫码 (24小时)</CardTitle>
           </CardHeader>
-          <CardContent className="pt-2">
-            <ResponsiveContainer width="100%" height={220}>
-              <LineChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.04)" vertical={false} />
-                <XAxis dataKey="time" tick={{ fontSize: 10, fill: '#86868b' }} interval="preserveStartEnd" axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 10, fill: '#86868b' }} axisLine={false} tickLine={false} />
+          <CardContent className="pt-1 sm:pt-2 px-1 sm:px-6">
+            <ResponsiveContainer width="100%" height={200}>
+              <LineChart data={chartData} margin={{ top: 4, right: 8, left: -12, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke={isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)'} vertical={false} />
+                <XAxis dataKey="time" tick={{ fontSize: 10, fill: isDark ? '#98989d' : '#86868b' }} interval={xInterval} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 10, fill: isDark ? '#98989d' : '#86868b' }} axisLine={false} tickLine={false} width={30} />
                 <Tooltip contentStyle={customTooltipStyle} />
                 <Line type="monotone" dataKey="skip_scans" stroke="#af52de" strokeWidth={2} dot={false} name="跳扫码" />
               </LineChart>
             </ResponsiveContainer>
-            <p className="text-[12px] text-[#86868b] mt-2 px-1 leading-relaxed">{skipScanSummary}</p>
+            <p className="text-[11px] sm:text-[12px] text-[#86868b] dark:text-[#98989d] mt-2 px-1 leading-relaxed">{skipScanSummary}</p>
           </CardContent>
         </Card>
       </div>

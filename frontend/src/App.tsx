@@ -104,27 +104,30 @@ export default function App() {
   // Login page
   if (!authenticated) {
     return (
-      <div className="min-h-screen bg-[#f5f5f7] dark:bg-[#000] flex items-center justify-center p-4">
-        <div className="bg-white dark:bg-[#1c1c1e] rounded-2xl shadow-sm p-8 w-full max-w-sm text-center">
-          <div className="w-16 h-16 rounded-2xl bg-[#0071e3]/10 flex items-center justify-center mx-auto mb-4">
-            <svg width="32" height="32" viewBox="0 0 48 48" fill="none">
-              <rect x="8" y="20" width="32" height="22" rx="4" stroke="#0071e3" stroke-width="2.5"/>
-              <path d="M16 20V14a8 8 0 0116 0v6" stroke="#0071e3" stroke-width="2.5" stroke-linecap="round"/>
+      <div className="min-h-[100dvh] bg-[#f5f5f7] dark:bg-[#000] flex items-center justify-center p-4">
+        <div className="bg-white dark:bg-[#1c1c1e] rounded-2xl shadow-sm p-6 sm:p-8 w-full max-w-sm text-center">
+          <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-[#0071e3]/10 flex items-center justify-center mx-auto mb-4">
+            <svg width="28" height="28" viewBox="0 0 48 48" fill="none">
+              <rect x="8" y="20" width="32" height="22" rx="4" stroke="#0071e3" strokeWidth="2.5"/>
+              <path d="M16 20V14a8 8 0 0116 0v6" stroke="#0071e3" strokeWidth="2.5" strokeLinecap="round"/>
               <circle cx="24" cy="32" r="3" fill="#0071e3"/>
             </svg>
           </div>
-          <h1 className="text-xl font-semibold text-[#1d1d1f] mb-1">艾特米监控平台</h1>
-          <p className="text-sm text-[#86868b] mb-6">请输入访问密钥</p>
+          <h1 className="text-lg sm:text-xl font-semibold text-[#1d1d1f] dark:text-white mb-1">艾特米监控平台</h1>
+          <p className="text-sm text-[#86868b] dark:text-[#98989d] mb-5 sm:mb-6">请输入访问密钥</p>
           <input
             type="password"
             value={loginKey}
             onChange={(e) => { setLoginKey(e.target.value); setLoginError(''); }}
             onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
             placeholder="访问密钥"
-            className="w-full px-4 py-3 rounded-xl border border-[#e5e5ea] text-base outline-none focus:border-[#0071e3] transition-colors mb-3"
+            className="w-full px-4 py-3.5 rounded-xl border border-[#e5e5ea] dark:border-[#38383a] bg-white dark:bg-[#2c2c2e] text-base outline-none focus:border-[#0071e3] transition-colors mb-3 min-h-[48px]"
+            autoComplete="off"
+            autoCapitalize="off"
+            spellCheck={false}
           />
           {loginError && <p className="text-[#ff3b30] text-sm mb-3">{loginError}</p>}
-          <button onClick={handleLogin} className="w-full py-3 rounded-xl bg-[#0071e3] text-white font-medium text-base hover:bg-[#0077ed] transition-colors">
+          <button onClick={handleLogin} className="w-full py-3.5 rounded-xl bg-[#0071e3] text-white font-medium text-base active:bg-[#0056b3] transition-colors min-h-[48px]">
             进入
           </button>
         </div>
@@ -169,11 +172,11 @@ export default function App() {
 
   if (loading && !data) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen gap-3">
+      <div className="flex flex-col items-center justify-center min-h-[100dvh] gap-3">
         <div className="w-12 h-12 rounded-2xl bg-[#0071e3] flex items-center justify-center">
           <Loader2 className="h-6 w-6 animate-spin text-white" />
         </div>
-        <span className="text-sm text-[#86868b]">正在加载...</span>
+        <span className="text-sm text-[#86868b] dark:text-[#98989d]">正在加载...</span>
       </div>
     );
   }
@@ -183,10 +186,10 @@ export default function App() {
   return (
     <div className="min-h-screen bg-[#f5f5f7] dark:bg-[#000]">
       {/* Glassmorphism Navbar */}
-      <header className="sticky top-0 z-50 border-b border-black/[0.06] bg-white/70 dark:bg-[#1c1c1e]/70 backdrop-blur-xl backdrop-saturate-150">
+      <header className="sticky top-0 z-50 border-b border-black/[0.06] dark:border-white/[0.06] bg-white/70 dark:bg-[#1c1c1e]/70 backdrop-blur-xl backdrop-saturate-150">
         <div className="max-w-6xl mx-auto flex h-[64px] items-center justify-between px-4">
           <div className="flex items-center gap-3">
-            <h1 className="text-[17px] font-semibold tracking-tight text-[#1d1d1f]">艾特米监控</h1>
+            <h1 className="text-[17px] font-semibold tracking-tight text-[#1d1d1f] dark:text-white">艾特米监控</h1>
             <Badge
               variant={sessionOk ? 'default' : 'destructive'}
               className={cn(
@@ -200,23 +203,23 @@ export default function App() {
               {sessionOk ? '在线' : 'Session 过期'}
             </Badge>
           </div>
-          <div className="flex items-center gap-1.5 text-[13px] text-[#86868b]">
+          <div className="flex items-center gap-1.5 text-[13px] text-[#86868b] dark:text-[#98989d]">
             <span className="hidden sm:inline">{relativeTime(data?.updated_at || '')}更新</span>
             <Button
               variant="ghost"
               size="icon"
               onClick={handleRefresh}
               disabled={refreshing}
-              className="text-[#86868b] hover:text-[#1d1d1f] hover:bg-black/[0.04]"
+              className="text-[#86868b] dark:text-[#98989d] hover:text-[#1d1d1f] dark:hover:text-white hover:bg-black/[0.04] dark:hover:bg-white/[0.05]"
             >
               <RefreshCw className={cn('h-[18px] w-[18px]', refreshing && 'animate-spin')} />
             </Button>
-            <span className="w-px h-4 bg-black/[0.08] mx-0.5" />
+            <span className="w-px h-4 bg-black/[0.08] dark:bg-white/[0.08] mx-0.5" />
             <Button
               variant="ghost"
               size="icon"
               onClick={toggleDarkMode}
-              className="text-[#86868b] hover:text-[#1d1d1f] hover:bg-black/[0.04]"
+              className="text-[#86868b] dark:text-[#98989d] hover:text-[#1d1d1f] dark:hover:text-white hover:bg-black/[0.04] dark:hover:bg-white/[0.05]"
               title={darkMode === 'dark' ? '暗色' : darkMode === 'light' ? '亮色' : '跟随系统'}
             >
               {darkMode === 'dark' ? <Moon className="h-[18px] w-[18px]" /> : <Sun className="h-[18px] w-[18px]" />}
@@ -228,7 +231,7 @@ export default function App() {
       {/* Error Banner */}
       {error && (
         <div className="max-w-6xl mx-auto px-4 pt-3">
-          <Alert variant="destructive" className="rounded-2xl border-none bg-[#ff3b30]/8 text-[#ff3b30]">
+          <Alert variant="destructive" className="rounded-2xl border-none bg-[#ff3b30]/8 dark:bg-[#ff453a]/12 text-[#ff3b30] dark:text-[#ff453a]">
             <AlertTriangle className="h-4 w-4" />
             <AlertDescription className="text-[13px]">{error}</AlertDescription>
           </Alert>
@@ -237,7 +240,7 @@ export default function App() {
 
       {!sessionOk && (
         <div className="max-w-6xl mx-auto px-4 pt-3">
-          <Alert variant="destructive" className="rounded-2xl border-none bg-[#ff3b30]/8 text-[#ff3b30]">
+          <Alert variant="destructive" className="rounded-2xl border-none bg-[#ff3b30]/8 dark:bg-[#ff453a]/12 text-[#ff3b30] dark:text-[#ff453a]">
             <AlertTriangle className="h-4 w-4" />
             <AlertDescription className="text-[13px]">Session 已过期，请更新 Cookie</AlertDescription>
           </Alert>
@@ -245,12 +248,12 @@ export default function App() {
       )}
 
       {/* Main Content */}
-      <main className="max-w-6xl mx-auto px-4 py-4 pb-24">
+      <main className="max-w-6xl mx-auto px-3 sm:px-4 py-3 sm:py-4 pb-[calc(6rem+env(safe-area-inset-bottom,0px))]">
         {currentTab !== 'overview' && currentTab !== 'more' && (
           <Button
             variant="ghost"
             size="sm"
-            className="gap-1.5 text-[13px] text-[#86868b] hover:text-[#1d1d1f] hover:bg-black/[0.04] -ml-1 mb-1"
+            className="gap-1.5 text-[13px] text-[#86868b] dark:text-[#98989d] hover:text-[#1d1d1f] dark:hover:text-white hover:bg-black/[0.04] dark:hover:bg-white/[0.05] -ml-1 mb-1"
             onClick={() => setCurrentTab('overview')}
           >
             返回总览
@@ -279,13 +282,13 @@ export default function App() {
         {/* More Page */}
         {currentTab === 'more' && (
           <div className="space-y-3">
-            <h2 className="text-[17px] font-semibold text-[#1d1d1f]">更多</h2>
-            <div className="bg-white rounded-2xl overflow-hidden shadow-sm">
+            <h2 className="text-[17px] font-semibold text-[#1d1d1f] dark:text-white">更多</h2>
+            <div className="bg-white dark:bg-[#1c1c1e] rounded-2xl overflow-hidden shadow-sm">
               {[
                 { icon: BarChart3, label: '竞品监控', tab: 'competitor', color: 'text-[#0071e3]' },
                 { icon: TrendingUp, label: '历史曲线', tab: 'history', color: 'text-[#34c759]' },
                 { icon: FileText, label: 'AI 日报', action: 'aireport', color: 'text-[#af52de]' },
-                { icon: Settings, label: '设置', action: 'settings', color: 'text-[#86868b]' },
+                { icon: Settings, label: '设置', action: 'settings', color: 'text-[#86868b] dark:text-[#98989d]' },
                 { icon: Activity, label: '系统状态', tab: 'overview', color: 'text-[#ff9500]' },
               ].map((item, i) => (
                 <button
@@ -300,13 +303,13 @@ export default function App() {
                     }
                   }}
                   className={cn(
-                    'w-full flex items-center gap-3 px-4 py-3.5 text-left hover:bg-black/[0.03] transition-colors',
-                    i < 3 && 'border-b border-[#f2f2f7]'
+                    'w-full flex items-center gap-3 px-4 py-3 sm:py-3.5 text-left hover:bg-black/[0.03] dark:hover:bg-white/[0.05] active:bg-black/[0.06] dark:active:bg-white/[0.08] transition-colors min-h-[48px]',
+                    i < 3 && 'border-b border-[#f2f2f7] dark:border-[#38383a]'
                   )}
                 >
                   <item.icon className={cn('h-5 w-5', item.color)} />
-                  <span className="text-[15px] text-[#1d1d1f] flex-1">{item.label}</span>
-                  <ChevronRight className="h-4 w-4 text-[#c7c7cc]" />
+                  <span className="text-[15px] text-[#1d1d1f] dark:text-white flex-1">{item.label}</span>
+                  <ChevronRight className="h-4 w-4 text-[#c7c7cc] dark:text-[#636366]" />
                 </button>
               ))}
             </div>
@@ -315,25 +318,25 @@ export default function App() {
       </main>
 
       {/* Bottom Navigation Bar */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-black/[0.06] bg-white/70 dark:bg-[#1c1c1e]/70 backdrop-blur-xl backdrop-saturate-150 safe-area-bottom">
-        <div className="max-w-6xl mx-auto flex h-[60px]">
+      <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-black/[0.06] dark:border-white/[0.06] bg-white/80 dark:bg-[#1c1c1e]/80 backdrop-blur-xl backdrop-saturate-150 safe-area-bottom">
+        <div className="max-w-6xl mx-auto flex h-[56px] sm:h-[60px]">
           {[
-            { id: 'overview', label: '总览', icon: LayoutDashboard, emoji: '🏠' },
-            { id: 'anomalies', label: '异常', icon: AlertTriangle, emoji: '⚠️', badge: data?.summary?.anomaly_count },
-            { id: 'riders', label: '骑手', icon: Users, emoji: '👤' },
-            { id: 'skipscan', label: '跳扫', icon: Camera, emoji: '📷', badge: data?.summary?.skip_scan_count, badgeColor: 'bg-[#ff9500]' },
-            { id: 'more', label: '更多', icon: MoreHorizontal, emoji: '⋯' },
+            { id: 'overview', label: '总览', icon: LayoutDashboard },
+            { id: 'anomalies', label: '异常', icon: AlertTriangle, badge: data?.summary?.anomaly_count },
+            { id: 'riders', label: '骑手', icon: Users },
+            { id: 'skipscan', label: '跳扫', icon: Camera, badge: data?.summary?.skip_scan_count, badgeColor: 'bg-[#ff9500]' },
+            { id: 'more', label: '更多', icon: MoreHorizontal },
           ].map((tab) => (
             <button
               key={tab.id}
               onClick={() => setCurrentTab(tab.id)}
-              className="flex-1 flex flex-col items-center justify-center gap-0.5 relative tap-highlight-transparent"
+              className="flex-1 flex flex-col items-center justify-center gap-0.5 relative tap-highlight-transparent active:bg-black/[0.04] dark:active:bg-white/[0.06] transition-colors min-h-[56px]"
             >
               <div className="relative">
                 <tab.icon
                   className={cn(
                     'h-[22px] w-[22px] transition-colors',
-                    currentTab === tab.id ? 'text-[#0071e3]' : 'text-[#86868b]'
+                    currentTab === tab.id ? 'text-[#0071e3] dark:text-[#0a84ff]' : 'text-[#86868b] dark:text-[#98989d]'
                   )}
                 />
                 {tab.badge != null && tab.badge > 0 && (
@@ -347,7 +350,7 @@ export default function App() {
               </div>
               <span className={cn(
                 'text-[11px] transition-colors',
-                currentTab === tab.id ? 'text-[#0071e3] font-medium' : 'text-[#86868b]'
+                currentTab === tab.id ? 'text-[#0071e3] dark:text-[#0a84ff] font-medium' : 'text-[#86868b] dark:text-[#98989d]'
               )}>
                 {tab.label}
               </span>
@@ -370,19 +373,19 @@ export default function App() {
 
       {/* Alert Dialog - Session / Health Score */}
       <Dialog open={alertOpen} onOpenChange={setAlertOpen}>
-        <DialogContent className="max-w-sm rounded-2xl bg-white/95 backdrop-blur-xl">
+        <DialogContent className="max-w-sm rounded-2xl bg-white/95 dark:bg-[#1c1c1e] backdrop-blur-xl">
           <DialogHeader>
-            <DialogTitle className={cn('text-[17px] font-semibold', alertInfo.level === 'danger' ? 'text-[#ff3b30]' : 'text-[#ff9500]')}>
+            <DialogTitle className={cn('text-[17px] font-semibold', alertInfo.level === 'danger' ? 'text-[#ff3b30] dark:text-[#ff453a]' : 'text-[#ff9500] dark:text-[#ff9f0a]')}>
               {alertInfo.title}
             </DialogTitle>
           </DialogHeader>
-          <p className="text-[14px] text-[#1d1d1f] leading-relaxed">{alertInfo.message}</p>
-          <div className="flex gap-2 mt-2">
-            <Button variant="outline" onClick={() => setAlertOpen(false)} className="flex-1 rounded-xl">
+          <p className="text-[14px] text-[#1d1d1f] dark:text-white leading-relaxed">{alertInfo.message}</p>
+          <div className="flex gap-2 mt-3">
+            <Button variant="outline" onClick={() => setAlertOpen(false)} className="flex-1 rounded-xl min-h-[44px]">
               知道了
             </Button>
             {!data?.session_valid && (
-              <Button onClick={() => { setAlertOpen(false); }} className="flex-1 rounded-xl bg-[#ff3b30] hover:bg-[#ff3b30]/90 text-white">
+              <Button onClick={() => { setAlertOpen(false); }} className="flex-1 rounded-xl bg-[#ff3b30] hover:bg-[#ff3b30]/90 active:bg-[#ff3b30]/80 text-white min-h-[44px]">
                 去更新
               </Button>
             )}
@@ -392,17 +395,17 @@ export default function App() {
 
       {/* AI Report Dialog */}
       <Dialog open={aiReportOpen} onOpenChange={setAiReportOpen}>
-        <DialogContent className="max-w-md rounded-2xl bg-white/95 backdrop-blur-xl max-h-[80vh] flex flex-col">
+        <DialogContent className="max-w-md rounded-2xl bg-white/95 dark:bg-[#1c1c1e] backdrop-blur-xl max-h-[80vh] flex flex-col">
           <DialogHeader>
-            <DialogTitle className="text-[17px] font-semibold text-[#1d1d1f]">📊 AI 日报</DialogTitle>
+            <DialogTitle className="text-[17px] font-semibold text-[#1d1d1f] dark:text-white">📊 AI 日报</DialogTitle>
           </DialogHeader>
           <div className="overflow-y-auto flex-1 min-0">
             {data?.ai_report ? (
-              <div className="text-[14px] text-[#1d1d1f] whitespace-pre-wrap leading-relaxed">{data.ai_report}</div>
+              <div className="text-[14px] text-[#1d1d1f] dark:text-white whitespace-pre-wrap leading-relaxed">{data.ai_report}</div>
             ) : (
               <div className="text-center py-8">
-                <div className="text-[#86868b] text-sm">今日日报尚未生成</div>
-                <div className="text-[#c7c7cc] text-xs mt-1">每天 22:30 自动生成</div>
+                <div className="text-[#86868b] dark:text-[#98989d] text-sm">今日日报尚未生成</div>
+                <div className="text-[#c7c7cc] dark:text-[#636366] text-xs mt-1">每天 22:30 自动生成</div>
               </div>
             )}
           </div>

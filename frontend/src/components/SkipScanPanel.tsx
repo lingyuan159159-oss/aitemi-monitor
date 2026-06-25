@@ -33,9 +33,9 @@ export function SkipScanPanel({ data }: Props) {
 
   return (
     <div className="space-y-4">
-      <Card>
+      <Card className="dark:bg-[#1c1c1e]">
         <CardContent className="px-4 py-3">
-          <p className="text-[13px] text-[#86868b]">投餐到送达间隔 &lt; {threshold} 秒视为疑似跳扫码</p>
+          <p className="text-[13px] text-[#86868b] dark:text-[#98989d]">投餐到送达间隔 &lt; {threshold} 秒视为疑似跳扫码</p>
         </CardContent>
       </Card>
 
@@ -43,11 +43,11 @@ export function SkipScanPanel({ data }: Props) {
       {computedRiders.length > 0 && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {computedRiders.map(r => (
-            <Card key={r.name} className={cn('cursor-pointer hover:shadow-md transition-shadow', r.high_risk && 'border-l-[3px] border-l-[#ff3b30]')} onClick={() => setSelectedRider(r.name)}>
+            <Card key={r.name} className={cn('cursor-pointer hover:shadow-md transition-shadow dark:bg-[#1c1c1e]', r.high_risk && 'border-l-[3px] border-l-[#ff3b30]')} onClick={() => setSelectedRider(r.name)}>
               <CardContent className="p-4">
-                <div className="font-semibold text-[13px] text-[#1d1d1f]">{r.name}</div>
-                <div className={cn('text-[26px] font-semibold tracking-tight', r.high_risk ? 'text-[#ff3b30]' : 'text-[#1d1d1f]')}>{r.count}</div>
-                <div className="text-xs text-[#86868b]">{r.high_risk ? '高风险' : '次疑似'}</div>
+                <div className="font-semibold text-[13px] text-[#1d1d1f] dark:text-white">{r.name}</div>
+                <div className={cn('text-[26px] font-semibold tracking-tight', r.high_risk ? 'text-[#ff3b30] dark:text-[#ff453a]' : 'text-[#1d1d1f] dark:text-white')}>{r.count}</div>
+                <div className="text-xs text-[#86868b] dark:text-[#98989d]">{r.high_risk ? '高风险' : '次疑似'}</div>
               </CardContent>
             </Card>
           ))}
@@ -56,12 +56,25 @@ export function SkipScanPanel({ data }: Props) {
 
       {/* Detail Table */}
       {scans.length > 0 ? (
-        <Card>
+        <Card className="dark:bg-[#1c1c1e]">
           <CardHeader className="pb-0">
-            <CardTitle className="text-[13px] font-medium text-[#1d1d1f]">全部记录（共 {scans.length} 单，阈值: {threshold}秒）</CardTitle>
+            <CardTitle className="text-[13px] font-medium text-[#1d1d1f] dark:text-white">全部记录（共 {scans.length} 单，阈值: {threshold}秒）</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="overflow-x-auto">
+            {/* Mobile: card list */}
+            <div className="sm:hidden space-y-2">
+              {scans.map((s, i) => (
+                <div key={i} className="p-3 bg-[#f5f5f7] dark:bg-[#2c2c2e] rounded-xl active:bg-[#ebebed] dark:active:bg-[#3a3a3c] transition-colors min-h-[56px]">
+                  <div className="flex items-center justify-between mb-1">
+                    <button className="font-medium text-[14px] text-[#0071e3] dark:text-[#0a84ff] active:underline" onClick={() => setSelectedRider(s.rider)}>{s.rider}</button>
+                    <span className="text-[14px] font-semibold text-[#ff9500]">{s.gap_seconds}秒</span>
+                  </div>
+                  <div className="text-[12px] text-[#86868b] dark:text-[#98989d]">{s.shop} · {s.place_time} → {s.deliver_time}</div>
+                </div>
+              ))}
+            </div>
+            {/* Desktop: table */}
+            <div className="hidden sm:block overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -78,9 +91,9 @@ export function SkipScanPanel({ data }: Props) {
                 {scans.map((s, i) => (
                   <TableRow key={i}>
                     <TableCell>
-                      <Badge className={SEVERITY_BADGE_CLASSES[s.severity] || 'bg-[#86868b]/10 text-[#86868b]'}>{SEVERITY_LABEL_MAP[s.severity] || s.severity}</Badge>
+                      <Badge className={SEVERITY_BADGE_CLASSES[s.severity] || 'bg-[#86868b]/10 dark:bg-[#98989d]/15 text-[#86868b] dark:text-[#98989d]'}>{SEVERITY_LABEL_MAP[s.severity] || s.severity}</Badge>
                     </TableCell>
-                    <TableCell className="font-medium text-[13px] cursor-pointer text-[#0071e3] hover:underline" onClick={() => setSelectedRider(s.rider)}>{s.rider}</TableCell>
+                    <TableCell className="font-medium text-[13px] cursor-pointer text-[#0071e3] dark:text-[#0a84ff] hover:underline" onClick={() => setSelectedRider(s.rider)}>{s.rider}</TableCell>
                     <TableCell className="text-[13px]">{s.oid}</TableCell>
                     <TableCell className="text-[13px]">{s.shop}</TableCell>
                     <TableCell className="text-[13px]">{s.place_time}</TableCell>
@@ -94,16 +107,16 @@ export function SkipScanPanel({ data }: Props) {
           </CardContent>
         </Card>
       ) : (
-        <Card>
+        <Card className="dark:bg-[#1c1c1e]">
           <CardContent className="p-10 text-center">
-            <div className="text-[#86868b] text-sm">暂无跳扫码记录</div>
+            <div className="text-[#86868b] dark:text-[#98989d] text-sm">暂无跳扫码记录</div>
           </CardContent>
         </Card>
       )}
 
       {/* Rider Detail Dialog */}
       <Dialog open={!!selectedRider} onOpenChange={() => setSelectedRider(null)}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl dark:bg-[#1c1c1e]">
           <DialogHeader>
             <DialogTitle>{selectedRider} - 跳扫码记录（{selectedOrders.length}单）</DialogTitle>
           </DialogHeader>
@@ -135,7 +148,7 @@ export function SkipScanPanel({ data }: Props) {
             </Table>
             </div>
           ) : (
-            <div className="text-center text-[#86868b] py-8">暂无记录</div>
+            <div className="text-center text-[#86868b] dark:text-[#98989d] py-8">暂无记录</div>
           )}
         </DialogContent>
       </Dialog>
