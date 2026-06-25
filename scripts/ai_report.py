@@ -110,13 +110,26 @@ def generate_daily_report(summary, anomalies, rider_stats, skip_scans, competito
             prompt += f"- {name}: {count}次\n"
 
     if competitor and competitor.get('total_daily', 0) > 0:
-        prompt += f"\n【竞品】今日总销量{competitor['total_daily']}，活跃{competitor['active_stores']}/{competitor['total_stores']}家\n"
+        prompt += f"\n【竞品（一技生活圈）】\n"
+        prompt += f"- 今日总销量: {competitor['total_daily']}，小时增量: {competitor.get('total_hourly', 0)}\n"
+        prompt += f"- 活跃店铺: {competitor['active_stores']}/{competitor['total_stores']}家\n"
+        # Top 5 店铺
+        stores = sorted(competitor.get('stores', []), key=lambda s: s.get('daily', 0), reverse=True)[:5]
+        if stores:
+            prompt += "- TOP5店铺: "
+            prompt += ", ".join(f"{s['name']}({s['daily']}单)" for s in stores)
+            prompt += "\n"
+        # 零单店铺
+        zero_stores = [s for s in competitor.get('stores', []) if s.get('daily', 0) == 0]
+        if zero_stores:
+            prompt += f"- 零单店铺: {len(zero_stores)}家\n"
 
     prompt += """
 请分析：
 1. 今日运营状况总结（一句话）
 2. 最突出的问题和原因
-3. 2-3条具体可操作的改进建议
+3. 竞品分析：哪些店铺在涨/跌，我们的竞争优势在哪
+4. 2-3条具体可操作的改进建议
 """
 
     return _call_ai(prompt)

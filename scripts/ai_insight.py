@@ -62,5 +62,37 @@ def generate_insights(current, previous, history):
     if not anomalies and prev_anomaly > 0:
         insights.append({"type": "good", "text": "当前零异常，一切正常"})
 
-    # 限制最多 5 条
+    # 7. 竞品洞察
+    curr_comp = current.get('competitor', {})
+    prev_comp = previous.get('competitor', {})
+    if curr_comp.get('total_stores', 0) > 0 and prev_comp.get('total_stores', 0) > 0:
+        # 总量变化
+        curr_daily = curr_comp.get('total_daily', 0)
+        prev_daily = prev_comp.get('total_daily', 0)
+        if prev_daily > 0 and curr_daily > 0:
+            change_pct = (curr_daily - prev_daily) / prev_daily * 100
+            if change_pct > 30:
+                insights.append({"type": "info", "text": f"竞品总销量涨 {change_pct:.0f}%（{prev_daily}→{curr_daily}）"})
+            elif change_pct < -30:
+                insights.append({"type": "info", "text": f"竞品总销量跌 {abs(change_pct):.0f}%（{prev_daily}→{curr_daily}）"})
+
+        # 活跃店铺变化
+        curr_active = curr_comp.get('active_stores', 0)
+        prev_active = prev_comp.get('active_stores', 0)
+        if prev_active > 0 and curr_active < prev_active - 3:
+            insights.append({"type": "info", "text": f"竞品活跃店铺减少：{prev_active}→{curr_active}家"})
+
+        # 单店暴涨/暴跌
+        curr_stores = {s['id']: s for s in curr_comp.get('stores', [])}
+        prev_stores = {s['id']: s for s in prev_comp.get('stores', [])}
+        for sid, cs in curr_stores.items():
+            ps = prev_stores.get(sid)
+            if ps and ps.get('hourly', 0) > 5:
+                chg = (cs.get('hourly', 0) - ps['hourly']) / ps['hourly'] * 100
+                if chg > 100:
+                    insights.append({"type": "info", "text": f"竞品 {cs['name']} 小时增量翻倍（{ps['hourly']}→{cs['hourly']}）"})
+                elif chg < -60:
+                    insights.append({"type": "info", "text": f"竞品 {cs['name']} 小时增量骤降（{ps['hourly']}→{cs['hourly']}）"})
+
+    # 限制最多 5 条（竞品洞察优先级低，不挤占异常洞察）
     return insights[:5]
