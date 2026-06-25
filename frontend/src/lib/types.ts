@@ -82,6 +82,11 @@ export interface Summary {
   skip_scan_count: number;
 }
 
+export interface Insight {
+  type: 'warning' | 'info' | 'good';
+  text: string;
+}
+
 export interface MonitorData {
   updated_at: string;
   session_valid: boolean;
@@ -92,6 +97,10 @@ export interface MonitorData {
   skip_scan_riders: SkipScanRider[];
   riders: Rider[];
   competitor: Competitor;
+  collection_duration_sec?: number;
+  health_score?: number;
+  insights?: Insight[];
+  ai_report?: string;
   config: {
     thresholds: Record<string, { sort: number; stay: number; deliver: number }>;
     skip_scan_threshold: number;

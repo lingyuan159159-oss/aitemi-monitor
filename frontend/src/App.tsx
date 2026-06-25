@@ -1,12 +1,13 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useMonitorData } from '@/hooks/useMonitorData';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
-  LayoutDashboard, AlertTriangle, Users, Clock, BarChart3,
-  TrendingUp, RefreshCw, Settings, Loader2, ArrowLeft
+  LayoutDashboard, AlertTriangle, Users, Camera,
+  MoreHorizontal, TrendingUp, BarChart3, Settings,
+  Loader2, RefreshCw, ChevronRight, Activity, FileText
 } from 'lucide-react';
 import { OverviewPanel } from '@/components/OverviewPanel';
 import { AnomalyPanel } from '@/components/AnomalyPanel';
@@ -42,6 +43,30 @@ export default function App() {
       return { sort_timeout: 20, deliver_timeout: 15, backlog: 30, skip_scan: 60 };
     }
   });
+
+  // 告警弹窗
+  const [alertOpen, setAlertOpen] = useState(false);
+  const [alertInfo, setAlertInfo] = useState<{ title: string; message: string; level: 'danger' | 'warning' }>({ title: '', message: '', level: 'warning' });
+  const [aiReportOpen, setAiReportOpen] = useState(false);
+
+  // 检测异常状态，自动弹窗
+  useEffect(() => {
+    if (!data || !authenticated) return;
+    const sessionOk = data.session_valid ?? false;
+    const score = data.health_score ?? 100;
+    const criticalAnomalies = data.anomalies?.filter(a => a.severity === '严重').length ?? 0;
+
+    if (!sessionOk) {
+      setAlertInfo({ title: '🚨 Session 过期', message: '艾特米后台 Session 已失效，数据停止采集。请重新登录后台更新 Cookie。', level: 'danger' });
+      setAlertOpen(true);
+    } else if (score < 40) {
+      setAlertInfo({ title: '🚨 健康评分极低', message: `当前评分 ${score} 分，有 ${criticalAnomalies} 条严重异常，需要立即处理！`, level: 'danger' });
+      setAlertOpen(true);
+    } else if (score < 60) {
+      setAlertInfo({ title: '⚠️ 健康评分偏低', message: `当前评分 ${score} 分，有 ${data.summary?.anomaly_count ?? 0} 条异常，请关注。`, level: 'warning' });
+      setAlertOpen(true);
+    }
+  }, [data?.session_valid, data?.health_score, data?.anomalies?.length, authenticated]);
 
   const ACCESS_KEY = 'aitemi2026'; // TODO: 移到后端验证
 
@@ -165,14 +190,6 @@ export default function App() {
             >
               <RefreshCw className={cn('h-[18px] w-[18px]', refreshing && 'animate-spin')} />
             </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setSettingsOpen(true)}
-              className="text-[#86868b] hover:text-[#1d1d1f] hover:bg-black/[0.04]"
-            >
-              <Settings className="h-[18px] w-[18px]" />
-            </Button>
           </div>
         </div>
       </header>
@@ -197,61 +214,116 @@ export default function App() {
       )}
 
       {/* Main Content */}
-      <main className="max-w-6xl mx-auto px-4 py-4">
-        <Tabs value={currentTab} onValueChange={setCurrentTab} className="space-y-5">
-          <TabsList className="w-full sm:w-auto flex overflow-x-auto no-scrollbar">
-            <TabsTrigger value="overview" className="gap-1.5 text-[14px] sm:text-[13px] px-4 sm:px-3 min-h-[44px] flex-shrink-0">
-              <LayoutDashboard className="h-3.5 w-3.5" />总览
-            </TabsTrigger>
-            <TabsTrigger value="anomalies" className="gap-1.5 text-[14px] sm:text-[13px] px-4 sm:px-3 min-h-[44px] flex-shrink-0">
-              <AlertTriangle className="h-3.5 w-3.5" />异常
-            </TabsTrigger>
-            <TabsTrigger value="riders" className="gap-1.5 text-[14px] sm:text-[13px] px-4 sm:px-3 min-h-[44px] flex-shrink-0">
-              <Users className="h-3.5 w-3.5" />骑手
-            </TabsTrigger>
-            <TabsTrigger value="skipscan" className="gap-1.5 text-[14px] sm:text-[13px] px-4 sm:px-3 min-h-[44px] flex-shrink-0">
-              <Clock className="h-3.5 w-3.5" />跳扫
-            </TabsTrigger>
-            <TabsTrigger value="competitor" className="gap-1.5 text-[14px] sm:text-[13px] px-4 sm:px-3 min-h-[44px] flex-shrink-0">
-              <BarChart3 className="h-3.5 w-3.5" />竞品
-            </TabsTrigger>
-            <TabsTrigger value="history" className="gap-1.5 text-[14px] sm:text-[13px] px-4 sm:px-3 min-h-[44px] flex-shrink-0">
-              <TrendingUp className="h-3.5 w-3.5" />历史
-            </TabsTrigger>
-          </TabsList>
+      <main className="max-w-6xl mx-auto px-4 py-4 pb-24">
+        {currentTab !== 'overview' && currentTab !== 'more' && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="gap-1.5 text-[13px] text-[#86868b] hover:text-[#1d1d1f] hover:bg-black/[0.04] -ml-1 mb-1"
+            onClick={() => setCurrentTab('overview')}
+          >
+            返回总览
+          </Button>
+        )}
 
-          {currentTab !== 'overview' && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="gap-1.5 text-[13px] text-[#86868b] hover:text-[#1d1d1f] hover:bg-black/[0.04] -ml-1 mb-1"
-              onClick={() => setCurrentTab('overview')}
-            >
-              <ArrowLeft className="h-3.5 w-3.5" />
-              返回总览
-            </Button>
-          )}
+        {currentTab === 'overview' && (
+          <OverviewPanel data={data} history={history} formatTime={formatTime} onTabChange={setCurrentTab} />
+        )}
+        {currentTab === 'anomalies' && (
+          <AnomalyPanel data={data} formatTime={formatTime} />
+        )}
+        {currentTab === 'riders' && (
+          <RiderPanel data={data} />
+        )}
+        {currentTab === 'skipscan' && (
+          <SkipScanPanel data={data} />
+        )}
+        {currentTab === 'competitor' && (
+          <CompetitorPanel data={data} />
+        )}
+        {currentTab === 'history' && (
+          <HistoryPanel history={history} />
+        )}
 
-          <TabsContent value="overview">
-            <OverviewPanel data={data} history={history} formatTime={formatTime} onTabChange={setCurrentTab} />
-          </TabsContent>
-          <TabsContent value="anomalies">
-            <AnomalyPanel data={data} formatTime={formatTime} />
-          </TabsContent>
-          <TabsContent value="riders">
-            <RiderPanel data={data} />
-          </TabsContent>
-          <TabsContent value="skipscan">
-            <SkipScanPanel data={data} />
-          </TabsContent>
-          <TabsContent value="competitor">
-            <CompetitorPanel data={data} />
-          </TabsContent>
-          <TabsContent value="history">
-            <HistoryPanel history={history} />
-          </TabsContent>
-        </Tabs>
+        {/* More Page */}
+        {currentTab === 'more' && (
+          <div className="space-y-3">
+            <h2 className="text-[17px] font-semibold text-[#1d1d1f]">更多</h2>
+            <div className="bg-white rounded-2xl overflow-hidden shadow-sm">
+              {[
+                { icon: BarChart3, label: '竞品监控', tab: 'competitor', color: 'text-[#0071e3]' },
+                { icon: TrendingUp, label: '历史曲线', tab: 'history', color: 'text-[#34c759]' },
+                { icon: FileText, label: 'AI 日报', action: 'aireport', color: 'text-[#af52de]' },
+                { icon: Settings, label: '设置', action: 'settings', color: 'text-[#86868b]' },
+                { icon: Activity, label: '系统状态', tab: 'overview', color: 'text-[#ff9500]' },
+              ].map((item, i) => (
+                <button
+                  key={item.label}
+                  onClick={() => {
+                    if (item.action === 'settings') {
+                      setSettingsOpen(true);
+                    } else if (item.action === 'aireport') {
+                      setAiReportOpen(true);
+                    } else {
+                      setCurrentTab(item.tab!);
+                    }
+                  }}
+                  className={cn(
+                    'w-full flex items-center gap-3 px-4 py-3.5 text-left hover:bg-black/[0.03] transition-colors',
+                    i < 3 && 'border-b border-[#f2f2f7]'
+                  )}
+                >
+                  <item.icon className={cn('h-5 w-5', item.color)} />
+                  <span className="text-[15px] text-[#1d1d1f] flex-1">{item.label}</span>
+                  <ChevronRight className="h-4 w-4 text-[#c7c7cc]" />
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </main>
+
+      {/* Bottom Navigation Bar */}
+      <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-black/[0.06] bg-white/70 backdrop-blur-xl backdrop-saturate-150 safe-area-bottom">
+        <div className="max-w-6xl mx-auto flex h-[60px]">
+          {[
+            { id: 'overview', label: '总览', icon: LayoutDashboard, emoji: '🏠' },
+            { id: 'anomalies', label: '异常', icon: AlertTriangle, emoji: '⚠️', badge: data?.summary?.anomaly_count },
+            { id: 'riders', label: '骑手', icon: Users, emoji: '👤' },
+            { id: 'skipscan', label: '跳扫', icon: Camera, emoji: '📷', badge: data?.summary?.skip_scan_count, badgeColor: 'bg-[#ff9500]' },
+            { id: 'more', label: '更多', icon: MoreHorizontal, emoji: '⋯' },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setCurrentTab(tab.id)}
+              className="flex-1 flex flex-col items-center justify-center gap-0.5 relative tap-highlight-transparent"
+            >
+              <div className="relative">
+                <tab.icon
+                  className={cn(
+                    'h-[22px] w-[22px] transition-colors',
+                    currentTab === tab.id ? 'text-[#0071e3]' : 'text-[#86868b]'
+                  )}
+                />
+                {tab.badge != null && tab.badge > 0 && (
+                  <span className={cn(
+                    'absolute -top-1.5 -right-2 min-w-[16px] h-[16px] flex items-center justify-center rounded-full text-white text-[10px] font-medium px-1',
+                    tab.badgeColor || 'bg-[#ff3b30]'
+                  )}>
+                    {tab.badge > 99 ? '99+' : tab.badge}
+                  </span>
+                )}
+              </div>
+              <span className={cn(
+                'text-[11px] transition-colors',
+                currentTab === tab.id ? 'text-[#0071e3] font-medium' : 'text-[#86868b]'
+              )}>
+                {tab.label}
+              </span>
+            </button>
+          ))}
+        </div>
+      </nav>
 
       <SettingsDialog
         open={settingsOpen}
@@ -264,6 +336,47 @@ export default function App() {
         thresholds={thresholds}
         onThresholdsChange={setThresholds}
       />
+
+      {/* Alert Dialog - Session / Health Score */}
+      <Dialog open={alertOpen} onOpenChange={setAlertOpen}>
+        <DialogContent className="max-w-sm rounded-2xl bg-white/95 backdrop-blur-xl">
+          <DialogHeader>
+            <DialogTitle className={cn('text-[17px] font-semibold', alertInfo.level === 'danger' ? 'text-[#ff3b30]' : 'text-[#ff9500]')}>
+              {alertInfo.title}
+            </DialogTitle>
+          </DialogHeader>
+          <p className="text-[14px] text-[#1d1d1f] leading-relaxed">{alertInfo.message}</p>
+          <div className="flex gap-2 mt-2">
+            <Button variant="outline" onClick={() => setAlertOpen(false)} className="flex-1 rounded-xl">
+              知道了
+            </Button>
+            {!data?.session_valid && (
+              <Button onClick={() => { setAlertOpen(false); }} className="flex-1 rounded-xl bg-[#ff3b30] hover:bg-[#ff3b30]/90 text-white">
+                去更新
+              </Button>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* AI Report Dialog */}
+      <Dialog open={aiReportOpen} onOpenChange={setAiReportOpen}>
+        <DialogContent className="max-w-md rounded-2xl bg-white/95 backdrop-blur-xl max-h-[80vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="text-[17px] font-semibold text-[#1d1d1f]">📊 AI 日报</DialogTitle>
+          </DialogHeader>
+          <div className="overflow-y-auto flex-1 min-0">
+            {data?.ai_report ? (
+              <div className="text-[14px] text-[#1d1d1f] whitespace-pre-wrap leading-relaxed">{data.ai_report}</div>
+            ) : (
+              <div className="text-center py-8">
+                <div className="text-[#86868b] text-sm">今日日报尚未生成</div>
+                <div className="text-[#c7c7cc] text-xs mt-1">每天 22:30 自动生成</div>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

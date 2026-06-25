@@ -194,3 +194,12 @@
     --color-sidebar-ring: #0a84ff;
   }
 }
+
+/* Bottom nav safe area for devices with home indicator */
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.tap-highlight-transparent {
+  -webkit-tap-highlight-color: transparent;
+}

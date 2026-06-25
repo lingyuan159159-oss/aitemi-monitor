@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
-import type { MonitorData, HistoryEntry } from '@/lib/types';
+import type { MonitorData, HistoryEntry, Anomaly } from '@/lib/types';
 import { SEVERITY_BADGE_CLASSES, SEVERITY_LABEL_MAP } from '@/lib/constants';
 import { Package, Truck, AlertTriangle, Clock, RotateCcw, CheckCircle2, TrendingUp, TrendingDown, ChevronRight, ArrowRight } from 'lucide-react';
 
@@ -45,6 +45,7 @@ function MetricCard({ icon: Icon, label, value, color, prev, onClick }: {
 
 export function OverviewPanel({ data, history = [], formatTime: _formatTime, onTabChange }: Props) {
   const [anomalyModalType, setAnomalyModalType] = useState<string | null>(null);
+  const [selectedAnomaly, setSelectedAnomaly] = useState<Anomaly | null>(null);
   if (!data) return null;
   const s = data.summary;
 
@@ -101,6 +102,64 @@ export function OverviewPanel({ data, history = [], formatTime: _formatTime, onT
 
   return (
     <div className="space-y-5">
+      {/* Health Score */}
+      {data.health_score != null && (
+        <Card className={cn(
+          'border-2',
+          data.health_score >= 80 ? 'border-[#34c759]/30 bg-[#34c759]/5' :
+          data.health_score >= 60 ? 'border-[#ff9500]/30 bg-[#ff9500]/5' :
+          'border-[#ff3b30]/30 bg-[#ff3b30]/5'
+        )}>
+          <CardContent className="p-5 flex items-center gap-5">
+            <div className={cn(
+              'w-20 h-20 rounded-2xl flex items-center justify-center text-[32px] font-bold',
+              data.health_score >= 80 ? 'bg-[#34c759]/15 text-[#34c759]' :
+              data.health_score >= 60 ? 'bg-[#ff9500]/15 text-[#ff9500]' :
+              'bg-[#ff3b30]/15 text-[#ff3b30]'
+            )}>
+              {data.health_score}
+            </div>
+            <div>
+              <div className="text-[15px] font-semibold text-[#1d1d1f]">
+                {data.health_score >= 80 ? '一切正常' : data.health_score >= 60 ? '有小问题' : '需要关注'}
+              </div>
+              <div className="text-[13px] text-[#86868b] mt-0.5">今日 {data.summary.total_orders} 单</div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* AI Insights */}
+      {data.insights && data.insights.length > 0 && (
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-[13px] font-medium text-[#1d1d1f] mb-2">AI 洞察</div>
+            <div className="space-y-1.5">
+              {data.insights.map((insight, i) => (
+                <div key={i} className={cn(
+                  'text-[13px] px-3 py-1.5 rounded-lg',
+                  insight.type === 'warning' ? 'bg-[#ff3b30]/8 text-[#ff3b30]' :
+                  insight.type === 'good' ? 'bg-[#34c759]/8 text-[#34c759]' :
+                  'bg-[#0071e3]/8 text-[#0071e3]'
+                )}>
+                  {insight.text}
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* AI Daily Report */}
+      {data.ai_report && (
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-[13px] font-medium text-[#1d1d1f] mb-2">📊 AI 日报</div>
+            <div className="text-[13px] text-[#1d1d1f] whitespace-pre-wrap leading-relaxed">{data.ai_report}</div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Metric Cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         <MetricCard icon={Package} label="总订单" value={s.total_orders} color="bg-[#0071e3]/10 text-[#0071e3]" />
@@ -119,9 +178,12 @@ export function OverviewPanel({ data, history = [], formatTime: _formatTime, onT
             <span className="font-medium text-[15px] text-[#1d1d1f]">
               {(() => {
                 const upd = new Date(data.updated_at.includes('+') ? data.updated_at : data.updated_at + '+08:00');
-                const nxt = new Date(upd.getTime() + 300000);
+                const intervalSec = (data.config?.scan_intervals?.sort_timeout || 5) * 60;
+                const nxt = new Date(upd.getTime() + intervalSec * 1000);
                 const fmt = (d: Date) => d.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Shanghai' });
-                return `采集时间 ${fmt(upd)}  |  下次采集 ${fmt(nxt)}`;
+                const dur = data.collection_duration_sec;
+                const durStr = dur != null ? `  |  耗时 ${dur < 1 ? '<1' : Math.round(dur)}秒` : '';
+                return `采集 ${fmt(upd)}  |  下次 ${fmt(nxt)}${durStr}`;
               })()}
             </span>
           </div>
@@ -231,7 +293,7 @@ export function OverviewPanel({ data, history = [], formatTime: _formatTime, onT
                   </TableHeader>
                   <TableBody>
                     {filtered.map((a) => (
-                      <TableRow key={`${a.oid}-${a.type}`}>
+                      <TableRow key={`${a.oid}-${a.type}`} className="cursor-pointer" onClick={() => setSelectedAnomaly(a)}>
                         <TableCell>
                           <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${SEVERITY_BADGE_CLASSES[a.severity] || SEVERITY_BADGE_CLASSES.WARN}`}>
                             {SEVERITY_LABEL_MAP[a.severity] || a.severity}
@@ -251,6 +313,46 @@ export function OverviewPanel({ data, history = [], formatTime: _formatTime, onT
               );
             })()}
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Anomaly Detail Dialog */}
+      <Dialog open={!!selectedAnomaly} onOpenChange={() => setSelectedAnomaly(null)}>
+        <DialogContent className="max-w-lg rounded-2xl bg-white/90 backdrop-blur-xl">
+          <DialogHeader>
+            <DialogTitle className="text-[17px] font-semibold text-[#1d1d1f]">
+              {selectedAnomaly?.type || '异常详情'}
+            </DialogTitle>
+          </DialogHeader>
+          {selectedAnomaly && (
+            <div className="space-y-2.5 text-[13px]">
+              {[
+                { label: '订单号', value: selectedAnomaly.oid },
+                { label: '店铺', value: selectedAnomaly.shop },
+                { label: '区域', value: selectedAnomaly.area },
+                { label: '耗时', value: `${selectedAnomaly.elapsed_min} 分钟` },
+                { label: '阈值', value: `${selectedAnomaly.threshold} 分钟` },
+                { label: '严重度', value: selectedAnomaly.severity },
+                { label: '基线', value: selectedAnomaly.baseline != null ? `${selectedAnomaly.baseline} 分钟` : '--' },
+                { label: '斜率', value: selectedAnomaly.slope != null ? String(selectedAnomaly.slope) : '--' },
+                { label: '骑手', value: selectedAnomaly.rider || '--' },
+                { label: '宿舍', value: selectedAnomaly.dorm || '--' },
+                { label: '配送序号', value: selectedAnomaly.delivery_seq || '--' },
+                { label: '扫码时间', value: selectedAnomaly.scan_time || '--' },
+              ].map(({ label, value }) => (
+                <div key={label} className="flex items-center justify-between bg-[#f5f5f7] rounded-lg px-3 py-2">
+                  <span className="text-[#86868b]">{label}</span>
+                  <span className="font-medium text-[#1d1d1f]">{value}</span>
+                </div>
+              ))}
+              {selectedAnomaly.detail && (
+                <div className="bg-[#f5f5f7] rounded-lg px-3 py-2">
+                  <div className="text-[#86868b] mb-1">详情</div>
+                  <div className="text-[#1d1d1f]">{selectedAnomaly.detail}</div>
+                </div>
+              )}
+            </div>
+          )}
         </DialogContent>
       </Dialog>
 
@@ -315,7 +417,7 @@ export function OverviewPanel({ data, history = [], formatTime: _formatTime, onT
               </TableHeader>
               <TableBody>
                 {data.anomalies.slice(0, 20).map((a) => (
-                  <TableRow key={`${a.oid}-${a.type}`}>
+                  <TableRow key={`${a.oid}-${a.type}`} className="cursor-pointer" onClick={() => setSelectedAnomaly(a)}>
                     <TableCell>
                       <Badge className={SEVERITY_BADGE_CLASSES[a.severity] || SEVERITY_BADGE_CLASSES.WARN}>
                         {SEVERITY_LABEL_MAP[a.severity] || a.severity}

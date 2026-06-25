@@ -87,6 +87,16 @@ export function CompetitorPanel({ data }: Props) {
         </CardContent>
       </Card>
 
+      {/* 7-Day Trend Note */}
+      <Card>
+        <CardContent className="p-4">
+          <div className="text-[13px] text-[#86868b] flex items-center gap-2">
+            <TrendingUp className="h-4 w-4 text-[#0071e3]" />
+            竞品数据按小时存储，保留 7 天历史。可在历史页面查看趋势。
+          </div>
+        </CardContent>
+      </Card>
+
       {/* TOP 15 Bar Chart */}
       <Card>
         <CardHeader className="pb-0">

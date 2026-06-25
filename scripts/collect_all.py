@@ -25,6 +25,7 @@ from detectors import detect_anomalies, detect_skip_scans, compute_rider_stats
 from competitor import fetch_all_stores, compute_competitor_data
 from notify import process_alerts, send_daily_report, notify_failure, notify_session_expired, flush_pending_summaries
 from ai_report import generate_daily_report
+from ai_insight import generate_insights
 
 BASE_URL = 'https://admshop.mengshimei.shop'
 DATA_DIR = SCRIPT_DIR.parent / 'data'
@@ -62,6 +63,59 @@ def _config_hash(config):
     """计算 config 的短 hash，用于嵌入 latest.json。"""
     raw = json.dumps(config, sort_keys=True, ensure_ascii=False)
     return hashlib.md5(raw.encode()).hexdigest()[:12]
+
+
+def _calc_health_score(summary, anomalies, skip_scans, skip_riders, rider_stats, competitor):
+    """计算健康评分（0-100），加权算法。
+
+    权重:
+    - 异常严重度 (40%): 严重-20, 中等-8, 轻微-2, 警告-1
+    - 跳扫码 (20%): 每条-3, 高危骑手额外-10
+    - 配送效率 (20%): 基于骑手平均超时率
+    - 订单完成度 (10%): 售后率
+    - 竞品活跃度 (10%): 活跃店铺比例
+    """
+    score = 100.0
+
+    # 异常严重度 (40%)
+    sev_weights = {'严重': 20, '中等': 8, '轻微': 2, '警告': 1}
+    anomaly_deduction = 0
+    for a in anomalies:
+        anomaly_deduction += sev_weights.get(a.get('severity', ''), 1)
+    score -= min(anomaly_deduction, 40)
+
+    # 跳扫码 (20%)
+    skip_deduction = len(skip_scans) * 3
+    high_risk = sum(1 for r in skip_riders if r.get('high_risk'))
+    skip_deduction += high_risk * 10
+    score -= min(skip_deduction, 20)
+
+    # 配送效率 (20%): 平均超时率
+    if rider_stats:
+        avg_rates = []
+        for r in rider_stats:
+            for dim in ('sort', 'stay', 'deliver'):
+                rate = r.get(dim, {}).get('rate', 0)
+                if rate > 0:
+                    avg_rates.append(rate)
+        if avg_rates:
+            avg_rate = sum(avg_rates) / len(avg_rates)
+            eff_deduction = min(avg_rate / 5, 20)  # 100%超时率 → -20分
+            score -= eff_deduction
+
+    # 订单完成度 (10%): 售后率
+    total = summary.get('total_orders', 0)
+    aftersale = summary.get('aftersale', 0)
+    if total > 0:
+        aftersale_rate = aftersale / total * 100
+        score -= min(aftersale_rate * 2, 10)  # 5%售后 → -10分
+
+    # 竞品活跃度 (10%): 活跃店铺比例越低扣越多
+    if competitor and competitor.get('total_stores', 0) > 0:
+        active_rate = competitor['active_stores'] / competitor['total_stores']
+        score -= min((1 - active_rate) * 10, 10)
+
+    return max(0, min(100, round(score)))
 
 
 def load_config():
@@ -302,6 +356,20 @@ def main():
 
     # ===== 输出 =====
     collect_duration = round(time.time() - collect_start, 1)
+
+    # 健康评分
+    health_score = _calc_health_score(summary, deduped, skip_scans, skip_riders, rider_stats, competitor)
+
+    # AI 日报（保留上次的，22:30 时更新）
+    ai_report_text = prev.get('ai_report', '')
+
+    # AI 实时洞察
+    insights = generate_insights(
+        {'summary': summary, 'anomalies': deduped, 'skip_scans': skip_scans, 'skip_scan_riders': skip_riders, 'riders': rider_stats},
+        prev,
+        load_json(HISTORY_TRACK_PATH, []),
+    )
+
     result = {
         'updated_at': now_str,
         'session_valid': True,
@@ -313,6 +381,10 @@ def main():
         'riders': rider_stats,
         'competitor': competitor,
         'config_hash': _config_hash(config),
+        'collection_duration_sec': collect_duration,
+        'health_score': health_score,
+        'insights': insights,
+        'ai_report': ai_report_text,
     }
 
     write_json(LATEST_PATH, result)
@@ -355,6 +427,8 @@ def main():
         try:
             flush_pending_summaries(str(DATA_DIR))
             ai_text = generate_daily_report(summary, deduped, rider_stats, skip_scans, competitor, [])
+            if ai_text:
+                ai_report_text = ai_text
             send_daily_report(str(DATA_DIR), summary, competitor, deduped, ai_text)
             runtime['daily_report_date'] = now.strftime('%Y-%m-%d')
             save_runtime(runtime)

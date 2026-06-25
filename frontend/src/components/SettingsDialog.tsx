@@ -56,12 +56,12 @@ export function SettingsDialog({ open, onOpenChange, refreshInterval, onInterval
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md rounded-2xl bg-white/90 backdrop-blur-xl">
+      <DialogContent className="max-w-md rounded-2xl bg-white/90 backdrop-blur-xl max-h-[85vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="text-[17px] font-semibold text-[#1d1d1f]">设置</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-5">
+        <div className="space-y-5 overflow-y-auto flex-1 min-0 pr-1">
           <div>
             <Label className="text-xs text-[#86868b] font-medium uppercase tracking-wider">页面刷新</Label>
             <Select value={String(refreshInterval)} onValueChange={(v: string | null) => v && onIntervalChange(parseInt(v, 10))}>
