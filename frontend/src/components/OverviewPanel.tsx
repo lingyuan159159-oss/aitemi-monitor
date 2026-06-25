@@ -23,7 +23,7 @@ function MetricCard({ icon: Icon, label, value, color, prev, onClick }: {
   const diff = prev != null ? value - prev : null;
   return (
     <Card
-      className={cn('cursor-pointer transition-all duration-200 hover:-translate-y-0.5', onClick && 'cursor-pointer')}
+      className={cn('cursor-pointer transition-all duration-200 hover:-translate-y-0.5', onClick && 'cursor-pointer', value === 0 && 'opacity-50')}
       onClick={onClick}
     >
       <CardContent className="p-3">
@@ -175,15 +175,15 @@ export function OverviewPanel({ data, history = [], formatTime: _formatTime, onT
         <CardContent className="p-5">
           <div className="flex items-center gap-2 mb-4">
             <span className="h-2.5 w-2.5 rounded-full bg-[#34c759]" />
-            <span className="font-medium text-[15px] text-[#1d1d1f]">
+            <span className="font-medium text-[14px] text-[#1d1d1f]">
               {(() => {
                 const upd = new Date(data.updated_at.includes('+') ? data.updated_at : data.updated_at + '+08:00');
                 const intervalSec = (data.config?.scan_intervals?.sort_timeout || 5) * 60;
                 const nxt = new Date(upd.getTime() + intervalSec * 1000);
                 const fmt = (d: Date) => d.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Shanghai' });
                 const dur = data.collection_duration_sec;
-                const durStr = dur != null ? `  |  耗时 ${dur < 1 ? '<1' : Math.round(dur)}秒` : '';
-                return `采集 ${fmt(upd)}  |  下次 ${fmt(nxt)}${durStr}`;
+                const durStr = dur != null ? ` · 耗时${dur < 1 ? '<1' : Math.round(dur)}秒` : '';
+                return `采集 ${fmt(upd)} · 下次 ${fmt(nxt)}${durStr}`;
               })()}
             </span>
           </div>
@@ -363,19 +363,25 @@ export function OverviewPanel({ data, history = [], formatTime: _formatTime, onT
             <CardTitle className="text-[13px] font-medium text-[#1d1d1f]">异常分布</CardTitle>
           </CardHeader>
           <CardContent className="pt-2">
-            <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={distData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.04)" vertical={false} />
-                <XAxis dataKey="name" tick={{ fontSize: 12, fill: '#86868b' }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 12, fill: '#86868b' }} axisLine={false} tickLine={false} />
-                <Tooltip contentStyle={customTooltipStyle} />
-                <Bar dataKey="count" radius={[6, 6, 0, 0]}>
-                  {distData.map((entry, i) => (
-                    <Cell key={i} fill={entry.fill} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+            {distData.some(d => d.count > 0) ? (
+              <ResponsiveContainer width="100%" height={200}>
+                <BarChart data={distData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.04)" vertical={false} />
+                  <XAxis dataKey="name" tick={{ fontSize: 12, fill: '#86868b' }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 12, fill: '#86868b' }} axisLine={false} tickLine={false} />
+                  <Tooltip contentStyle={customTooltipStyle} />
+                  <Bar dataKey="count" radius={[6, 6, 0, 0]}>
+                    {distData.map((entry, i) => (
+                      <Cell key={i} fill={entry.fill} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex items-center justify-center h-[200px] text-[13px] text-[#34c759] font-medium">
+                暂无异常，一切正常
+              </div>
+            )}
           </CardContent>
         </Card>
         <Card>
@@ -383,21 +389,27 @@ export function OverviewPanel({ data, history = [], formatTime: _formatTime, onT
             <CardTitle className="text-[13px] font-medium text-[#1d1d1f]">订单趋势（按30分钟分段）</CardTitle>
           </CardHeader>
           <CardContent className="pt-2">
-            <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={trendData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.04)" vertical={false} />
-                <XAxis dataKey="time" tick={{ fontSize: 10, fill: '#86868b' }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 10, fill: '#86868b' }} axisLine={false} tickLine={false} />
-                <Tooltip contentStyle={customTooltipStyle} />
-                <Bar dataKey="orders" fill="#0071e3" radius={[4, 4, 0, 0]} name="订单数" />
-              </BarChart>
-            </ResponsiveContainer>
+            {trendData.length > 1 ? (
+              <ResponsiveContainer width="100%" height={200}>
+                <BarChart data={trendData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.04)" vertical={false} />
+                  <XAxis dataKey="time" tick={{ fontSize: 10, fill: '#86868b' }} axisLine={false} tickLine={false} interval={trendData.length > 6 ? 1 : 0} />
+                  <YAxis tick={{ fontSize: 10, fill: '#86868b' }} axisLine={false} tickLine={false} />
+                  <Tooltip contentStyle={customTooltipStyle} />
+                  <Bar dataKey="orders" fill="#0071e3" radius={[4, 4, 0, 0]} name="订单数" />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex items-center justify-center h-[200px] text-[13px] text-[#86868b]">
+                数据积累中，至少需要 2 个时间点
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
 
       {/* Current Anomalies Table */}
-      {data.anomalies.length > 0 && (
+      {s.anomaly_count > 0 && (
         <Card>
           <CardHeader className="pb-0">
             <CardTitle className="text-[13px] font-medium text-[#1d1d1f]">当前异常</CardTitle>
@@ -441,7 +453,7 @@ export function OverviewPanel({ data, history = [], formatTime: _formatTime, onT
                   className="gap-1.5 text-[13px] text-[#0071e3] hover:text-[#0077ed] hover:bg-[#0071e3]/5"
                   onClick={() => onTabChange?.('anomalies')}
                 >
-                  查看全部 {data.anomalies.length} 条
+                  查看全部 {s.anomaly_count} 条
                   <ArrowRight className="h-3.5 w-3.5" />
                 </Button>
               </div>

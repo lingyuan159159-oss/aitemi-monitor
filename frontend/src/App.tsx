@@ -211,6 +211,7 @@ export default function App() {
             >
               <RefreshCw className={cn('h-[18px] w-[18px]', refreshing && 'animate-spin')} />
             </Button>
+            <span className="w-px h-4 bg-black/[0.08] mx-0.5" />
             <Button
               variant="ghost"
               size="icon"
