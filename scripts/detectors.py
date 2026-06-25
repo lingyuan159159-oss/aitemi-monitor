@@ -378,7 +378,7 @@ def detect_skip_scans(orders, ops, config):
             continue
 
         # 获取店铺区域
-        order_area = get_area(o['shop'], config_areas, config.get('shop_areas', {}))
+        order_area = get_area(o['shop'], config.get('shop_areas', {}))
 
         rider_ops = {}
         for op in order_ops:

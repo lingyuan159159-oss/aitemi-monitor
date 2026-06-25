@@ -104,7 +104,7 @@ export default function App() {
   // Login page
   if (!authenticated) {
     return (
-      <div className="min-h-[100dvh] bg-[#f5f5f7] dark:bg-[#000] flex items-center justify-center p-4">
+      <div className="min-h-[100dvh] bg-[#f5f5f7] dark:bg-[#0a0a0a] flex items-center justify-center p-4">
         <div className="bg-white dark:bg-[#1c1c1e] rounded-2xl shadow-sm p-6 sm:p-8 w-full max-w-sm text-center">
           <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-[#0071e3]/10 flex items-center justify-center mx-auto mb-4">
             <svg width="28" height="28" viewBox="0 0 48 48" fill="none">
@@ -184,7 +184,7 @@ export default function App() {
   const sessionOk = data?.session_valid ?? false;
 
   return (
-    <div className="min-h-screen bg-[#f5f5f7] dark:bg-[#000]">
+    <div className="min-h-screen bg-[#f5f5f7] dark:bg-[#0a0a0a]">
       {/* Glassmorphism Navbar */}
       <header className="sticky top-0 z-50 border-b border-black/[0.06] dark:border-white/[0.06] bg-white/70 dark:bg-[#1c1c1e]/70 backdrop-blur-xl backdrop-saturate-150">
         <div className="max-w-6xl mx-auto flex h-[64px] items-center justify-between px-4">
