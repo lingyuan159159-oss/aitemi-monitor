@@ -4,7 +4,7 @@
 
 @custom-variant dark (&:is(.dark *));
 
-@theme inline {
+@theme {
   --color-background: #f5f5f7;
   --color-foreground: #1d1d1f;
   --color-card: #ffffff;
@@ -187,38 +187,38 @@
   --chart-4: #ff453a;
   --chart-5: #bf5af2;
 
-  --color-background: #0a0a0a;
-  --color-foreground: #ffffff;
-  --color-card: #1c1c1e;
-  --color-card-foreground: #ffffff;
-  --color-popover: #1c1c1e;
-  --color-popover-foreground: #ffffff;
-  --color-primary: #0a84ff;
-  --color-primary-foreground: #ffffff;
-  --color-secondary: #2c2c2e;
-  --color-secondary-foreground: #ffffff;
-  --color-muted: #2c2c2e;
-  --color-muted-foreground: #98989d;
-  --color-accent: #2c2c2e;
-  --color-accent-foreground: #ffffff;
-  --color-destructive: #ff453a;
-  --color-destructive-foreground: #ffffff;
-  --color-border: #38383a;
-  --color-input: #38383a;
-  --color-ring: #0a84ff;
-  --color-chart-1: #0a84ff;
-  --color-chart-2: #30d158;
-  --color-chart-3: #ff9f0a;
-  --color-chart-4: #ff453a;
-  --color-chart-5: #bf5af2;
-  --color-sidebar: #1c1c1e;
-  --color-sidebar-foreground: #ffffff;
-  --color-sidebar-primary: #0a84ff;
-  --color-sidebar-primary-foreground: #ffffff;
-  --color-sidebar-accent: #2c2c2e;
-  --color-sidebar-accent-foreground: #ffffff;
-  --color-sidebar-border: #38383a;
-  --color-sidebar-ring: #0a84ff;
+  --color-background: #0a0a0a !important;
+  --color-foreground: #ffffff !important;
+  --color-card: #1c1c1e !important;
+  --color-card-foreground: #ffffff !important;
+  --color-popover: #1c1c1e !important;
+  --color-popover-foreground: #ffffff !important;
+  --color-primary: #0a84ff !important;
+  --color-primary-foreground: #ffffff !important;
+  --color-secondary: #2c2c2e !important;
+  --color-secondary-foreground: #ffffff !important;
+  --color-muted: #2c2c2e !important;
+  --color-muted-foreground: #98989d !important;
+  --color-accent: #2c2c2e !important;
+  --color-accent-foreground: #ffffff !important;
+  --color-destructive: #ff453a !important;
+  --color-destructive-foreground: #ffffff !important;
+  --color-border: #38383a !important;
+  --color-input: #38383a !important;
+  --color-ring: #0a84ff !important;
+  --color-chart-1: #0a84ff !important;
+  --color-chart-2: #30d158 !important;
+  --color-chart-3: #ff9f0a !important;
+  --color-chart-4: #ff453a !important;
+  --color-chart-5: #bf5af2 !important;
+  --color-sidebar: #1c1c1e !important;
+  --color-sidebar-foreground: #ffffff !important;
+  --color-sidebar-primary: #0a84ff !important;
+  --color-sidebar-primary-foreground: #ffffff !important;
+  --color-sidebar-accent: #2c2c2e !important;
+  --color-sidebar-accent-foreground: #ffffff !important;
+  --color-sidebar-border: #38383a !important;
+  --color-sidebar-ring: #0a84ff !important;
 }
 
 /* Dark mode: system preference fallback */
