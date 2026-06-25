@@ -25,7 +25,7 @@ export default function App() {
   const [loginKey, setLoginKey] = useState('');
   const [loginError, setLoginError] = useState('');
 
-  const ACCESS_KEY = 'aitemi2024'; // 访问密钥
+  const ACCESS_KEY = 'aitemi2026'; // 访问密钥
 
   const handleLogin = () => {
     if (loginKey === ACCESS_KEY) {
@@ -76,6 +76,10 @@ export default function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [currentTab, setCurrentTab] = useState('overview');
+  const [thresholds, setThresholds] = useState<Record<string, number>>(() => {
+    const saved = localStorage.getItem('thresholds');
+    return saved ? JSON.parse(saved) : { sort_timeout: 20, deliver_timeout: 15, backlog: 30, skip_scan: 60 };
+  });
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -240,6 +244,8 @@ export default function App() {
         scanIntervals={data?.config?.scan_intervals}
         scanTimeRange={data?.config?.scan_time_range}
         onTimeRangeChange={handleTimeRangeChange}
+        thresholds={thresholds}
+        onThresholdsChange={setThresholds}
       />
     </div>
   );

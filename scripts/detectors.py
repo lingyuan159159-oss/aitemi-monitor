@@ -112,15 +112,7 @@ def _classify_with_baseline(current, threshold, baseline, slope, anomaly_type=No
       未超标 + slope > 5 + current > threshold*0.8 -> 警告（预警）
       其他                    -> 正常
     """
-    # 压单独立判定
-    if anomaly_type == '压单':
-        if current > 45:
-            return '严重'
-        elif current > 35:
-            return '中等'
-        else:
-            return '轻微'
-
+    # 压单也用弹簧机制（不再独立判定）
     over = current > threshold
     ratio = current / max(baseline, 1)
 
@@ -237,7 +229,7 @@ def detect_anomalies(orders, ops, config, baseline_path, shop_areas_api=None):
                 if mins > press_threshold:
                     bl_key = f"{shop}|压单"
                     baseline, slope = _update_baseline(baselines, bl_key, mins)
-                    sev = _classify_with_baseline(mins, press_threshold, baseline, slope, '压单')
+                    sev = _classify_with_baseline(mins, press_threshold, baseline, slope)
                     anomalies.append({
                         'type': '压单',
                         'oid': oid,
@@ -306,7 +298,7 @@ def detect_anomalies(orders, ops, config, baseline_path, shop_areas_api=None):
             area = get_area(o['shop'], config_areas, shop_areas_api)
             bl_key = f"{o['shop']}|压单"
             baseline, slope = _update_baseline(baselines, bl_key, gap)
-            sev = _classify_with_baseline(gap, press_threshold, baseline, slope, '压单')
+            sev = _classify_with_baseline(gap, press_threshold, baseline, slope)
             anomalies.append({
                 'type': '压单',
                 'oid': oid,

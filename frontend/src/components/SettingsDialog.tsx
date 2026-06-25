@@ -14,6 +14,8 @@ interface Props {
   scanIntervals?: Record<string, number>;
   scanTimeRange?: { start: string; end: string };
   onTimeRangeChange?: (range: { start: string; end: string }) => void;
+  thresholds?: Record<string, number>;
+  onThresholdsChange?: (t: Record<string, number>) => void;
 }
 
 const intervalLabels: Record<string, string> = {
@@ -25,9 +27,12 @@ const intervalLabels: Record<string, string> = {
   competitor: '竞品监控',
 };
 
-export function SettingsDialog({ open, onOpenChange, refreshInterval, onIntervalChange, scanIntervals, scanTimeRange, onTimeRangeChange }: Props) {
+export function SettingsDialog({ open, onOpenChange, refreshInterval, onIntervalChange, scanIntervals, scanTimeRange, onTimeRangeChange, thresholds, onThresholdsChange }: Props) {
   const [localIntervals, setLocalIntervals] = useState<Record<string, number>>({});
   const [timeRange, setTimeRange] = useState({ start: '11:00', end: '23:00' });
+  const [localThresholds, setLocalThresholds] = useState<Record<string, number>>({
+    sort_timeout: 20, deliver_timeout: 15, backlog: 30, skip_scan: 60,
+  });
 
   useEffect(() => {
     if (scanIntervals) setLocalIntervals({ ...scanIntervals });
@@ -37,9 +42,15 @@ export function SettingsDialog({ open, onOpenChange, refreshInterval, onInterval
     if (scanTimeRange) setTimeRange({ ...scanTimeRange });
   }, [scanTimeRange]);
 
+  useEffect(() => {
+    if (thresholds) setLocalThresholds({ ...thresholds });
+  }, [thresholds]);
+
   const handleSave = () => {
     localStorage.setItem('scan_intervals', JSON.stringify(localIntervals));
+    localStorage.setItem('thresholds', JSON.stringify(localThresholds));
     if (onTimeRangeChange) onTimeRangeChange(timeRange);
+    if (onThresholdsChange) onThresholdsChange(localThresholds);
     onOpenChange(false);
   };
 
@@ -114,6 +125,54 @@ export function SettingsDialog({ open, onOpenChange, refreshInterval, onInterval
                 </div>
               ))}
             </div>
+          </div>
+          <Separator className="bg-black/[0.06]" />
+
+          <div>
+            <Label className="text-xs text-[#86868b] font-medium uppercase tracking-wider">超时阈值（分钟）</Label>
+            <div className="grid grid-cols-2 gap-3 mt-3">
+              <div className="space-y-1">
+                <Label className="text-xs text-[#1d1d1f]">分拣超时</Label>
+                <Input
+                  type="number"
+                  value={localThresholds.sort_timeout || 20}
+                  min={1}
+                  className="h-9 text-sm rounded-xl border-black/[0.06] bg-[#f5f5f7]"
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLocalThresholds(prev => ({ ...prev, sort_timeout: parseInt(e.target.value, 10) || 20 }))}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs text-[#1d1d1f]">配送超时</Label>
+                <Input
+                  type="number"
+                  value={localThresholds.deliver_timeout || 15}
+                  min={1}
+                  className="h-9 text-sm rounded-xl border-black/[0.06] bg-[#f5f5f7]"
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLocalThresholds(prev => ({ ...prev, deliver_timeout: parseInt(e.target.value, 10) || 15 }))}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs text-[#1d1d1f]">压单</Label>
+                <Input
+                  type="number"
+                  value={localThresholds.backlog || 30}
+                  min={1}
+                  className="h-9 text-sm rounded-xl border-black/[0.06] bg-[#f5f5f7]"
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLocalThresholds(prev => ({ ...prev, backlog: parseInt(e.target.value, 10) || 30 }))}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs text-[#1d1d1f]">跳扫码（秒）</Label>
+                <Input
+                  type="number"
+                  value={localThresholds.skip_scan || 60}
+                  min={1}
+                  className="h-9 text-sm rounded-xl border-black/[0.06] bg-[#f5f5f7]"
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLocalThresholds(prev => ({ ...prev, skip_scan: parseInt(e.target.value, 10) || 60 }))}
+                />
+              </div>
+            </div>
+            <p className="text-[11px] text-[#86868b] mt-1.5">超过阈值即判定为异常</p>
           </div>
         </div>
 
