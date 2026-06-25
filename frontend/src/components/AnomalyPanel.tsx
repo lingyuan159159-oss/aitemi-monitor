@@ -73,6 +73,7 @@ export function AnomalyPanel({ data, formatTime }: Props) {
                     <TableHead>配送单号</TableHead>
                     <TableHead>订单号</TableHead>
                     <TableHead>店名</TableHead>
+                    <TableHead>宿舍</TableHead>
                     <TableHead>耗时</TableHead>
                     <TableHead>阈值</TableHead>
                     <TableHead>骑手</TableHead>
@@ -90,6 +91,7 @@ export function AnomalyPanel({ data, formatTime }: Props) {
                       <TableCell className="font-medium text-[13px]">{a.delivery_seq || '--'}</TableCell>
                       <TableCell className="text-[13px]">{a.oid}</TableCell>
                       <TableCell className="font-medium text-[13px]">{a.shop}</TableCell>
+                      <TableCell className="text-[13px]">{a.dorm || '--'}</TableCell>
                       <TableCell className="text-[13px]">{a.elapsed_min}分钟</TableCell>
                       <TableCell className="text-[13px]">{a.threshold}分钟</TableCell>
                       <TableCell className="text-[13px]">{a.rider || '--'}</TableCell>
@@ -123,6 +125,7 @@ export function AnomalyPanel({ data, formatTime }: Props) {
                   <TableHead>类型</TableHead>
                   <TableHead>订单号</TableHead>
                   <TableHead>店名</TableHead>
+                  <TableHead>宿舍</TableHead>
                   <TableHead>耗时</TableHead>
                   <TableHead>骑手</TableHead>
                 </TableRow>
@@ -134,6 +137,7 @@ export function AnomalyPanel({ data, formatTime }: Props) {
                     <TableCell>{a.type}</TableCell>
                     <TableCell>{a.oid}</TableCell>
                     <TableCell className="font-medium text-[13px]">{a.shop}</TableCell>
+                    <TableCell>{a.dorm || '--'}</TableCell>
                     <TableCell>{a.elapsed_min}分钟</TableCell>
                     <TableCell>{a.rider || '--'}</TableCell>
                   </TableRow>

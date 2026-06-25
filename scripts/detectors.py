@@ -202,9 +202,10 @@ def detect_anomalies(orders, ops, config, baseline_path, shop_areas_api=None):
                     bl_key = f"{shop}|配送超时"
                     baseline, slope = _update_baseline(baselines, bl_key, mins)
                     sev = _classify_with_baseline(mins, th, baseline, slope)
+                    # 从所有操作中找骑手（送达未发生，从投餐/分拣操作中找）
                     rider = ''
                     for op in order_ops:
-                        if op['type'] == '送达' and op.get('rider'):
+                        if op.get('rider'):
                             rider = op['rider']
                     anomalies.append({
                         'type': '配送超时',
