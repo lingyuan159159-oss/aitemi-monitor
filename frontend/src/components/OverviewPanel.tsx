@@ -227,9 +227,9 @@ export function OverviewPanel({ data, history = [], formatTime: _formatTime, onT
                     {filtered.map((a, i) => (
                       <TableRow key={i}>
                         <TableCell>
-                          <Badge className={severityColors[a.severity] || severityColors.WARN}>
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${severityColors[a.severity] || severityColors.WARN}`}>
                             {severityLabels[a.severity] || a.severity}
-                          </Badge>
+                          </span>
                         </TableCell>
                         <TableCell className="text-[13px]">{a.oid}</TableCell>
                         <TableCell className="font-medium text-[13px]">{a.shop}</TableCell>

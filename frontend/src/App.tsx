@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   LayoutDashboard, AlertTriangle, Users, Clock, BarChart3,
-  TrendingUp, RefreshCw, Settings, Loader2
+  TrendingUp, RefreshCw, Settings, Loader2, ArrowLeft
 } from 'lucide-react';
 import { OverviewPanel } from '@/components/OverviewPanel';
 import { AnomalyPanel } from '@/components/AnomalyPanel';
@@ -195,25 +195,37 @@ export default function App() {
       <main className="max-w-6xl mx-auto px-4 py-4">
         <Tabs value={currentTab} onValueChange={setCurrentTab} className="space-y-5">
           <TabsList className="w-full sm:w-auto flex overflow-x-auto no-scrollbar">
-            <TabsTrigger value="overview" className="gap-1.5 text-[13px] px-3">
+            <TabsTrigger value="overview" className="gap-1.5 text-[14px] sm:text-[13px] px-4 sm:px-3 min-h-[44px] flex-shrink-0">
               <LayoutDashboard className="h-3.5 w-3.5" />总览
             </TabsTrigger>
-            <TabsTrigger value="anomalies" className="gap-1.5 text-[13px] px-3">
+            <TabsTrigger value="anomalies" className="gap-1.5 text-[14px] sm:text-[13px] px-4 sm:px-3 min-h-[44px] flex-shrink-0">
               <AlertTriangle className="h-3.5 w-3.5" />异常
             </TabsTrigger>
-            <TabsTrigger value="riders" className="gap-1.5 text-[13px] px-3">
+            <TabsTrigger value="riders" className="gap-1.5 text-[14px] sm:text-[13px] px-4 sm:px-3 min-h-[44px] flex-shrink-0">
               <Users className="h-3.5 w-3.5" />骑手
             </TabsTrigger>
-            <TabsTrigger value="skipscan" className="gap-1.5 text-[13px] px-3">
+            <TabsTrigger value="skipscan" className="gap-1.5 text-[14px] sm:text-[13px] px-4 sm:px-3 min-h-[44px] flex-shrink-0">
               <Clock className="h-3.5 w-3.5" />跳扫
             </TabsTrigger>
-            <TabsTrigger value="competitor" className="gap-1.5 text-[13px] px-3">
+            <TabsTrigger value="competitor" className="gap-1.5 text-[14px] sm:text-[13px] px-4 sm:px-3 min-h-[44px] flex-shrink-0">
               <BarChart3 className="h-3.5 w-3.5" />竞品
             </TabsTrigger>
-            <TabsTrigger value="history" className="gap-1.5 text-[13px] px-3">
+            <TabsTrigger value="history" className="gap-1.5 text-[14px] sm:text-[13px] px-4 sm:px-3 min-h-[44px] flex-shrink-0">
               <TrendingUp className="h-3.5 w-3.5" />历史
             </TabsTrigger>
           </TabsList>
+
+          {currentTab !== 'overview' && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="gap-1.5 text-[13px] text-[#86868b] hover:text-[#1d1d1f] hover:bg-black/[0.04] -ml-1 mb-1"
+              onClick={() => setCurrentTab('overview')}
+            >
+              <ArrowLeft className="h-3.5 w-3.5" />
+              返回总览
+            </Button>
+          )}
 
           <TabsContent value="overview">
             <OverviewPanel data={data} history={history} formatTime={formatTime} onTabChange={setCurrentTab} />

@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import type { Rider, MonitorData } from '@/lib/types';
-import { Users, AlertTriangle, TrendingUp } from 'lucide-react';
+import { Users, AlertTriangle, TrendingUp, Zap } from 'lucide-react';
 
 interface Props { data: MonitorData | null; }
 
@@ -22,17 +22,22 @@ export function RiderPanel({ data }: Props) {
     );
   }
 
-  // 计算每个骑手的问题总数（超时数之和）
-  const ridersWithIssues = data.riders.map(r => ({
-    ...r,
-    totalOvertime: r.sort.overtime + r.stay.overtime + r.deliver.overtime,
-    totalOrders: r.sort.total + r.stay.total + r.deliver.total,
-    maxRate: Math.max(r.sort.rate, r.stay.rate, r.deliver.rate),
-  })).sort((a, b) => b.totalOvertime - a.totalOvertime);
+  // 计算每个骑手的问题总数（超时数之和）和快速送达数
+  const ridersWithIssues = data.riders.map(r => {
+    const totalOvertime = r.sort.overtime + r.stay.overtime + r.deliver.overtime;
+    const totalOrders = r.sort.total + r.stay.total + r.deliver.total;
+    const maxRate = Math.max(r.sort.rate, r.stay.rate, r.deliver.rate);
+    // 快速送达：配送平均时间 < 阈值50% 的次数（rate低说明快）
+    const fastDeliver = r.deliver.total > 0 && r.deliver.rate < 50
+      ? Math.round(r.deliver.total * (1 - r.deliver.rate / 100))
+      : 0;
+    return { ...r, totalOvertime, totalOrders, maxRate, fastDeliver };
+  }).sort((a, b) => b.totalOvertime - a.totalOvertime);
 
   const totalRiders = ridersWithIssues.length;
   const problemRiders = ridersWithIssues.filter(r => r.totalOvertime > 0).length;
   const highestRate = ridersWithIssues.length > 0 ? ridersWithIssues[0].maxRate : 0;
+  const fastRiders = ridersWithIssues.filter(r => r.fastDeliver > 0).length;
 
   // Top 10 柱状图数据
   const top10 = ridersWithIssues.slice(0, 10).map(r => ({
@@ -71,6 +76,11 @@ export function RiderPanel({ data }: Props) {
               <TrendingUp className="h-4 w-4 text-[#ff9500]" />
               <span className="text-[#86868b]">最高超时率</span>
               <span className="font-semibold text-[#ff9500]">{highestRate}%</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Zap className="h-4 w-4 text-[#34c759]" />
+              <span className="text-[#86868b]">快速送达</span>
+              <span className="font-semibold text-[#34c759]">{fastRiders}人</span>
             </div>
           </div>
         </CardContent>
@@ -112,13 +122,13 @@ export function RiderPanel({ data }: Props) {
                 key={r.name}
                 className={cn(
                   'flex items-center gap-4 p-3.5 rounded-2xl bg-[#f5f5f7] cursor-pointer hover:bg-[#ebebed] transition-colors',
-                  r.totalOvertime > 0 && 'border-l-[3px] border-l-[#ff3b30]'
+                  r.totalOvertime > 0 && 'border-l-[3px] border-l-[#ff3b30]',
+                  r.totalOvertime === 0 && r.fastDeliver > 0 && 'border-l-[3px] border-l-[#34c759]'
                 )}
                 onClick={() => setSelectedRider(r)}
               >
-                <div className="w-20">
+                <div className="w-16">
                   <div className="font-semibold text-[13px] text-[#1d1d1f]">{r.name}</div>
-                  <div className="text-[11px] text-[#86868b]">{r.area}</div>
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
@@ -127,11 +137,16 @@ export function RiderPanel({ data }: Props) {
                     ) : (
                       <Badge variant="secondary" className="text-[11px] rounded-full">正常</Badge>
                     )}
+                    {r.fastDeliver > 0 && (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-[#34c759]/10 text-[#34c759]">
+                        {r.fastDeliver}次快速送达
+                      </span>
+                    )}
                   </div>
-                  <div className="flex gap-3 text-[11px] text-[#86868b]">
+                  <div className="flex gap-3 text-sm text-[#86868b]">
                     <span>分拣 {r.sort.overtime}/{r.sort.total} ({r.sort.rate}%)</span>
-                    <span>停留 {r.stay.overtime}/{r.stay.total} ({r.stay.rate}%)</span>
-                    <span>配送 {r.deliver.overtime}/{r.deliver.total} ({r.deliver.rate}%)</span>
+                    <span>压单 {r.stay.overtime}/{r.stay.total} ({r.stay.rate}%)</span>
+                    <span>配送次数 {r.deliver.overtime}/{r.deliver.total} ({r.deliver.rate}%)</span>
                   </div>
                 </div>
               </div>
@@ -150,22 +165,21 @@ export function RiderPanel({ data }: Props) {
           </DialogHeader>
           {selectedRider && (
             <div className="space-y-4">
-              <div className="text-[13px] text-[#86868b]">区域：{selectedRider.area}</div>
               <div className="grid grid-cols-3 gap-3">
                 {[
                   { label: '分拣', data: selectedRider.sort },
-                  { label: '停留', data: selectedRider.stay },
-                  { label: '配送', data: selectedRider.deliver },
+                  { label: '压单', data: selectedRider.stay },
+                  { label: '配送次数', data: selectedRider.deliver },
                 ].map(d => (
                   <div key={d.label} className="text-center p-3 rounded-xl bg-[#f5f5f7]">
-                    <div className="text-[11px] text-[#86868b] mb-1">{d.label}</div>
+                    <div className="text-sm text-[#86868b] mb-1">{d.label}</div>
                     <div className={cn('text-xl font-semibold', d.data.rate > 20 ? 'text-[#ff3b30]' : 'text-[#1d1d1f]')}>
                       {d.data.rate}%
                     </div>
-                    <div className="text-[11px] text-[#86868b] mt-0.5">
+                    <div className="text-sm text-[#86868b] mt-0.5">
                       {d.data.overtime}/{d.data.total} 超时
                     </div>
-                    <div className="text-[11px] text-[#86868b]">
+                    <div className="text-sm text-[#86868b]">
                       均{d.data.avg}分钟
                     </div>
                   </div>

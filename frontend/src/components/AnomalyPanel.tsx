@@ -26,6 +26,11 @@ const typeColors: Record<string, string> = {
   '配送超时': 'border-l-[3px] border-l-[#ffcc00]',
   '压单': 'border-l-[3px] border-l-[#86868b]',
 };
+const typeTextColors: Record<string, string> = {
+  '分拣超时': 'text-[#ff3b30]',
+  '配送超时': 'text-[#9a6700]',
+  '压单': 'text-[#86868b]',
+};
 
 export function AnomalyPanel({ data, formatTime }: Props) {
   if (!data) return null;
@@ -62,7 +67,7 @@ export function AnomalyPanel({ data, formatTime }: Props) {
         return (
           <Card key={type} className={cn('overflow-hidden', typeColors[type])}>
             <CardHeader className="pb-1">
-              <CardTitle className="text-[13px] font-medium text-[#1d1d1f] flex items-center gap-2">
+              <CardTitle className={cn("text-[13px] font-medium flex items-center gap-2", typeTextColors[type] || 'text-[#1d1d1f]')}>
                 {type}
                 <Badge variant="secondary" className="text-[11px]">{items.length}</Badge>
               </CardTitle>
