@@ -57,12 +57,15 @@ export interface CompetitorStore {
   total: number;
   yesterday_total: number;
   daily: number;
+  hourly: number;
   score: number;
 }
 
 export interface Competitor {
   date: string;
+  hour?: number;
   total_daily: number;
+  total_hourly: number;
   total_cumul: number;
   active_stores: number;
   total_stores: number;

@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import type { MonitorData } from '@/lib/types';
-import { Store, TrendingUp, Users, BarChart3 } from 'lucide-react';
+import { Store, TrendingUp, Users } from 'lucide-react';
 
 interface Props { data: MonitorData | null; }
 
@@ -50,8 +50,8 @@ export function CompetitorPanel({ data }: Props) {
       </Card>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <MetricCard icon={TrendingUp} label="当日销量" value={comp.total_daily} color="bg-[#0071e3]/10 text-[#0071e3]" />
-        <MetricCard icon={BarChart3} label="累计销量" value={comp.total_cumul.toLocaleString()} color="bg-[#34c759]/10 text-[#34c759]" />
+        <MetricCard icon={TrendingUp} label="当日总量" value={comp.total_daily} color="bg-[#0071e3]/10 text-[#0071e3]" />
+        <MetricCard icon={TrendingUp} label="本小时增量" value={comp.total_hourly || 0} color="bg-[#ff9500]/10 text-[#ff9500]" />
         <MetricCard icon={Users} label="活跃店铺" value={comp.active_stores} color="bg-[#34c759]/10 text-[#34c759]" />
         <MetricCard icon={Store} label="总店铺数" value={comp.total_stores} color="bg-[#86868b]/10 text-[#86868b]" />
       </div>
@@ -62,12 +62,13 @@ export function CompetitorPanel({ data }: Props) {
           <div className="text-[15px] font-semibold text-[#1d1d1f] mb-3">当日总结</div>
           <div className="space-y-2 text-[13px] text-[#1d1d1f]">
             <div>今日平台总销量 <strong className="text-[17px]">{comp.total_daily.toLocaleString()}</strong> 单，覆盖 {comp.active_stores} 家活跃店铺</div>
+            <div>本小时增量 <strong className="text-[17px]">{(comp.total_hourly || 0).toLocaleString()}</strong> 单（{comp.hour || '--'}:00 对比上一小时）</div>
             {comp.stores.length > 0 && (
               <div>
-                销量前三：
-                {comp.stores.slice(0, 3).map((s, i) => (
+                小时增量前三：
+                {[...comp.stores].sort((a, b) => (b.hourly || 0) - (a.hourly || 0)).slice(0, 3).map((s, i) => (
                   <span key={s.id} className="ml-2">
-                    <span className="text-[#86868b]">{i + 1}.</span> {s.name} <strong>{s.daily}</strong>单
+                    <span className="text-[#86868b]">{i + 1}.</span> {s.name} <strong>+{s.hourly || 0}</strong>
                   </span>
                 ))}
               </div>
@@ -114,8 +115,8 @@ export function CompetitorPanel({ data }: Props) {
                 <TableHead>#</TableHead>
                 <TableHead>店铺</TableHead>
                 <TableHead>当日</TableHead>
+                <TableHead>小时增量</TableHead>
                 <TableHead>累计</TableHead>
-                <TableHead>昨日累计</TableHead>
                 <TableHead>评分</TableHead>
               </TableRow>
             </TableHeader>
@@ -125,8 +126,8 @@ export function CompetitorPanel({ data }: Props) {
                   <TableCell className="text-[13px]">{i + 1}</TableCell>
                   <TableCell className="font-medium text-[13px]">{s.name}</TableCell>
                   <TableCell className="font-semibold text-[13px]">{s.daily}</TableCell>
+                  <TableCell className="text-[13px]">{s.hourly || 0}</TableCell>
                   <TableCell className="text-[13px]">{s.total.toLocaleString()}</TableCell>
-                  <TableCell className="text-[13px]">{s.yesterday_total.toLocaleString()}</TableCell>
                   <TableCell className="text-[13px]">{s.score || '--'}</TableCell>
                 </TableRow>
               ))}

@@ -161,7 +161,13 @@ def fetch_all_stores(session_id, max_retries=3):
 
 
 def compute_competitor_data(stores, history_path=None):
+    """计算竞品数据，支持：
+    - 每小时增量（对比上一小时）
+    - 当日总量（对比昨天最后一小时）
+    """
+    now = datetime.now()
     today_str = date.today().strftime("%Y-%m-%d")
+    hour_key = now.strftime("%Y-%m-%dT%H")  # 如 "2026-06-25T14"
 
     today_map = {}
     for s in stores:
@@ -174,6 +180,7 @@ def compute_competitor_data(stores, history_path=None):
                 "address": s.get("address", ""),
             }
 
+    # 加载历史（按小时存储）
     history = {}
     if history_path and os.path.exists(history_path):
         try:
@@ -181,37 +188,64 @@ def compute_competitor_data(stores, history_path=None):
         except Exception:
             history = {}
 
-    dates = sorted(history.keys(), reverse=True)
-    prev_str = None
-    for d in dates:
-        if d < today_str:
-            prev_str = d
+    # 找昨天最后一小时的快照（用于计算当日总量）
+    yesterday_keys = sorted([k for k in history.keys() if k < today_str], reverse=True)
+    yesterday_map = history[yesterday_keys[0]] if yesterday_keys else {}
+
+    # 找上一小时的快照（用于计算小时增量）
+    prev_hour_key = None
+    for k in sorted(history.keys(), reverse=True):
+        if k < hour_key:
+            prev_hour_key = k
             break
-    yesterday_map = history.get(prev_str, {}) if prev_str else {}
+    prev_hour_map = history[prev_hour_key] if prev_hour_key else {}
 
     results = []
     for sid, t in today_map.items():
-        sailed_today = t["sailed"]
+        sailed_now = t["sailed"]
         sailed_yesterday = yesterday_map.get(sid, {}).get("sailed", 0)
-        daily = max(0, sailed_today - sailed_yesterday)
+        sailed_prev_hour = prev_hour_map.get(sid, {}).get("sailed", 0)
+
+        daily = max(0, sailed_now - sailed_yesterday)  # 当日总量
+        hourly = max(0, sailed_now - sailed_prev_hour)  # 小时增量
+
         results.append({
             "id": sid,
             "name": t["name"],
-            "total": sailed_today,
+            "total": sailed_now,
             "yesterday_total": sailed_yesterday,
             "daily": daily,
+            "hourly": hourly,
             "score": t["score"],
         })
 
     results.sort(key=lambda x: x["daily"], reverse=True)
 
-    history[today_str] = today_map
-    keep_dates = sorted(history.keys())[-30:]
-    history = {d: history[d] for d in keep_dates}
+    # 保存当前小时快照
+    history[hour_key] = today_map
+    # 保留最近7天的小时数据（7×24=168条）
+    keep_keys = sorted(history.keys())[-168:]
+    history = {k: history[k] for k in keep_keys}
     if history_path:
         os.makedirs(os.path.dirname(history_path), exist_ok=True)
         with open(history_path, 'w') as f:
             json.dump(history, f, ensure_ascii=False)
+
+    total_hourly = sum(r["hourly"] for r in results)
+    total_daily = sum(r["daily"] for r in results)
+    total_cumul = sum(r["total"] for r in results)
+    active = sum(1 for r in results if r["hourly"] > 0)
+
+    return {
+        "date": today_str,
+        "hour": now.hour,
+        "total_daily": total_daily,
+        "total_hourly": total_hourly,
+        "total_cumul": total_cumul,
+        "active_stores": active,
+        "total_stores": len(results),
+        "stores": results,
+    }
 
     total_daily = sum(r["daily"] for r in results)
     total_cumul = sum(r["total"] for r in results)
