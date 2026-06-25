@@ -114,9 +114,9 @@ def _classify_with_baseline(current, threshold, baseline, slope, anomaly_type=No
     """
     # 压单独立判定
     if anomaly_type == '压单':
-        if current > 60:
+        if current > 45:
             return '严重'
-        elif current > 45:
+        elif current > 35:
             return '中等'
         else:
             return '轻微'
@@ -127,10 +127,12 @@ def _classify_with_baseline(current, threshold, baseline, slope, anomaly_type=No
     if over:
         if slope > 3:
             return '严重'   # 持续恶化
-        if ratio > 1.5:
+        if ratio > 1.3:
             return '严重'   # 远超基线
         if slope > 1:
             return '中等'   # 轻微恶化
+        if ratio > 1.1:
+            return '中等'   # 超过基线10%
         return '轻微'       # 偶发超标
 
     # 未超标，但有预警趋势
@@ -249,6 +251,7 @@ def detect_anomalies(orders, ops, config, baseline_path, shop_areas_api=None):
                         'detail': f"分拣{last_sort.strftime('%H:%M')}已{mins:.0f}min无骑手取餐",
                         'dorm': o.get('dorm', ''),
                         'rider': '',
+                        'delivery_seq': str(o.get('delivery_seq', '')),
                         'delivery_seq': str(o.get('delivery_seq', '')),
                     })
             continue

@@ -18,6 +18,56 @@ import { SettingsDialog } from '@/components/SettingsDialog';
 import { cn } from '@/lib/utils';
 
 export default function App() {
+  // Auth state - check localStorage for saved login
+  const [authenticated, setAuthenticated] = useState(() => {
+    return localStorage.getItem('aitemi_auth') === 'true';
+  });
+  const [loginKey, setLoginKey] = useState('');
+  const [loginError, setLoginError] = useState('');
+
+  const ACCESS_KEY = 'aitemi2024'; // 访问密钥
+
+  const handleLogin = () => {
+    if (loginKey === ACCESS_KEY) {
+      localStorage.setItem('aitemi_auth', 'true');
+      setAuthenticated(true);
+      setLoginError('');
+    } else {
+      setLoginError('密钥错误');
+    }
+  };
+
+  // Login page
+  if (!authenticated) {
+    return (
+      <div className="min-h-screen bg-[#f5f5f7] flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl shadow-sm p-8 w-full max-w-sm text-center">
+          <div className="w-16 h-16 rounded-2xl bg-[#0071e3]/10 flex items-center justify-center mx-auto mb-4">
+            <svg width="32" height="32" viewBox="0 0 48 48" fill="none">
+              <rect x="8" y="20" width="32" height="22" rx="4" stroke="#0071e3" stroke-width="2.5"/>
+              <path d="M16 20V14a8 8 0 0116 0v6" stroke="#0071e3" stroke-width="2.5" stroke-linecap="round"/>
+              <circle cx="24" cy="32" r="3" fill="#0071e3"/>
+            </svg>
+          </div>
+          <h1 className="text-xl font-semibold text-[#1d1d1f] mb-1">艾特米监控平台</h1>
+          <p className="text-sm text-[#86868b] mb-6">请输入访问密钥</p>
+          <input
+            type="password"
+            value={loginKey}
+            onChange={(e) => { setLoginKey(e.target.value); setLoginError(''); }}
+            onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
+            placeholder="访问密钥"
+            className="w-full px-4 py-3 rounded-xl border border-[#e5e5ea] text-base outline-none focus:border-[#0071e3] transition-colors mb-3"
+          />
+          {loginError && <p className="text-[#ff3b30] text-sm mb-3">{loginError}</p>}
+          <button onClick={handleLogin} className="w-full py-3 rounded-xl bg-[#0071e3] text-white font-medium text-base hover:bg-[#0077ed] transition-colors">
+            进入
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   const [refreshInterval, setRefreshInterval] = useState(() => {
     const saved = localStorage.getItem('refresh_interval');
     return saved ? parseInt(saved, 10) : 300;

@@ -215,6 +215,11 @@ def main():
         dup_count = len(anomalies) - len(deduped)
         print(f"  去重: {dup_count} 条已完成，保留 {len(deduped)} 条活跃异常", file=sys.stderr)
 
+        # 补全缺失的 delivery_seq
+        for a in deduped:
+            if not a.get('delivery_seq') and a.get('oid') in orders_map:
+                a['delivery_seq'] = str(orders_map[a['oid']].get('delivery_seq', ''))
+
         # 跳扫码去重（同一骑手同一单不重复）
         skip_seen = runtime.get('seen_skip_scans', {})
         deduped_skip, skip_seen = dedup_skip_scans(skip_scans, skip_seen)
