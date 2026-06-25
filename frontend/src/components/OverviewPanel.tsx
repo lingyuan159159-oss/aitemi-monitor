@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import type { MonitorData } from '@/lib/types';
 import { Package, Truck, AlertTriangle, Clock, RotateCcw, CheckCircle2, TrendingUp, TrendingDown, ChevronRight } from 'lucide-react';
 
@@ -279,18 +279,27 @@ export function OverviewPanel({ data, history = [], formatTime: _formatTime, onT
         </Card>
         <Card>
           <CardHeader className="pb-0">
-            <CardTitle className="text-[13px] font-medium text-[#1d1d1f]">订单趋势（最近）</CardTitle>
+            <CardTitle className="text-[13px] font-medium text-[#1d1d1f]">订单趋势（按30分钟分段）</CardTitle>
           </CardHeader>
           <CardContent className="pt-2">
             <ResponsiveContainer width="100%" height={200}>
-              <LineChart data={history.slice(-24)}>
+              <BarChart data={(() => {
+                const buckets: Record<string, number> = {};
+                history.forEach((h: any) => {
+                  const d = new Date(h.time);
+                  const h2 = String(d.getHours()).padStart(2, '0');
+                  const m = d.getMinutes() < 30 ? '00' : '30';
+                  const key = `${h2}:${m}`;
+                  buckets[key] = (buckets[key] || 0) + (h.orders || 0);
+                });
+                return Object.entries(buckets).sort((a, b) => a[0].localeCompare(b[0])).map(([time, orders]) => ({ time, orders }));
+              })()}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.04)" vertical={false} />
-                <XAxis dataKey="time" tick={{ fontSize: 10, fill: '#86868b' }} axisLine={false} tickLine={false} tickFormatter={(v: string) => { const d = new Date(v); return d.getHours() + ':' + String(d.getMinutes()).padStart(2, '0'); }} />
+                <XAxis dataKey="time" tick={{ fontSize: 10, fill: '#86868b' }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 10, fill: '#86868b' }} axisLine={false} tickLine={false} />
                 <Tooltip contentStyle={customTooltipStyle} />
-                <Line type="monotone" dataKey="orders" stroke="#0071e3" strokeWidth={2} dot={false} name="总订单" />
-                <Line type="monotone" dataKey="delivering" stroke="#34c759" strokeWidth={2} dot={false} name="配送中" />
-              </LineChart>
+                <Bar dataKey="orders" fill="#0071e3" radius={[4, 4, 0, 0]} name="订单数" />
+              </BarChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>

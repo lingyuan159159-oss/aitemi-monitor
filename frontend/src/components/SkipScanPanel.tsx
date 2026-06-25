@@ -19,10 +19,23 @@ const severityLabels: Record<string, string> = { HIGH: '严重', MED: '中等', 
 export function SkipScanPanel({ data }: Props) {
   const [selectedRider, setSelectedRider] = useState<string | null>(null);
   if (!data) return null;
-  const { skip_scans: scans, skip_scan_riders: riders } = data;
+  const { skip_scans: scans } = data;
   const threshold = data.config?.skip_scan_threshold || 60;
 
-  // 获取选中骑手的订单
+  // 直接从 skip_scans 计算每个骑手的数量，确保和表格一致
+  const riderCountMap: Record<string, { count: number; high_risk: boolean }> = {};
+  scans.forEach(s => {
+    if (!s.rider) return;
+    if (!riderCountMap[s.rider]) riderCountMap[s.rider] = { count: 0, high_risk: false };
+    riderCountMap[s.rider].count++;
+  });
+  // 标记高风险（超过2单）
+  Object.values(riderCountMap).forEach(r => { r.high_risk = r.count > 2; });
+  const computedRiders = Object.entries(riderCountMap)
+    .map(([name, info]) => ({ name, count: info.count, high_risk: info.high_risk }))
+    .sort((a, b) => b.count - a.count);
+
+  // 获取选中骑手的订单（直接从 scans 筛选）
   const selectedOrders = selectedRider ? scans.filter(s => s.rider === selectedRider) : [];
 
   return (
@@ -34,9 +47,9 @@ export function SkipScanPanel({ data }: Props) {
       </Card>
 
       {/* Rider Summary */}
-      {riders.length > 0 && (
+      {computedRiders.length > 0 && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {riders.map(r => (
+          {computedRiders.map(r => (
             <Card key={r.name} className={cn('cursor-pointer hover:shadow-md transition-shadow', r.high_risk && 'border-l-[3px] border-l-[#ff3b30]')} onClick={() => setSelectedRider(r.name)}>
               <CardContent className="p-4">
                 <div className="font-semibold text-[13px] text-[#1d1d1f]">{r.name}</div>
@@ -52,7 +65,7 @@ export function SkipScanPanel({ data }: Props) {
       {scans.length > 0 ? (
         <Card>
           <CardHeader className="pb-0">
-            <CardTitle className="text-[13px] font-medium text-[#1d1d1f]">全部记录（阈值: {threshold}秒）</CardTitle>
+            <CardTitle className="text-[13px] font-medium text-[#1d1d1f]">全部记录（共 {scans.length} 单，阈值: {threshold}秒）</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
@@ -74,7 +87,7 @@ export function SkipScanPanel({ data }: Props) {
                     <TableCell>
                       <Badge className={severityColors[s.severity] || 'bg-[#86868b]/10 text-[#86868b]'}>{severityLabels[s.severity] || s.severity}</Badge>
                     </TableCell>
-                    <TableCell className="font-medium text-[13px]">{s.rider}</TableCell>
+                    <TableCell className="font-medium text-[13px] cursor-pointer text-[#0071e3] hover:underline" onClick={() => setSelectedRider(s.rider)}>{s.rider}</TableCell>
                     <TableCell className="text-[13px]">{s.oid}</TableCell>
                     <TableCell className="text-[13px]">{s.shop}</TableCell>
                     <TableCell className="text-[13px]">{s.place_time}</TableCell>
@@ -99,7 +112,7 @@ export function SkipScanPanel({ data }: Props) {
       <Dialog open={!!selectedRider} onOpenChange={() => setSelectedRider(null)}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>{selectedRider} - 跳扫码记录</DialogTitle>
+            <DialogTitle>{selectedRider} - 跳扫码记录（{selectedOrders.length}单）</DialogTitle>
           </DialogHeader>
           {selectedOrders.length > 0 ? (
             <div className="overflow-x-auto">
