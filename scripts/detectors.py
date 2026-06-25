@@ -408,6 +408,8 @@ def detect_skip_scans(orders, ops, config):
                     'severity': sev,
                     'detail': f"投餐→送达仅{gap_seconds:.0f}秒",
                     'dorm': o.get('dorm', ''),
+                    'place_time': last_place.strftime('%H:%M:%S'),
+                    'deliver_time': last_deliver.strftime('%H:%M:%S'),
                 })
 
                 if rider_name not in rider_stats:

@@ -95,34 +95,29 @@ def mark_run(state, component):
 
 
 def dedup_anomalies(new_anomalies, seen_keys, orders_map=None):
-    """去重：只有订单已完成送达才去重。
-    - 订单仍在配送中 → 每次都显示
-    - 订单已完成送达 → 不再重复提醒
+    """去重：只有订单已完成送达才去重。"""
+    # 兼容旧格式（float -> dict）
+    for k, v in list(seen_keys.items()):
+        if isinstance(v, (int, float)):
+            seen_keys[k] = {'completed': True, 'time': v}
 
-    orders_map: {oid: order_dict} 用于检查订单完成状态
-    """
     result = []
     for a in new_anomalies:
         key = f"{a.get('oid', '')}_{a.get('type', '')}"
         oid = a.get('oid', '')
 
-        # 检查订单是否已完成
         is_complete = False
         if orders_map and oid in orders_map:
             o = orders_map[oid]
             is_complete = o.get('is_complete', False) or o.get('is_aftersale', False)
 
         if is_complete:
-            # 订单已完成，标记为已处理，后续不再提醒
             seen_keys[key] = {'completed': True, 'time': time.time()}
-        elif key in seen_keys and seen_keys[key].get('completed'):
-            # 已完成的订单，跳过
+        elif key in seen_keys and isinstance(seen_keys[key], dict) and seen_keys[key].get('completed'):
             continue
         else:
-            # 订单仍在配送中，每次都要显示（不入 seen_keys）
             result.append(a)
 
-    # 清理超过24小时的旧记录
     cutoff = time.time() - 86400
     seen_keys = {k: v for k, v in seen_keys.items()
                  if isinstance(v, dict) and v.get('time', 0) > cutoff}
@@ -130,19 +125,16 @@ def dedup_anomalies(new_anomalies, seen_keys, orders_map=None):
 
 
 def dedup_skip_scans(new_scans, seen_keys):
-    """跳扫码去重：同理，订单完成才去重。"""
+    """跳扫码去重：同一骑手同一单只提醒一次。"""
     result = []
     for s in new_scans:
         key = f"{s.get('oid', '')}_{s.get('rider', '')}"
-        oid = s.get('oid', '')
-        # 跳扫码数据没有 is_complete，所以跳扫码始终显示
-        # 只按 oid+rider 去重（同一骑手同一单不重复）
         if key not in seen_keys:
             result.append(s)
             seen_keys[key] = time.time()
 
     cutoff = time.time() - 86400
-    seen_keys = {k: v for k, v in seen_keys.items() if v > cutoff}
+    seen_keys = {k: v for k, v in seen_keys.items() if isinstance(v, (int, float)) and v > cutoff}
     return result, seen_keys
 
 
