@@ -7,7 +7,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import {
   LayoutDashboard, AlertTriangle, Users, Camera,
   MoreHorizontal, TrendingUp, BarChart3, Settings,
-  Loader2, RefreshCw, ChevronRight, Activity, FileText
+  Loader2, RefreshCw, ChevronRight, Activity, FileText,
+  Sun, Moon
 } from 'lucide-react';
 import { OverviewPanel } from '@/components/OverviewPanel';
 import { AnomalyPanel } from '@/components/AnomalyPanel';
@@ -49,6 +50,26 @@ export default function App() {
   const [alertInfo, setAlertInfo] = useState<{ title: string; message: string; level: 'danger' | 'warning' }>({ title: '', message: '', level: 'warning' });
   const [aiReportOpen, setAiReportOpen] = useState(false);
 
+  // 暗色模式: 'system' | 'dark' | 'light'
+  const [darkMode, setDarkMode] = useState(() => {
+    return localStorage.getItem('theme') || 'system';
+  });
+
+  useEffect(() => {
+    const root = document.documentElement;
+    root.classList.remove('dark', 'light');
+    if (darkMode === 'dark') {
+      root.classList.add('dark');
+    } else if (darkMode === 'light') {
+      root.classList.add('light');
+    }
+    localStorage.setItem('theme', darkMode);
+  }, [darkMode]);
+
+  const toggleDarkMode = () => {
+    setDarkMode(prev => prev === 'dark' ? 'light' : prev === 'light' ? 'system' : 'dark');
+  };
+
   // 检测异常状态，自动弹窗
   useEffect(() => {
     if (!data || !authenticated) return;
@@ -83,8 +104,8 @@ export default function App() {
   // Login page
   if (!authenticated) {
     return (
-      <div className="min-h-screen bg-[#f5f5f7] flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl shadow-sm p-8 w-full max-w-sm text-center">
+      <div className="min-h-screen bg-[#f5f5f7] dark:bg-[#000] flex items-center justify-center p-4">
+        <div className="bg-white dark:bg-[#1c1c1e] rounded-2xl shadow-sm p-8 w-full max-w-sm text-center">
           <div className="w-16 h-16 rounded-2xl bg-[#0071e3]/10 flex items-center justify-center mx-auto mb-4">
             <svg width="32" height="32" viewBox="0 0 48 48" fill="none">
               <rect x="8" y="20" width="32" height="22" rx="4" stroke="#0071e3" stroke-width="2.5"/>
@@ -160,9 +181,9 @@ export default function App() {
   const sessionOk = data?.session_valid ?? false;
 
   return (
-    <div className="min-h-screen bg-[#f5f5f7]">
+    <div className="min-h-screen bg-[#f5f5f7] dark:bg-[#000]">
       {/* Glassmorphism Navbar */}
-      <header className="sticky top-0 z-50 border-b border-black/[0.06] bg-white/70 backdrop-blur-xl backdrop-saturate-150">
+      <header className="sticky top-0 z-50 border-b border-black/[0.06] bg-white/70 dark:bg-[#1c1c1e]/70 backdrop-blur-xl backdrop-saturate-150">
         <div className="max-w-6xl mx-auto flex h-[64px] items-center justify-between px-4">
           <div className="flex items-center gap-3">
             <h1 className="text-[17px] font-semibold tracking-tight text-[#1d1d1f]">艾特米监控</h1>
@@ -189,6 +210,15 @@ export default function App() {
               className="text-[#86868b] hover:text-[#1d1d1f] hover:bg-black/[0.04]"
             >
               <RefreshCw className={cn('h-[18px] w-[18px]', refreshing && 'animate-spin')} />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={toggleDarkMode}
+              className="text-[#86868b] hover:text-[#1d1d1f] hover:bg-black/[0.04]"
+              title={darkMode === 'dark' ? '暗色' : darkMode === 'light' ? '亮色' : '跟随系统'}
+            >
+              {darkMode === 'dark' ? <Moon className="h-[18px] w-[18px]" /> : <Sun className="h-[18px] w-[18px]" />}
             </Button>
           </div>
         </div>
@@ -284,7 +314,7 @@ export default function App() {
       </main>
 
       {/* Bottom Navigation Bar */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-black/[0.06] bg-white/70 backdrop-blur-xl backdrop-saturate-150 safe-area-bottom">
+      <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-black/[0.06] bg-white/70 dark:bg-[#1c1c1e]/70 backdrop-blur-xl backdrop-saturate-150 safe-area-bottom">
         <div className="max-w-6xl mx-auto flex h-[60px]">
           {[
             { id: 'overview', label: '总览', icon: LayoutDashboard, emoji: '🏠' },
