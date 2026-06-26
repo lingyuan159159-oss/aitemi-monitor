@@ -130,14 +130,13 @@ export function RiderPanel({ data }: Props) {
                 <div className="flex items-center gap-3">
                   <div className="font-semibold text-[14px] sm:text-[13px] text-[#1d1d1f] dark:text-white min-w-[40px]">{r.name}</div>
                   {r.totalOvertime > 0 ? (
-                    <Badge variant="destructive" className="text-[11px] rounded-full">{r.totalOvertime}次超时</Badge>
+                    <div className="flex gap-1.5">
+                      {r.sort.overtime > 0 && <Badge variant="destructive" className="text-[11px] rounded-full">分拣{r.sort.overtime}</Badge>}
+                      {r.stay.overtime > 0 && <Badge className="text-[11px] rounded-full bg-[#ff9500]/10 text-[#ff9500] hover:bg-[#ff9500]/15">停留{r.stay.overtime}</Badge>}
+                      {r.deliver.overtime > 0 && <Badge className="text-[11px] rounded-full bg-[#ffcc00]/10 text-[#9a6700] hover:bg-[#ffcc00]/15">配送{r.deliver.overtime}</Badge>}
+                    </div>
                   ) : (
                     <Badge variant="secondary" className="text-[11px] rounded-full">正常</Badge>
-                  )}
-                  {r.fastDeliver > 0 && (
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-[#34c759]/10 text-[#34c759]">
-                      {r.fastDeliver}次快速
-                    </span>
                   )}
                 </div>
                 <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[12px] sm:text-sm text-[#86868b] dark:text-[#98989d]">

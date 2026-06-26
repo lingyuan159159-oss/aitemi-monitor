@@ -64,6 +64,7 @@ function AnomalyMobileCard({ anomaly, onClick }: { anomaly: Anomaly; onClick: ()
         <span>{anomaly.type}</span>
         <span>{anomaly.elapsed_min}分钟</span>
         <span>{anomaly.rider || '--'}</span>
+        {anomaly.dorm && <span>宿舍 {anomaly.dorm}</span>}
       </div>
       <div className="flex items-center gap-2 mt-1.5">
         <span className="text-[11px] text-[#0071e3] dark:text-[#0a84ff] font-mono" onClick={copyOid}>
@@ -105,15 +106,19 @@ export function OverviewPanel({ data, history = [], formatTime: _formatTime, onT
   }, [data?.anomalies, data?.skip_scans]);
 
   const trendData = useMemo(() => {
-    const buckets: Record<string, number> = {};
+    const buckets: Record<string, { max: number; min: number }> = {};
     history.forEach((h) => {
       const d = new Date(h.time);
       const h2 = String(d.getHours()).padStart(2, '0');
       const m = d.getMinutes() < 30 ? '00' : '30';
       const key = `${h2}:${m}`;
-      buckets[key] = Math.max(buckets[key] || 0, h.orders || 0);
+      if (!buckets[key]) buckets[key] = { max: h.orders || 0, min: h.orders || 0 };
+      buckets[key].max = Math.max(buckets[key].max, h.orders || 0);
+      buckets[key].min = Math.min(buckets[key].min, h.orders || 0);
     });
-    return Object.entries(buckets).sort((a, b) => a[0].localeCompare(b[0])).map(([time, orders]) => ({ time, orders }));
+    return Object.entries(buckets)
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .map(([time, { max, min }]) => ({ time, orders: max - min }));
   }, [history]);
 
   if (!data) return null;
@@ -396,6 +401,7 @@ export function OverviewPanel({ data, history = [], formatTime: _formatTime, onT
           {selectedAnomaly && (
             <div className="space-y-2 text-[13px]">
               {[
+                { label: '类型', value: selectedAnomaly.type },
                 { label: '订单号', value: selectedAnomaly.oid },
                 { label: '店铺', value: selectedAnomaly.shop },
                 { label: '区域', value: selectedAnomaly.area },

@@ -110,7 +110,15 @@ export function AnomalyPanel({ data, formatTime }: Props) {
                         </span>
                       </TableCell>
                       <TableCell className="font-medium text-[13px]">{a.delivery_seq || '--'}</TableCell>
-                      <TableCell className="text-[13px]">{a.oid}</TableCell>
+                      <TableCell className="text-[13px]">
+                        <span
+                          className="text-[#0071e3] dark:text-[#0a84ff] font-mono cursor-pointer hover:underline"
+                          onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(a.oid); }}
+                          title="点击复制"
+                        >
+                          {a.oid}
+                        </span>
+                      </TableCell>
                       <TableCell className="font-medium text-[13px]">{a.shop}</TableCell>
                       <TableCell className="text-[13px]">{a.dorm || '--'}</TableCell>
                       <TableCell className="text-[13px]">{a.scan_time || '--'}</TableCell>
@@ -176,7 +184,15 @@ export function AnomalyPanel({ data, formatTime }: Props) {
                   <TableRow key={`${a.oid}-${a.type}`} className={activeAnomalyKeys.has(`${a.oid}::${a.type}`) ? '' : 'opacity-50'}>
                     <TableCell><span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${SEVERITY_BADGE_CLASSES[a.severity] || SEVERITY_BADGE_CLASSES.WARN}`}>{SEVERITY_LABEL_MAP[a.severity] || a.severity}</span></TableCell>
                     <TableCell>{a.type}</TableCell>
-                    <TableCell>{a.oid}</TableCell>
+                    <TableCell>
+                      <span
+                        className="text-[#0071e3] dark:text-[#0a84ff] font-mono cursor-pointer hover:underline"
+                        onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(a.oid); }}
+                        title="点击复制"
+                      >
+                        {a.oid}
+                      </span>
+                    </TableCell>
                     <TableCell className="font-medium text-[13px]">{a.shop}</TableCell>
                     <TableCell>{a.dorm || '--'}</TableCell>
                     <TableCell>{a.elapsed_min}分钟</TableCell>

@@ -227,7 +227,7 @@ def detect_anomalies(orders, ops, config, baseline_path, shop_areas_api=None):
                         'dorm': o.get('dorm', ''),
                         'rider': rider,
                         'delivery_seq': str(o.get('delivery_seq', '')),
-                        'scan_time': last_place.strftime('%Y-%m-%dT%H:%M:%S+08:00'),
+                        'scan_time': last_place.strftime('%H:%M:%S'),
                     })
             continue
 
@@ -257,7 +257,7 @@ def detect_anomalies(orders, ops, config, baseline_path, shop_areas_api=None):
                         'dorm': o.get('dorm', ''),
                         'rider': '',
                         'delivery_seq': str(o.get('delivery_seq', '')),
-                        'scan_time': last_sort.strftime('%Y-%m-%dT%H:%M:%S+08:00'),
+                        'scan_time': last_sort.strftime('%H:%M:%S'),
                     })
             continue
 
@@ -286,21 +286,23 @@ def detect_anomalies(orders, ops, config, baseline_path, shop_areas_api=None):
                     'dorm': o.get('dorm', ''),
                     'rider': '',
                     'delivery_seq': str(o.get('delivery_seq', '')),
-                    'scan_time': o.get('order_time', '').replace(' ', 'T') + '+08:00' if o.get('order_time', '') else '',
+                    'scan_time': o.get('order_time', '')[-8:] if o.get('order_time', '') else '',
                 })
 
-    # ④ 压单检测：分拣→投餐间隔过长（已完成订单的历史压单）
-    # 已报告的 oid 不重复报告
+    # ④ 压单检测：分拣→投餐间隔过长（历史压单）
+    # 已报告的 oid 不重复报告；已完成的订单不提醒（只存历史）
     reported_backlog_oids = {a['oid'] for a in anomalies if a['type'] == '压单'}
+    historical_backlogs = []  # 已完成的压单独存储
     for o in orders:
         if o.get('is_aftersale'):
             continue
         if o['shop'] in exclude:
             continue
-        # 自配送店铺的压单（分拣→投餐）仍需检测
         oid = o['oid']
         if oid in reported_backlog_oids:
             continue
+        # 已完成的压单不提醒，只记录到历史
+        is_historical = o.get('is_complete', False)
         order_ops = ops.get(oid, [])
         sort_times = []
         place_times = []
@@ -322,7 +324,7 @@ def detect_anomalies(orders, ops, config, baseline_path, shop_areas_api=None):
             bl_key = f"{o['shop']}|压单"
             baseline, slope = _update_baseline(baselines, bl_key, gap)
             sev = _classify_with_baseline(gap, press_threshold, baseline, slope)
-            anomalies.append({
+            entry = {
                 'type': '压单',
                 'oid': oid,
                 'shop': o['shop'],
@@ -336,8 +338,13 @@ def detect_anomalies(orders, ops, config, baseline_path, shop_areas_api=None):
                 'dorm': o.get('dorm', ''),
                 'rider': '',
                 'delivery_seq': str(o.get('delivery_seq', '')),
-                'scan_time': last_sort.strftime('%Y-%m-%dT%H:%M:%S+08:00'),
-            })
+                'scan_time': last_sort.strftime('%H:%M:%S'),
+            }
+            if is_historical:
+                entry['historical'] = True
+                historical_backlogs.append(entry)
+            else:
+                anomalies.append(entry)
 
     # 保存基线
     _save_baselines(baseline_path, baselines)
@@ -348,7 +355,7 @@ def detect_anomalies(orders, ops, config, baseline_path, shop_areas_api=None):
         -x.get('elapsed_min', 0),
     ))
 
-    return anomalies
+    return anomalies, historical_backlogs
 
 
 # ===== 跳扫码检测 =====

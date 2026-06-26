@@ -284,7 +284,7 @@ def main():
             o['shop'] = normalize_shop_name(o['shop'])
 
         print("\n=== 异常检测 ===", file=sys.stderr)
-        anomalies = detect_anomalies(orders, ops, config, str(DATA_DIR / 'baseline.json'), shop_areas_api)
+        anomalies, historical_backlogs = detect_anomalies(orders, ops, config, str(DATA_DIR / 'baseline.json'), shop_areas_api)
 
         print("\n=== 跳扫码检测 ===", file=sys.stderr)
         skip_scans, skip_riders = detect_skip_scans(orders, ops, config)
@@ -377,6 +377,7 @@ def main():
         'summary': summary,
         'anomalies': deduped,
         'all_anomalies': anomalies if need_fetch else prev.get('all_anomalies', []),
+        'historical_backlogs': historical_backlogs if need_fetch else prev.get('historical_backlogs', []),
         'skip_scans': skip_scans,
         'skip_scan_riders': skip_riders,
         'riders': rider_stats,
