@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
-  LayoutDashboard, AlertTriangle, Users, Camera,
+  LayoutDashboard, AlertTriangle, Users, Camera, Clock,
   MoreHorizontal, TrendingUp, BarChart3, Settings,
   Loader2, RefreshCw, ChevronRight, Activity, FileText,
   Sun, Moon
@@ -237,6 +237,26 @@ export default function App() {
           </Alert>
         </div>
       )}
+
+      {/* Collection Status Banner - 采集结束后显示 */}
+      {data && (() => {
+        const upd = new Date(data.updated_at.includes('+') ? data.updated_at : data.updated_at + '+08:00');
+        const staleMinutes = Math.floor((Date.now() - upd.getTime()) / 60000);
+        if (staleMinutes > 15) {
+          return (
+            <div className="max-w-6xl mx-auto px-4 pt-3">
+              <Alert className="rounded-2xl border-none bg-[#ff9500]/8 dark:bg-[#ff9f0a]/12 text-[#ff9500] dark:text-[#ff9f0a]">
+                <Clock className="h-4 w-4" />
+                <AlertDescription className="text-[13px]">
+                  今日采集已暂停 · 上次采集 {staleMinutes > 60 ? `${Math.floor(staleMinutes / 60)}小时前` : `${staleMinutes}分钟前`}
+                  {data.health_score != null && ` · 健康分 ${data.health_score}`}
+                </AlertDescription>
+              </Alert>
+            </div>
+          );
+        }
+        return null;
+      })()}
 
       {!sessionOk && (
         <div className="max-w-6xl mx-auto px-4 pt-3">

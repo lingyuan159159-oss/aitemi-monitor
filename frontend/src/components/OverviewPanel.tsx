@@ -192,7 +192,15 @@ export function OverviewPanel({ data, history = [], formatTime: _formatTime, onT
       {data.insights && data.insights.length > 0 && (
         <Card className="dark:bg-[#1c1c1e]">
           <CardContent className="p-3 sm:p-4">
-            <div className="text-[13px] font-medium text-[#1d1d1f] dark:text-white mb-2">AI 洞察</div>
+            <div className="flex items-center justify-between mb-2">
+              <div className="text-[13px] font-medium text-[#1d1d1f] dark:text-white">AI 洞察</div>
+              <div className="text-[10px] text-[#c7c7cc] dark:text-[#636366]">
+                {(() => {
+                  const upd = new Date(data.updated_at.includes('+') ? data.updated_at : data.updated_at + '+08:00');
+                  return upd.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Shanghai' });
+                })()}
+              </div>
+            </div>
             <div className="space-y-1.5">
               {data.insights.map((insight, i) => (
                 <div key={i} className={cn(
