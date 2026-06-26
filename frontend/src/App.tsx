@@ -32,7 +32,7 @@ export default function App() {
     const saved = localStorage.getItem('refresh_interval');
     return saved ? parseInt(saved, 10) : 300;
   });
-  const { data, history, loading, error, triggerCollect } = useMonitorData(authenticated ? refreshInterval : 0);
+  const { data, history, compHistory, loading, error, triggerCollect } = useMonitorData(authenticated ? refreshInterval : 0);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [currentTab, setCurrentTab] = useState('overview');
@@ -273,7 +273,7 @@ export default function App() {
           <SkipScanPanel data={data} />
         )}
         {currentTab === 'competitor' && (
-          <CompetitorPanel data={data} />
+          <CompetitorPanel data={data} compHistory={compHistory} />
         )}
         {currentTab === 'history' && (
           <HistoryPanel history={history} />

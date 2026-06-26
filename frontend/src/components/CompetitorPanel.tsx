@@ -1,12 +1,13 @@
 import { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import type { MonitorData } from '@/lib/types';
+import type { CompetitorHistory } from '@/hooks/useMonitorData';
 import { Store, TrendingUp, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-interface Props { data: MonitorData | null; }
+interface Props { data: MonitorData | null; compHistory?: CompetitorHistory; }
 
 function MetricCard({ icon: Icon, label, value, color }: { icon: React.ElementType; label: string; value: number | string; color: string; }) {
   return (
@@ -22,10 +23,57 @@ function MetricCard({ icon: Icon, label, value, color }: { icon: React.ElementTy
   );
 }
 
-export function CompetitorPanel({ data }: Props) {
+export function CompetitorPanel({ data, compHistory = {} }: Props) {
   const comp = data?.competitor;
   const top15 = useMemo(() => comp?.stores?.slice(0, 15) || [], [comp?.stores]);
   const sortedByHourly = useMemo(() => comp?.stores ? [...comp.stores].sort((a, b) => (b.hourly || 0) - (a.hourly || 0)) : [], [comp?.stores]);
+
+  // 小时趋势：从历史数据计算每小时增量
+  const hourlyTrend = useMemo(() => {
+    const keys = Object.keys(compHistory).sort();
+    if (keys.length < 2) return [];
+    const result: { time: string; delta: number }[] = [];
+    for (let i = 1; i < keys.length; i++) {
+      const prev = compHistory[keys[i - 1]];
+      const curr = compHistory[keys[i]];
+      const prevTotal = Object.values(prev).reduce((s, st) => s + (st.sailed || 0), 0);
+      const currTotal = Object.values(curr).reduce((s, st) => s + (st.sailed || 0), 0);
+      const delta = Math.max(0, currTotal - prevTotal);
+      // 时间标签：从 key 提取 HH:00
+      const label = keys[i].includes('T') ? keys[i].split('T')[1] + ':00' : keys[i];
+      result.push({ time: label, delta });
+    }
+    return result;
+  }, [compHistory]);
+
+  // 每日对比：按天汇总增量
+  const dailyComparison = useMemo(() => {
+    const keys = Object.keys(compHistory).sort();
+    if (keys.length < 2) return [];
+    const dayMap: Record<string, { total: number; hours: number }> = {};
+    let prevTotal: number | null = null;
+    let prevDay = '';
+    for (const key of keys) {
+      const day = key.split('T')[0];
+      const stores = compHistory[key];
+      const total = Object.values(stores).reduce((s, st) => s + (st.sailed || 0), 0);
+      if (prevTotal !== null) {
+        const delta = Math.max(0, total - prevTotal);
+        if (!dayMap[day]) dayMap[day] = { total: 0, hours: 0 };
+        dayMap[day].total += delta;
+        dayMap[day].hours += 1;
+      }
+      prevTotal = total;
+      prevDay = day;
+    }
+    return Object.entries(dayMap)
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .map(([day, { total, hours }]) => ({
+        date: day.slice(5), // MM-DD
+        total,
+        label: `${day.slice(5)} (${hours}h)`,
+      }));
+  }, [compHistory]);
 
   if (!data || !comp || !comp.stores) {
     return (
@@ -91,15 +139,45 @@ export function CompetitorPanel({ data }: Props) {
         </CardContent>
       </Card>
 
-      {/* 7-Day Trend Note */}
-      <Card className="dark:bg-[#1c1c1e]">
-        <CardContent className="p-4">
-          <div className="text-[13px] text-[#86868b] dark:text-[#98989d] flex items-center gap-2">
-            <TrendingUp className="h-4 w-4 text-[#0071e3]" />
-            竞品数据按小时存储，保留 7 天历史。可在历史页面查看趋势。
-          </div>
-        </CardContent>
-      </Card>
+      {/* Hourly Trend Line Chart */}
+      {hourlyTrend.length > 1 && (
+        <Card className="dark:bg-[#1c1c1e]">
+          <CardHeader className="pb-0 px-3 sm:px-6">
+            <CardTitle className="text-[13px] font-medium text-[#1d1d1f] dark:text-white">小时趋势（每小时增量）</CardTitle>
+          </CardHeader>
+          <CardContent className="pt-2 px-1 sm:px-6">
+            <ResponsiveContainer width="100%" height={200}>
+              <LineChart data={hourlyTrend} margin={{ top: 4, right: 16, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke={isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)'} vertical={false} />
+                <XAxis dataKey="time" tick={{ fontSize: 10, fill: isDark ? '#98989d' : '#86868b' }} axisLine={false} tickLine={false} interval={hourlyTrend.length > 8 ? 1 : 0} />
+                <YAxis tick={{ fontSize: 10, fill: isDark ? '#98989d' : '#86868b' }} axisLine={false} tickLine={false} width={35} />
+                <Tooltip contentStyle={customTooltipStyle} />
+                <Line type="monotone" dataKey="delta" stroke="#0071e3" strokeWidth={2} dot={{ r: 3, fill: '#0071e3' }} activeDot={{ r: 5 }} name="增量" />
+              </LineChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Daily Comparison */}
+      {dailyComparison.length > 1 && (
+        <Card className="dark:bg-[#1c1c1e]">
+          <CardHeader className="pb-0 px-3 sm:px-6">
+            <CardTitle className="text-[13px] font-medium text-[#1d1d1f] dark:text-white">每日对比</CardTitle>
+          </CardHeader>
+          <CardContent className="pt-2 px-1 sm:px-6">
+            <ResponsiveContainer width="100%" height={180}>
+              <BarChart data={dailyComparison} margin={{ top: 4, right: 16, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke={isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)'} vertical={false} />
+                <XAxis dataKey="label" tick={{ fontSize: 10, fill: isDark ? '#98989d' : '#86868b' }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 10, fill: isDark ? '#98989d' : '#86868b' }} axisLine={false} tickLine={false} width={35} />
+                <Tooltip contentStyle={customTooltipStyle} />
+                <Bar dataKey="total" fill="#34c759" radius={[6, 6, 0, 0]} name="日增量" />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      )}
 
       {/* TOP 15 Bar Chart */}
       <Card className="dark:bg-[#1c1c1e]">
