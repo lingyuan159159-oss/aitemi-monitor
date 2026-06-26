@@ -4,6 +4,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import type { MonitorData } from '@/lib/types';
 import { Store, TrendingUp, Users } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface Props { data: MonitorData | null; }
 
