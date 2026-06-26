@@ -45,6 +45,10 @@ function MetricCard({ icon: Icon, label, value, color, prev, onClick }: {
 
 /* Mobile-friendly anomaly card for small screens */
 function AnomalyMobileCard({ anomaly, onClick }: { anomaly: Anomaly; onClick: () => void }) {
+  const copyOid = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(anomaly.oid);
+  };
   return (
     <button
       onClick={onClick}
@@ -60,6 +64,12 @@ function AnomalyMobileCard({ anomaly, onClick }: { anomaly: Anomaly; onClick: ()
         <span>{anomaly.type}</span>
         <span>{anomaly.elapsed_min}分钟</span>
         <span>{anomaly.rider || '--'}</span>
+      </div>
+      <div className="flex items-center gap-2 mt-1.5">
+        <span className="text-[11px] text-[#0071e3] dark:text-[#0a84ff] font-mono" onClick={copyOid}>
+          {anomaly.oid}
+        </span>
+        <span className="text-[10px] text-[#c7c7cc] dark:text-[#636366]">点击复制</span>
       </div>
     </button>
   );
@@ -349,7 +359,15 @@ export function OverviewPanel({ data, history = [], formatTime: _formatTime, onT
                                 {SEVERITY_LABEL_MAP[a.severity] || a.severity}
                               </span>
                             </TableCell>
-                            <TableCell className="text-[13px]">{a.oid}</TableCell>
+                            <TableCell className="text-[13px]">
+                              <span
+                                className="text-[#0071e3] dark:text-[#0a84ff] font-mono cursor-pointer hover:underline"
+                                onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(a.oid); }}
+                                title="点击复制"
+                              >
+                                {a.oid}
+                              </span>
+                            </TableCell>
                             <TableCell className="font-medium text-[13px]">{a.shop}</TableCell>
                             <TableCell className="text-[13px]">{a.elapsed_min}分钟</TableCell>
                             <TableCell className="text-[13px]">{a.rider || '--'}</TableCell>
@@ -494,7 +512,15 @@ export function OverviewPanel({ data, history = [], formatTime: _formatTime, onT
                         </Badge>
                       </TableCell>
                       <TableCell className="font-medium text-[13px]">{a.delivery_seq || '--'}</TableCell>
-                      <TableCell className="text-[13px]">{a.oid}</TableCell>
+                      <TableCell className="text-[13px]">
+                        <span
+                          className="text-[#0071e3] dark:text-[#0a84ff] font-mono cursor-pointer hover:underline"
+                          onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(a.oid); }}
+                          title="点击复制"
+                        >
+                          {a.oid}
+                        </span>
+                      </TableCell>
                       <TableCell className="font-medium text-[13px]">{a.shop}</TableCell>
                       <TableCell className="text-[13px]">{a.elapsed_min}分钟</TableCell>
                       <TableCell className="text-[13px]">{a.rider || '--'}</TableCell>
