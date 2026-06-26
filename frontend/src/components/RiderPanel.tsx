@@ -12,7 +12,17 @@ interface Props { data: MonitorData | null; }
 export function RiderPanel({ data }: Props) {
   const [selectedRider, setSelectedRider] = useState<Rider | null>(null);
 
-  if (!data || data.riders.length === 0) {
+  const ridersWithIssues = useMemo(() => (data?.riders || []).map(r => {
+    const totalOvertime = r.sort.overtime + r.stay.overtime + r.deliver.overtime;
+    const totalOrders = r.sort.total + r.stay.total + r.deliver.total;
+    const maxRate = Math.max(r.sort.rate, r.stay.rate, r.deliver.rate);
+    const fastDeliver = r.deliver.total > 0 && r.deliver.rate < 50
+      ? Math.round(r.deliver.total * (1 - r.deliver.rate / 100))
+      : 0;
+    return { ...r, totalOvertime, totalOrders, maxRate, fastDeliver };
+  }).sort((a, b) => b.totalOvertime - a.totalOvertime), [data?.riders]);
+
+  if (!data || !data.riders || data.riders.length === 0) {
     return (
       <Card className="dark:bg-[#1c1c1e]">
         <CardContent className="p-10 text-center">
@@ -21,17 +31,6 @@ export function RiderPanel({ data }: Props) {
       </Card>
     );
   }
-
-  // 计算每个骑手的问题总数（超时数之和）和快速送达数
-  const ridersWithIssues = useMemo(() => data.riders.map(r => {
-    const totalOvertime = r.sort.overtime + r.stay.overtime + r.deliver.overtime;
-    const totalOrders = r.sort.total + r.stay.total + r.deliver.total;
-    const maxRate = Math.max(r.sort.rate, r.stay.rate, r.deliver.rate);
-    const fastDeliver = r.deliver.total > 0 && r.deliver.rate < 50
-      ? Math.round(r.deliver.total * (1 - r.deliver.rate / 100))
-      : 0;
-    return { ...r, totalOvertime, totalOrders, maxRate, fastDeliver };
-  }).sort((a, b) => b.totalOvertime - a.totalOvertime), [data.riders]);
 
   const totalRiders = ridersWithIssues.length;
   const problemRiders = ridersWithIssues.filter(r => r.totalOvertime > 0).length;
