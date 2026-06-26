@@ -307,31 +307,6 @@ def main():
             if not a.get('delivery_seq') and a.get('oid') in orders_map:
                 a['delivery_seq'] = str(orders_map[a['oid']].get('delivery_seq', ''))
 
-        # 超时自动归档：活跃异常超过2小时自动转为历史
-        auto_archived = []
-        still_active = []
-        from datetime import timedelta
-        cutoff = now - timedelta(hours=2)
-        for a in deduped:
-            scan_t = a.get('scan_time', '')
-            # scan_time 现在是 HH:MM:SS 格式，拼上今天的日期
-            if scan_t and ':' in scan_t and len(scan_t) <= 8:
-                try:
-                    scan_dt = datetime.strptime(f"{now.strftime('%Y-%m-%d')} {scan_t}", '%Y-%m-%d %H:%M:%S')
-                    if scan_dt < cutoff:
-                        a['historical'] = True
-                        a['archive_reason'] = '超时自动归档'
-                        auto_archived.append(a)
-                        continue
-                except ValueError:
-                    pass
-            still_active.append(a)
-        if auto_archived:
-            deduped = still_active
-            print(f"  自动归档: {len(auto_archived)} 条超时异常转为历史", file=sys.stderr)
-            # 合并到历史压单列表
-            historical_backlogs.extend(auto_archived)
-
         # 跳扫码去重（同一骑手同一单不重复）
         skip_seen = runtime.get('seen_skip_scans', {})
         deduped_skip, skip_seen = dedup_skip_scans(skip_scans, skip_seen)
