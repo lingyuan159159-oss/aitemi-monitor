@@ -68,29 +68,23 @@ function AnomalyMobileCard({ anomaly, onClick }: { anomaly: Anomaly; onClick: ()
 export function OverviewPanel({ data, history = [], formatTime: _formatTime, onTabChange }: Props) {
   const [anomalyModalType, setAnomalyModalType] = useState<string | null>(null);
   const [selectedAnomaly, setSelectedAnomaly] = useState<Anomaly | null>(null);
-  if (!data) return null;
-  const s = data.summary;
 
   const distData = useMemo(() => [
-    { name: '分拣', count: data.anomalies.filter(a => a.type === '分拣超时').length, fill: '#ff3b30' },
-    { name: '配送', count: data.anomalies.filter(a => a.type === '配送超时').length, fill: '#ffcc00' },
-    { name: '压单', count: data.anomalies.filter(a => a.type === '压单').length, fill: '#86868b' },
-    { name: '跳扫', count: data.skip_scans.length, fill: '#af52de' },
-  ], [data.anomalies, data.skip_scans]);
-
-  const typeCnt: Record<string, number> = {};
-  data.anomalies.forEach(a => { typeCnt[a.type] = (typeCnt[a.type] || 0) + 1; });
-  const skipCnt = data.skip_scans.length;
+    { name: '分拣', count: (data?.anomalies || []).filter(a => a.type === '分拣超时').length, fill: '#ff3b30' },
+    { name: '配送', count: (data?.anomalies || []).filter(a => a.type === '配送超时').length, fill: '#ffcc00' },
+    { name: '压单', count: (data?.anomalies || []).filter(a => a.type === '压单').length, fill: '#86868b' },
+    { name: '跳扫', count: (data?.skip_scans || []).length, fill: '#af52de' },
+  ], [data?.anomalies, data?.skip_scans]);
 
   const { faultList } = useMemo(() => {
     const rf: Record<string, { count: number; types: Record<string, number> }> = {};
-    data.anomalies.forEach(a => {
+    (data?.anomalies || []).forEach(a => {
       if (!a.rider) return;
       if (!rf[a.rider]) rf[a.rider] = { count: 0, types: {} };
       rf[a.rider].count++;
       rf[a.rider].types[a.type] = (rf[a.rider].types[a.type] || 0) + 1;
     });
-    data.skip_scans.forEach(s => {
+    (data?.skip_scans || []).forEach(s => {
       if (!s.rider) return;
       if (!rf[s.rider]) rf[s.rider] = { count: 0, types: {} };
       rf[s.rider].count++;
@@ -98,7 +92,7 @@ export function OverviewPanel({ data, history = [], formatTime: _formatTime, onT
     });
     const fl = Object.entries(rf).sort((a, b) => b[1].count - a[1].count);
     return { riderFault: rf, faultList: fl };
-  }, [data.anomalies, data.skip_scans]);
+  }, [data?.anomalies, data?.skip_scans]);
 
   const trendData = useMemo(() => {
     const buckets: Record<string, number> = {};
@@ -111,6 +105,12 @@ export function OverviewPanel({ data, history = [], formatTime: _formatTime, onT
     });
     return Object.entries(buckets).sort((a, b) => a[0].localeCompare(b[0])).map(([time, orders]) => ({ time, orders }));
   }, [history]);
+
+  if (!data) return null;
+  const s = data.summary;
+  const typeCnt: Record<string, number> = {};
+  data.anomalies.forEach(a => { typeCnt[a.type] = (typeCnt[a.type] || 0) + 1; });
+  const skipCnt = data.skip_scans.length;
 
   const isDark = document.documentElement.classList.contains('dark');
   const customTooltipStyle = {

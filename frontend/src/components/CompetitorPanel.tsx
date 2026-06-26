@@ -22,7 +22,11 @@ function MetricCard({ icon: Icon, label, value, color }: { icon: React.ElementTy
 }
 
 export function CompetitorPanel({ data }: Props) {
-  if (!data || !data.competitor || !data.competitor.stores) {
+  const comp = data?.competitor;
+  const top15 = useMemo(() => comp?.stores?.slice(0, 15) || [], [comp?.stores]);
+  const sortedByHourly = useMemo(() => comp?.stores ? [...comp.stores].sort((a, b) => (b.hourly || 0) - (a.hourly || 0)) : [], [comp?.stores]);
+
+  if (!data || !comp || !comp.stores) {
     return (
       <Card className="dark:bg-[#1c1c1e]">
         <CardContent className="p-10 text-center">
@@ -31,9 +35,6 @@ export function CompetitorPanel({ data }: Props) {
       </Card>
     );
   }
-  const comp = data.competitor;
-  const top15 = useMemo(() => comp.stores.slice(0, 15), [comp.stores]);
-  const sortedByHourly = useMemo(() => [...comp.stores].sort((a, b) => (b.hourly || 0) - (a.hourly || 0)), [comp.stores]);
 
   const isDark = document.documentElement.classList.contains('dark');
   const customTooltipStyle = {
