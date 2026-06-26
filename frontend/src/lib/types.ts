@@ -6,6 +6,7 @@ export interface Anomaly {
   shop: string;
   area: string;
   elapsed_min: number;
+  elapsed_label?: string;
   threshold: number;
   severity: string;
   baseline?: number;
@@ -15,6 +16,7 @@ export interface Anomaly {
   rider: string;
   delivery_seq: string;
   scan_time?: string;
+  historical?: boolean;
 }
 
 export interface SkipScan {

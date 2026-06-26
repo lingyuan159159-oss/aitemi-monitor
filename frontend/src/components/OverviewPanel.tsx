@@ -55,15 +55,15 @@ function AnomalyMobileCard({ anomaly, onClick }: { anomaly: Anomaly; onClick: ()
       className="w-full text-left p-3 bg-[#f5f5f7] dark:bg-[#2c2c2e] rounded-xl active:bg-[#ebebed] dark:active:bg-[#3a3a3c] transition-colors min-h-[56px]"
     >
       <div className="flex items-center justify-between mb-1">
-        <span className="font-medium text-[14px] text-[#1d1d1f] dark:text-white truncate max-w-[60%]">{anomaly.shop}</span>
+        <span className="font-medium text-[14px] text-[#1d1d1f] dark:text-white truncate max-w-[55%]">{anomaly.shop}</span>
         <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold ${SEVERITY_BADGE_CLASSES[anomaly.severity] || SEVERITY_BADGE_CLASSES.WARN}`}>
           {SEVERITY_LABEL_MAP[anomaly.severity] || anomaly.severity}
         </span>
       </div>
-      <div className="flex items-center gap-3 text-[12px] text-[#86868b] dark:text-[#98989d]">
-        <span>{anomaly.type}</span>
-        <span>{anomaly.elapsed_min}分钟</span>
-        <span>{anomaly.rider || '--'}</span>
+      <div className="flex items-center gap-2 flex-wrap text-[12px] text-[#86868b] dark:text-[#98989d]">
+        <span className="text-[#ff3b30] dark:text-[#ff453a] font-medium">{anomaly.elapsed_label || anomaly.type} {anomaly.elapsed_min}分钟</span>
+        <span>扫码 {anomaly.scan_time || '--'}</span>
+        {anomaly.rider && <span>骑手 {anomaly.rider}</span>}
         {anomaly.dorm && <span>宿舍 {anomaly.dorm}</span>}
       </div>
       <div className="flex items-center gap-2 mt-1.5">
@@ -120,6 +120,23 @@ export function OverviewPanel({ data, history = [], formatTime: _formatTime, onT
       .sort((a, b) => a[0].localeCompare(b[0]))
       .map(([time, { max, min }]) => ({ time, orders: max - min }));
   }, [history]);
+
+  // 实时异常：过滤历史压单，按区域分组，按耗时降序
+  const activeAnomalies = useMemo(() => {
+    return (data?.anomalies || [])
+      .filter(a => !a.historical)
+      .sort((a, b) => b.elapsed_min - a.elapsed_min);
+  }, [data?.anomalies]);
+
+  const anomaliesByArea = useMemo(() => {
+    const groups: Record<string, Anomaly[]> = {};
+    activeAnomalies.forEach(a => {
+      const area = a.area || '未知';
+      if (!groups[area]) groups[area] = [];
+      groups[area].push(a);
+    });
+    return Object.entries(groups).sort((a, b) => b[1].length - a[1].length);
+  }, [activeAnomalies]);
 
   if (!data) return null;
   const s = data.summary;
@@ -483,71 +500,65 @@ export function OverviewPanel({ data, history = [], formatTime: _formatTime, onT
         </Card>
       </div>
 
-      {/* Current Anomalies - mobile card list + desktop table */}
-      {s.anomaly_count > 0 && (
+      {/* Current Anomalies - grouped by area, sorted by elapsed time */}
+      {activeAnomalies.length > 0 && (
         <Card className="dark:bg-[#1c1c1e]">
           <CardHeader className="pb-0 px-3 sm:px-6">
-            <CardTitle className="text-[13px] font-medium text-[#1d1d1f] dark:text-white">当前异常</CardTitle>
+            <CardTitle className="text-[13px] font-medium text-[#1d1d1f] dark:text-white">
+              实时异常 · {activeAnomalies.length} 单
+            </CardTitle>
           </CardHeader>
-          <CardContent className="px-3 sm:px-6">
-            {/* Mobile: card list */}
-            <div className="sm:hidden space-y-2">
-              {data.anomalies.slice(0, 20).map((a) => (
-                <AnomalyMobileCard key={`${a.oid}-${a.type}`} anomaly={a} onClick={() => setSelectedAnomaly(a)} />
-              ))}
-            </div>
-            {/* Desktop: table */}
-            <div className="hidden sm:block overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>严重度</TableHead>
-                    <TableHead>配送单号</TableHead>
-                    <TableHead>订单号</TableHead>
-                    <TableHead>店名</TableHead>
-                    <TableHead>耗时</TableHead>
-                    <TableHead>骑手</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {data.anomalies.slice(0, 20).map((a) => (
-                    <TableRow key={`${a.oid}-${a.type}`} className="cursor-pointer" onClick={() => setSelectedAnomaly(a)}>
-                      <TableCell>
-                        <Badge className={SEVERITY_BADGE_CLASSES[a.severity] || SEVERITY_BADGE_CLASSES.WARN}>
-                          {SEVERITY_LABEL_MAP[a.severity] || a.severity}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="font-medium text-[13px]">{a.delivery_seq || '--'}</TableCell>
-                      <TableCell className="text-[13px]">
-                        <span
-                          className="text-[#0071e3] dark:text-[#0a84ff] font-mono cursor-pointer hover:underline"
-                          onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(a.oid); }}
-                          title="点击复制"
-                        >
-                          {a.oid}
-                        </span>
-                      </TableCell>
-                      <TableCell className="font-medium text-[13px]">{a.shop}</TableCell>
-                      <TableCell className="text-[13px]">{a.elapsed_min}分钟</TableCell>
-                      <TableCell className="text-[13px]">{a.rider || '--'}</TableCell>
-                    </TableRow>
+          <CardContent className="px-3 sm:px-6 space-y-4">
+            {anomaliesByArea.map(([area, items]) => (
+              <div key={area}>
+                <div className="text-[12px] font-medium text-[#86868b] dark:text-[#98989d] mb-2 flex items-center gap-2">
+                  <span className="h-1.5 w-1.5 rounded-full bg-[#ff3b30]" />
+                  {area}（{items.length}）
+                </div>
+                <div className="sm:hidden space-y-2">
+                  {items.map((a) => (
+                    <AnomalyMobileCard key={`${a.oid}-${a.type}`} anomaly={a} onClick={() => setSelectedAnomaly(a)} />
                   ))}
-                </TableBody>
-              </Table>
-            </div>
-            {data.anomalies.length > 20 && (
-              <div className="mt-3 flex justify-center">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="gap-1.5 text-[13px] text-[#0071e3] hover:text-[#0077ed] hover:bg-[#0071e3]/5 min-h-[44px]"
-                  onClick={() => onTabChange?.('anomalies')}
-                >
-                  查看全部 {s.anomaly_count} 条
-                  <ArrowRight className="h-3.5 w-3.5" />
-                </Button>
+                </div>
+                <div className="hidden sm:block overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>严重度</TableHead>
+                        <TableHead>耗时</TableHead>
+                        <TableHead>扫码时间</TableHead>
+                        <TableHead>订单号</TableHead>
+                        <TableHead>店名</TableHead>
+                        <TableHead>宿舍</TableHead>
+                        <TableHead>骑手</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {items.map((a) => (
+                        <TableRow key={`${a.oid}-${a.type}`} className="cursor-pointer" onClick={() => setSelectedAnomaly(a)}>
+                          <TableCell>
+                            <Badge className={SEVERITY_BADGE_CLASSES[a.severity] || SEVERITY_BADGE_CLASSES.WARN}>
+                              {SEVERITY_LABEL_MAP[a.severity] || a.severity}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-[13px]">
+                            <span className="text-[#ff3b30] dark:text-[#ff453a] font-medium">{a.elapsed_label || a.type}</span>
+                            <span className="ml-1">{a.elapsed_min}分钟</span>
+                          </TableCell>
+                          <TableCell className="text-[13px] font-mono">{a.scan_time || '--'}</TableCell>
+                          <TableCell className="text-[13px]">
+                            <span className="text-[#0071e3] dark:text-[#0a84ff] font-mono cursor-pointer hover:underline" onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(a.oid); }} title="点击复制">{a.oid}</span>
+                          </TableCell>
+                          <TableCell className="font-medium text-[13px]">{a.shop}</TableCell>
+                          <TableCell className="text-[13px]">{a.dorm || '--'}</TableCell>
+                          <TableCell className="text-[13px]">{a.rider || '--'}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
               </div>
-            )}
+            ))}
           </CardContent>
         </Card>
       )}
