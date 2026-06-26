@@ -187,10 +187,10 @@ def detect_anomalies(orders, ops, config, baseline_path, shop_areas_api=None):
         if sort_ok and place_ok and deliver_ok:
             continue
 
-        # ① 投餐已发生但未送达 -> 配送超时
-        if shop in self_delivery:
-            continue
+        # ① 投餐已发生但未送达 -> 配送超时（自配送店铺跳过配送超时检测）
         if place_ok and not deliver_ok:
+            if shop in self_delivery:
+                continue
             th = _get_threshold(area, '配送超时', thresholds)
             pt = [parse_ts(op['time']) for op in order_ops
                   if op['type'] == '投餐' and op['status'] == '完成']
@@ -290,12 +290,17 @@ def detect_anomalies(orders, ops, config, baseline_path, shop_areas_api=None):
                 })
 
     # ④ 压单检测：分拣→投餐间隔过长（已完成订单的历史压单）
+    # 已报告的 oid 不重复报告
+    reported_backlog_oids = {a['oid'] for a in anomalies if a['type'] == '压单'}
     for o in orders:
         if o.get('is_aftersale'):
             continue
-        if o['shop'] in exclude or o['shop'] in self_delivery:
+        if o['shop'] in exclude:
             continue
+        # 自配送店铺的压单（分拣→投餐）仍需检测
         oid = o['oid']
+        if oid in reported_backlog_oids:
+            continue
         order_ops = ops.get(oid, [])
         sort_times = []
         place_times = []

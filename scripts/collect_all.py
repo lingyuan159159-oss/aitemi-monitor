@@ -90,14 +90,14 @@ def _calc_health_score(summary, anomalies, skip_scans, skip_riders, rider_stats,
     skip_deduction += high_risk * 10
     score -= min(skip_deduction, 20)
 
-    # 配送效率 (20%): 平均超时率
+    # 配送效率 (20%): 平均超时率（只算有数据的维度）
     if rider_stats:
         avg_rates = []
         for r in rider_stats:
             for dim in ('sort', 'stay', 'deliver'):
-                rate = r.get(dim, {}).get('rate', 0)
-                if rate > 0:
-                    avg_rates.append(rate)
+                dim_data = r.get(dim, {})
+                if dim_data.get('total', 0) > 0 and dim_data.get('rate', 0) > 0:
+                    avg_rates.append(dim_data['rate'])
         if avg_rates:
             avg_rate = sum(avg_rates) / len(avg_rates)
             eff_deduction = min(avg_rate / 5, 20)  # 100%超时率 → -20分
@@ -110,10 +110,11 @@ def _calc_health_score(summary, anomalies, skip_scans, skip_riders, rider_stats,
         aftersale_rate = aftersale / total * 100
         score -= min(aftersale_rate * 2, 10)  # 5%售后 → -10分
 
-    # 竞品活跃度 (10%): 活跃店铺比例越低扣越多
+    # 竞品活跃度 (10%): 活跃店铺比例（比例越高说明市场越活跃，竞争越激烈）
     if competitor and competitor.get('total_stores', 0) > 0:
         active_rate = competitor['active_stores'] / competitor['total_stores']
-        score -= min((1 - active_rate) * 10, 10)
+        # 竞争越激烈（活跃比例高）扣分越多，但最多扣10分
+        score -= min(active_rate * 10, 10)
 
     return max(0, min(100, round(score)))
 
@@ -422,7 +423,7 @@ def main():
     # ===== 每日日报（22:30 自动生成）=====
     current_hour_min = now.strftime('%H:%M')
     daily_report_done = runtime.get('daily_report_date') == now.strftime('%Y-%m-%d')
-    if '22:20' <= current_hour_min <= '22:40' and not daily_report_done:
+    if '22:10' <= current_hour_min <= '22:50' and not daily_report_done:
         print("\n=== 生成每日日报 ===", file=sys.stderr)
         try:
             flush_pending_summaries(str(DATA_DIR))

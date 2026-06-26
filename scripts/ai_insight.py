@@ -62,7 +62,16 @@ def generate_insights(current, previous, history):
     if not anomalies and prev_anomaly > 0:
         insights.append({"type": "good", "text": "当前零异常，一切正常"})
 
-    # 7. 竞品洞察
+    # 7. 订单量异常（突增/突降可能是系统问题）
+    curr_orders = current.get('summary', {}).get('total_orders', 0)
+    prev_orders = previous.get('summary', {}).get('total_orders', 0)
+    if prev_orders > 50 and curr_orders > 0:
+        order_chg = abs(curr_orders - prev_orders) / prev_orders
+        if order_chg > 0.5:
+            direction = '突增' if curr_orders > prev_orders else '骤降'
+            insights.append({"type": "warning", "text": f"订单量{direction}：{prev_orders}→{curr_orders}（{order_chg*100:.0f}%），请检查采集是否正常"})
+
+    # 8. 竞品洞察
     curr_comp = current.get('competitor', {})
     prev_comp = previous.get('competitor', {})
     if curr_comp.get('total_stores', 0) > 0 and prev_comp.get('total_stores', 0) > 0:
@@ -94,5 +103,7 @@ def generate_insights(current, previous, history):
                 elif chg < -60:
                     insights.append({"type": "info", "text": f"竞品 {cs['name']} 小时增量骤降（{ps['hourly']}→{cs['hourly']}）"})
 
-    # 限制最多 5 条（竞品洞察优先级低，不挤占异常洞察）
-    return insights[:5]
+    # 限制：异常类最多 3 条，竞品类最多 2 条
+    anomaly_insights = [i for i in insights if i['type'] != 'info']
+    competitor_insights = [i for i in insights if i['type'] == 'info']
+    return anomaly_insights[:3] + competitor_insights[:2]

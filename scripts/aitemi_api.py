@@ -73,6 +73,9 @@ def load_all_ops(base_url, cookie, date_str=None):
         html = _fetch(url, cookie)
         trs = re.findall(r'<tr[^>]*>(.*?)</tr>', html, re.DOTALL)
         if not trs:
+            # 如果 HTML 有内容但解析不到 tr，可能是页面改版
+            if pg == 1 and len(html) > 1000:
+                print(f"  [WARN] Ops page {pg}: HTML 有 {len(html)} 字节但无 <tr>，可能页面改版", file=sys.stderr)
             break
         for tr in trs:
             tds = re.findall(r'<td[^>]*>(.*?)</td>', tr, re.DOTALL)
@@ -111,6 +114,8 @@ def load_all_orders(base_url, cookie, date_str=None):
         html = _fetch(url, cookie)
         tables = re.findall(r'<table[^>]*>(.*?)</table>', html, re.DOTALL)
         if not tables:
+            if pg == 1 and len(html) > 1000:
+                print(f"  [WARN] Orders page {pg}: HTML 有 {len(html)} 字节但无 <table>，可能页面改版", file=sys.stderr)
             break
         for table in tables:
             shop_m = re.search(r'店铺[：:]\s*<b>(.*?)</b>', table)

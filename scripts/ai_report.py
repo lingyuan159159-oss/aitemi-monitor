@@ -49,6 +49,14 @@ def _call_ai(prompt, max_tokens=1000):
         )
         resp = urllib.request.urlopen(req, timeout=30)
         result = json.loads(resp.read().decode('utf-8'))
+        # 检查 API 错误响应
+        if 'error' in result:
+            err_msg = result['error'].get('message', str(result['error']))
+            print(f"  [AI] API 返回错误: {err_msg}", file=sys.stderr)
+            return None
+        if 'choices' not in result or not result['choices']:
+            print(f"  [AI] API 返回无 choices: {list(result.keys())}", file=sys.stderr)
+            return None
         content = result['choices'][0]['message']['content'].strip()
         print(f"  [AI] 生成成功 ({len(content)} 字)", file=sys.stderr)
         return content
