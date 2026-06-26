@@ -68,24 +68,32 @@ def _send_feishu(title, content_lines):
         },
     }
 
-    try:
-        data = json.dumps(card).encode('utf-8')
-        req = urllib.request.Request(
-            FEISHU_WEBHOOK,
-            data=data,
-            headers={'Content-Type': 'application/json'},
-        )
-        resp = urllib.request.urlopen(req, timeout=10)
-        result = json.loads(resp.read().decode('utf-8'))
-        if result.get('code') == 0:
-            print(f"  [NOTIFY] 飞书推送成功: {title}", file=sys.stderr)
-            return True
-        else:
-            print(f"  [NOTIFY] 飞书推送失败: {result}", file=sys.stderr)
-            return False
-    except Exception as e:
-        print(f"  [NOTIFY] 飞书推送异常: {e}", file=sys.stderr)
-        return False
+    last_err = None
+    for attempt in range(2):  # 最多重试 1 次
+        try:
+            data = json.dumps(card).encode('utf-8')
+            req = urllib.request.Request(
+                FEISHU_WEBHOOK,
+                data=data,
+                headers={'Content-Type': 'application/json'},
+            )
+            resp = urllib.request.urlopen(req, timeout=10)
+            result = json.loads(resp.read().decode('utf-8'))
+            if result.get('code') == 0:
+                print(f"  [NOTIFY] 飞书推送成功: {title}", file=sys.stderr)
+                return True
+            else:
+                print(f"  [NOTIFY] 飞书推送失败: {result}", file=sys.stderr)
+                return False
+        except Exception as e:
+            last_err = e
+            if attempt == 0:
+                print(f"  [NOTIFY] 飞书推送异常(重试): {e}", file=sys.stderr)
+                import time
+                time.sleep(2)
+            else:
+                print(f"  [NOTIFY] 飞书推送异常: {e}", file=sys.stderr)
+    return False
 
 
 def notify_critical(anomalies):

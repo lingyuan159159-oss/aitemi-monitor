@@ -103,7 +103,17 @@ def generate_insights(current, previous, history):
                 elif chg < -60:
                     insights.append({"type": "info", "text": f"竞品 {cs['name']} 小时增量骤降（{ps['hourly']}→{cs['hourly']}）"})
 
-    # 限制：异常类最多 3 条，竞品类最多 2 条
-    anomaly_insights = [i for i in insights if i['type'] != 'info']
+    # 9. 基于历史的趋势分析（过去3次采集的异常趋势）
+    if history and len(history) >= 3:
+        recent3 = history[-3:]
+        anomaly_trend = [h.get('anomalies', 0) for h in recent3]
+        if anomaly_trend[0] > 0 and anomaly_trend[2] > anomaly_trend[0] * 1.5:
+            insights.append({"type": "warning", "text": f"异常持续上升：{anomaly_trend[0]}→{anomaly_trend[1]}→{anomaly_trend[2]}"})
+        elif anomaly_trend[0] > 0 and anomaly_trend[2] < anomaly_trend[0] * 0.5:
+            insights.append({"type": "good", "text": f"异常持续下降：{anomaly_trend[0]}→{anomaly_trend[1]}→{anomaly_trend[2]}"})
+
+    # 限制：异常类最多 3 条，竞品类最多 2 条，趋势类最多 1 条
+    anomaly_insights = [i for i in insights if i['type'] not in ('info', 'trend')]
     competitor_insights = [i for i in insights if i['type'] == 'info']
-    return anomaly_insights[:3] + competitor_insights[:2]
+    trend_insights = [i for i in insights if i['type'] == 'trend']
+    return anomaly_insights[:3] + competitor_insights[:2] + trend_insights[:1]

@@ -37,18 +37,20 @@ def _call_ai(prompt, max_tokens=1000):
         "temperature": 0.3,
     }
 
-    try:
-        data = json.dumps(payload).encode('utf-8')
-        req = urllib.request.Request(
-            url,
-            data=data,
-            headers={
-                'Content-Type': 'application/json',
-                'Authorization': f'Bearer {AI_API_KEY}',
-            },
-        )
-        resp = urllib.request.urlopen(req, timeout=30)
-        result = json.loads(resp.read().decode('utf-8'))
+    last_err = None
+    for attempt in range(2):  # 最多重试 1 次
+        try:
+            data = json.dumps(payload).encode('utf-8')
+            req = urllib.request.Request(
+                url,
+                data=data,
+                headers={
+                    'Content-Type': 'application/json',
+                    'Authorization': f'Bearer {AI_API_KEY}',
+                },
+            )
+            resp = urllib.request.urlopen(req, timeout=30)
+            result = json.loads(resp.read().decode('utf-8'))
         # 检查 API 错误响应
         if 'error' in result:
             err_msg = result['error'].get('message', str(result['error']))
@@ -61,8 +63,14 @@ def _call_ai(prompt, max_tokens=1000):
         print(f"  [AI] 生成成功 ({len(content)} 字)", file=sys.stderr)
         return content
     except Exception as e:
-        print(f"  [AI] 调用失败: {e}", file=sys.stderr)
-        return None
+        last_err = e
+        if attempt == 0:
+            print(f"  [AI] 调用失败(重试): {e}", file=sys.stderr)
+            import time
+            time.sleep(2)
+        else:
+            print(f"  [AI] 调用失败: {e}", file=sys.stderr)
+    return None
 
 
 def generate_daily_report(summary, anomalies, rider_stats, skip_scans, competitor, history):
