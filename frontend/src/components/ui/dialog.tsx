@@ -51,11 +51,19 @@ function DialogContent({
       <DialogPrimitive.Popup
         data-slot="dialog-content"
         className={cn(
-          "fixed top-[50%] left-[50%] z-50 -translate-x-1/2 -translate-y-1/2 w-[calc(100%-2rem)] max-w-sm max-h-[calc(100dvh-2rem)] overflow-y-auto flex flex-col gap-4 rounded-xl bg-popover p-4 text-sm text-popover-foreground ring-1 ring-foreground/10 duration-100 outline-none data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
+          // 移动端：底部弹出 sheet 样式；桌面端：居中弹窗
+          "fixed z-50 flex flex-col gap-4 bg-popover text-sm text-popover-foreground ring-1 ring-foreground/10 duration-200 outline-none",
+          "data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
+          // 移动端样式
+          "inset-x-0 bottom-0 max-h-[85dvh] rounded-t-2xl p-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))]",
+          // 桌面端覆盖
+          "sm:inset-auto sm:top-[50%] sm:left-[50%] sm:-translate-x-1/2 sm:-translate-y-1/2 sm:max-w-sm sm:max-h-[calc(100dvh-2rem)] sm:rounded-xl sm:rounded-t-xl sm:pb-4",
           className
         )}
         {...props}
       >
+        {/* 移动端拖拽指示条 */}
+        <div className="mx-auto h-1 w-10 rounded-full bg-[#c7c7cc] dark:bg-[#636366] sm:hidden mb-1" />
         {children}
         {showCloseButton && (
           <DialogPrimitive.Close
@@ -68,8 +76,7 @@ function DialogContent({
               />
             }
           >
-            <XIcon
-            />
+            <XIcon />
             <span className="sr-only">Close</span>
           </DialogPrimitive.Close>
         )}
