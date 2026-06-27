@@ -47,8 +47,6 @@ export function SettingsDialog({ open, onOpenChange, refreshInterval, onInterval
   }, [thresholds]);
 
   const handleSave = () => {
-    localStorage.setItem('scan_intervals', JSON.stringify(localIntervals));
-    localStorage.setItem('thresholds', JSON.stringify(localThresholds));
     if (onTimeRangeChange) onTimeRangeChange(timeRange);
     if (onThresholdsChange) onThresholdsChange(localThresholds);
     onOpenChange(false);

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -7,38 +7,42 @@ import { cn } from '@/lib/utils';
 import type { MonitorData } from '@/lib/types';
 import { SEVERITY_BADGE_CLASSES, SEVERITY_LABEL_MAP } from '@/lib/constants';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
-import { useChartTheme } from '@/lib/chartTheme';
+import { getChartTheme } from '@/lib/chartTheme';
 
 interface Props { data: MonitorData | null; }
 
 export function SkipScanPanel({ data }: Props) {
   const [selectedRider, setSelectedRider] = useState<string | null>(null);
-  const { isDark, customTooltipStyle } = useChartTheme();
+  const { isDark, customTooltipStyle } = getChartTheme();
   if (!data) return null;
   const { skip_scans: scans } = data;
   const threshold = data.config?.skip_scan_threshold || 60;
 
   // 直接从 skip_scans 计算每个骑手的数量，确保和表格一致
-  const riderCountMap: Record<string, { count: number; high_risk: boolean }> = {};
-  scans.forEach(s => {
-    if (!s.rider) return;
-    if (!riderCountMap[s.rider]) riderCountMap[s.rider] = { count: 0, high_risk: false };
-    riderCountMap[s.rider].count++;
-  });
-  // 标记高风险（超过2单）
-  Object.values(riderCountMap).forEach(r => { r.high_risk = r.count > 2; });
-  const computedRiders = Object.entries(riderCountMap)
-    .map(([name, info]) => ({ name, count: info.count, high_risk: info.high_risk }))
-    .sort((a, b) => b.count - a.count);
+  const computedRiders = useMemo(() => {
+    const riderCountMap: Record<string, { count: number; high_risk: boolean }> = {};
+    scans.forEach(s => {
+      if (!s.rider) return;
+      if (!riderCountMap[s.rider]) riderCountMap[s.rider] = { count: 0, high_risk: false };
+      riderCountMap[s.rider].count++;
+    });
+    Object.values(riderCountMap).forEach(r => { r.high_risk = r.count > 2; });
+    return Object.entries(riderCountMap)
+      .map(([name, info]) => ({ name, count: info.count, high_risk: info.high_risk }))
+      .sort((a, b) => b.count - a.count);
+  }, [scans]);
 
-  const chartData = computedRiders.map(r => ({
+  const chartData = useMemo(() => computedRiders.map(r => ({
     name: r.name,
     count: r.count,
     fill: r.high_risk ? '#ff3b30' : '#af52de',
-  }));
+  })), [computedRiders]);
 
   // 获取选中骑手的订单（直接从 scans 筛选）
-  const selectedOrders = selectedRider ? scans.filter(s => s.rider === selectedRider) : [];
+  const selectedOrders = useMemo(() =>
+    selectedRider ? scans.filter(s => s.rider === selectedRider) : [],
+    [scans, selectedRider]
+  );
 
   return (
     <div className="space-y-4">

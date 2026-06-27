@@ -1,5 +1,14 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useMonitorData } from '@/hooks/useMonitorData';
+
+// SHA-256 hash of the access key — 原始密钥不在客户端代码中暴露
+const ACCESS_KEY_HASH = '1500fb5832148eea6c4b95361e90db95be72678184c6c669aa1450321f3444a2';
+
+async function hashKey(key: string): Promise<string> {
+  const data = new TextEncoder().encode(key);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -8,7 +17,7 @@ import {
   LayoutDashboard, AlertTriangle, Users, Clock,
   MoreHorizontal, TrendingUp, BarChart3, Settings,
   Loader2, RefreshCw, ChevronRight, Activity, FileText,
-  Sun, Moon
+  Sun, Moon, Monitor
 } from 'lucide-react';
 import { OverviewPanel } from '@/components/OverviewPanel';
 import { AnomalyPanel } from '@/components/AnomalyPanel';
@@ -37,9 +46,11 @@ export default function App() {
   const [refreshing, setRefreshing] = useState(false);
   const [currentTab, setCurrentTab] = useState('overview');
   const [toast, setToast] = useState<{ message: string; visible: boolean }>({ message: '', visible: false });
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout>>();
   const showToast = (msg: string) => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
     setToast({ message: msg, visible: true });
-    setTimeout(() => setToast(s => ({ ...s, visible: false })), 2000);
+    toastTimerRef.current = setTimeout(() => setToast(s => ({ ...s, visible: false })), 2000);
   };
   // 告警弹窗
   const [alertOpen, setAlertOpen] = useState(false);
@@ -118,10 +129,9 @@ export default function App() {
     }
   }, [data?.session_valid, data?.health_score, data?.anomalies?.length, authenticated]);
 
-  const ACCESS_KEY = 'aitemi2026'; // TODO: 移到后端验证
-
-  const handleLogin = () => {
-    if (loginKey === ACCESS_KEY) {
+  const handleLogin = async () => {
+    const hash = await hashKey(loginKey);
+    if (hash === ACCESS_KEY_HASH) {
       localStorage.setItem('aitemi_auth', 'true');
       setAuthenticated(true);
       setLoginError('');
@@ -278,7 +288,7 @@ export default function App() {
               className="text-[#86868b] dark:text-[#98989d] hover:text-[#1d1d1f] dark:hover:text-white hover:bg-black/[0.04] dark:hover:bg-white/[0.05]"
               title={darkMode === 'dark' ? '暗色' : darkMode === 'light' ? '亮色' : '跟随系统'}
             >
-              {darkMode === 'dark' ? <Moon className="h-[18px] w-[18px]" /> : <Sun className="h-[18px] w-[18px]" />}
+              {darkMode === 'dark' ? <Moon className="h-[18px] w-[18px]" /> : darkMode === 'light' ? <Sun className="h-[18px] w-[18px]" /> : <Monitor className="h-[18px] w-[18px]" />}
             </Button>
           </div>
         </div>
@@ -339,7 +349,10 @@ export default function App() {
       )}
 
       {/* Pull-to-refresh indicator */}
-      <div className="flex justify-center overflow-hidden transition-all" style={{ height: pullDistance > 0 ? pullDistance : 0 }}>
+      <div
+        className="flex justify-center items-center transition-[height] duration-300 ease-out"
+        style={{ height: refreshing ? 56 : Math.min(pullDistance, 120), overflow: pullDistance > 0 || refreshing ? 'visible' : 'hidden' }}
+      >
         <div className="flex flex-col items-center justify-center gap-1">
           <RefreshCw className={cn('h-5 w-5 text-[#86868b] dark:text-[#98989d] transition-transform', pullDistance >= PULL_THRESHOLD && 'rotate-180 text-[#0071e3] dark:text-[#0a84ff]', refreshing && 'animate-spin')} />
           {pullDistance >= PULL_THRESHOLD && !refreshing && (
@@ -427,7 +440,7 @@ export default function App() {
                   }}
                   className={cn(
                     'w-full flex items-center gap-3 px-4 py-3 sm:py-3.5 text-left hover:bg-black/[0.03] dark:hover:bg-white/[0.05] active:bg-black/[0.06] dark:active:bg-white/[0.08] transition-colors min-h-[48px]',
-                    i < 4 && 'border-b border-[#f2f2f7] dark:border-[#38383a]'
+                    i < 5 && 'border-b border-[#f2f2f7] dark:border-[#38383a]'
                   )}
                 >
                   <item.icon className={cn('h-5 w-5', item.color)} />
@@ -510,7 +523,7 @@ export default function App() {
               知道了
             </Button>
             {!data?.session_valid && (
-              <Button onClick={() => { setAlertOpen(false); }} className="flex-1 rounded-xl bg-[#ff3b30] hover:bg-[#ff3b30]/90 active:bg-[#ff3b30]/80 text-white min-h-[44px]">
+              <Button onClick={() => { setAlertOpen(false); window.open('https://admshop.mengshimei.shop', '_blank'); showToast('请登录后台后在 GitHub Secrets 更新 Cookie'); }} className="flex-1 rounded-xl bg-[#ff3b30] hover:bg-[#ff3b30]/90 active:bg-[#ff3b30]/80 text-white min-h-[44px]">
                 去更新
               </Button>
             )}

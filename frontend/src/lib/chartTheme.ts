@@ -1,4 +1,4 @@
-export function useChartTheme() {
+export function getChartTheme() {
   const isDark = document.documentElement.classList.contains('dark');
   return {
     isDark,

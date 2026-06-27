@@ -38,18 +38,23 @@ export function AnomalyPanel({ data, formatTime }: Props) {
     return Array.from(set).sort();
   }, [anomalies]);
 
-  const filteredAnomalies = selectedShop === '__all__'
-    ? anomalies
-    : anomalies.filter(a => a.shop === selectedShop);
+  const filteredAnomalies = useMemo(() =>
+    selectedShop === '__all__' ? anomalies : anomalies.filter(a => a.shop === selectedShop),
+    [anomalies, selectedShop]
+  );
 
-  const filteredAllAnomalies = selectedShop === '__all__'
-    ? allAnomalies
-    : allAnomalies.filter(a => a.shop === selectedShop);
+  const filteredAllAnomalies = useMemo(() =>
+    selectedShop === '__all__' ? allAnomalies : allAnomalies.filter(a => a.shop === selectedShop),
+    [allAnomalies, selectedShop]
+  );
 
-  const activeAnomalyKeys = new Set(filteredAnomalies.map(a => `${a.oid}::${a.type}`));
+  const activeAnomalyKeys = useMemo(() => new Set(filteredAnomalies.map(a => `${a.oid}::${a.type}`)), [filteredAnomalies]);
 
-  const cnt: Record<string, number> = { HIGH: 0, MED: 0, LOW: 0, WARN: 0 };
-  filteredAnomalies.forEach(a => { cnt[a.severity] = (cnt[a.severity] || 0) + 1; });
+  const cnt = useMemo(() => {
+    const c: Record<string, number> = { HIGH: 0, MED: 0, LOW: 0, WARN: 0 };
+    filteredAnomalies.forEach(a => { c[a.severity] = (c[a.severity] || 0) + 1; });
+    return c;
+  }, [filteredAnomalies]);
 
   const anomaliesByArea = useMemo(() => {
     const groups: Record<string, typeof filteredAnomalies> = {};

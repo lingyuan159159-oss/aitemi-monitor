@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, LabelList } from 'recharts';
 import type { Rider, MonitorData } from '@/lib/types';
 import { Users, AlertTriangle, TrendingUp, Zap } from 'lucide-react';
+import { getChartTheme } from '@/lib/chartTheme';
 
 type TabKey = 'problem' | 'good';
 
@@ -15,6 +16,7 @@ interface Props { data: MonitorData | null; }
 export function RiderPanel({ data }: Props) {
   const [selectedRider, setSelectedRider] = useState<Rider | null>(null);
   const [activeTab, setActiveTab] = useState<TabKey>('problem');
+  const { isDark } = getChartTheme();
 
   const ridersWithScore = useMemo(() => (data?.riders || []).map(r => {
     const totalOvertime = r.sort.overtime + r.stay.overtime + r.deliver.overtime;
@@ -46,7 +48,7 @@ export function RiderPanel({ data }: Props) {
 
   const totalRiders = ridersWithScore.length;
   const problemRiders = ridersWithScore.filter(r => r.totalOvertime > 0).length;
-  const highestRate = ridersWithScore.length > 0 ? ridersWithScore[0].maxRate : 0;
+  const highestRate = ridersWithScore.length > 0 ? Math.max(...ridersWithScore.map(r => r.maxRate)) : 0;
   const fastRiders = ridersWithScore.filter(r => r.fastDeliver > 0).length;
 
   const top10 = displayRiders.slice(0, 10).map(r => ({
@@ -55,7 +57,6 @@ export function RiderPanel({ data }: Props) {
     rate: Math.round((r.totalOvertime / Math.max(r.totalOrders, 1)) * 100),
   }));
 
-  const isDark = document.documentElement.classList.contains('dark');
   const customTooltipStyle = {
     backgroundColor: isDark ? 'rgba(28, 28, 30, 0.92)' : 'rgba(255, 255, 255, 0.9)',
     backdropFilter: 'blur(8px)',
@@ -111,14 +112,13 @@ export function RiderPanel({ data }: Props) {
                 <YAxis tick={{ fontSize: 10, fill: isDark ? '#98989d' : '#86868b' }} axisLine={false} tickLine={false} width={30} />
                 <Tooltip contentStyle={customTooltipStyle} />
                 <Bar dataKey="overtime" radius={[6, 6, 0, 0]} barSize={28} name="超时数">
-                  {top10.map((entry, i) => {
-                    const maxO = Math.max(...top10.map(t => t.overtime), 1);
+                  {(() => { const maxO = Math.max(...top10.map(t => t.overtime), 1); return top10.map((entry, i) => {
                     const ratio = entry.overtime / maxO;
                     const r = Math.round(255 * ratio);
                     const g = Math.round(59 * (1 - ratio));
                     const b = Math.round(48 * (1 - ratio));
                     return <Cell key={i} fill={`rgb(${r},${g},${b})`} />;
-                  })}
+                  }); })()}
                   <LabelList dataKey="overtime" position="top" style={{ fontSize: 11, fill: isDark ? '#ffffff' : '#1d1d1f', fontWeight: 600 }} />
                 </Bar>
               </BarChart>

@@ -6,7 +6,7 @@ import type { MonitorData } from '@/lib/types';
 import type { CompetitorHistory } from '@/hooks/useMonitorData';
 import { Store, TrendingUp, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useChartTheme } from '@/lib/chartTheme';
+import { getChartTheme } from '@/lib/chartTheme';
 
 interface Props { data: MonitorData | null; compHistory?: CompetitorHistory; }
 
@@ -25,6 +25,7 @@ function MetricCard({ icon: Icon, label, value, color }: { icon: React.ElementTy
 }
 
 export function CompetitorPanel({ data, compHistory = {} }: Props) {
+  const { isDark, customTooltipStyle } = getChartTheme();
   const comp = data?.competitor;
   const top15 = useMemo(() => comp?.stores?.slice(0, 15) || [], [comp?.stores]);
   const sortedByHourly = useMemo(() => comp?.stores ? [...comp.stores].sort((a, b) => (b.hourly || 0) - (a.hourly || 0)) : [], [comp?.stores]);
@@ -40,8 +41,9 @@ export function CompetitorPanel({ data, compHistory = {} }: Props) {
       const prevTotal = Object.values(prev).reduce((s, st) => s + (st.sailed || 0), 0);
       const currTotal = Object.values(curr).reduce((s, st) => s + (st.sailed || 0), 0);
       const delta = Math.max(0, currTotal - prevTotal);
-      // 时间标签：从 key 提取 HH:00
-      const label = keys[i].includes('T') ? keys[i].split('T')[1] + ':00' : keys[i];
+      // 时间标签：从 key 提取 HH:MM
+      const timePart = keys[i].includes('T') ? keys[i].split('T')[1] : keys[i];
+      const label = timePart.length > 5 ? timePart.slice(0, 5) : timePart;
       result.push({ time: label, delta });
     }
     return result;
@@ -83,8 +85,6 @@ export function CompetitorPanel({ data, compHistory = {} }: Props) {
       </Card>
     );
   }
-
-  const { isDark, customTooltipStyle } = useChartTheme();
 
   return (
     <div className="space-y-4">

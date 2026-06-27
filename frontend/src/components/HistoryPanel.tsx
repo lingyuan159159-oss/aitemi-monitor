@@ -1,12 +1,37 @@
+import { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import type { HistoryEntry } from '@/lib/types';
-import { useChartTheme } from '@/lib/chartTheme';
+import { getChartTheme } from '@/lib/chartTheme';
 
 interface Props { history: HistoryEntry[]; }
 
 export function HistoryPanel({ history }: Props) {
-  if (!history || history.length < 2) {
+  const { isDark, customTooltipStyle } = getChartTheme();
+
+  const chartData = useMemo(() =>
+    (history || []).map(h => ({
+      time: h.time.split('T')[1] || h.time,
+      orders: h.orders,
+      delivering: h.delivering,
+      anomalies: h.anomalies,
+      skip_scans: h.skip_scans,
+    })),
+    [history]
+  );
+
+  const summary = useMemo(() => {
+    if (chartData.length < 2) return null;
+    const latest = chartData[chartData.length - 1];
+    const earliest = chartData[0];
+    const maxOrders = Math.max(...chartData.map(d => d.orders));
+    const maxAnomalies = Math.max(...chartData.map(d => d.anomalies));
+    const totalSkipScans = chartData.reduce((sum, d) => sum + d.skip_scans, 0);
+    const maxSkipScans = Math.max(...chartData.map(d => d.skip_scans));
+    return { latest, earliest, maxOrders, maxAnomalies, totalSkipScans, maxSkipScans };
+  }, [chartData]);
+
+  if (!history || history.length < 2 || !summary) {
     return (
       <Card className="dark:bg-[#1c1c1e]">
         <CardContent className="p-10 text-center">
@@ -16,15 +41,7 @@ export function HistoryPanel({ history }: Props) {
     );
   }
 
-  const chartData = history.map(h => ({
-    time: h.time.split('T')[1] || h.time,
-    orders: h.orders,
-    delivering: h.delivering,
-    anomalies: h.anomalies,
-    skip_scans: h.skip_scans,
-  }));
-
-  const { isDark, customTooltipStyle } = useChartTheme();
+  const { latest, earliest, maxOrders, maxAnomalies, totalSkipScans, maxSkipScans } = summary;
 
   const legendStyle = { fontSize: '10px', color: isDark ? '#98989d' : '#86868b' };
 
@@ -32,12 +49,6 @@ export function HistoryPanel({ history }: Props) {
   const xInterval = chartData.length > 12 ? Math.floor(chartData.length / 6) : 'preserveStartEnd';
 
   // 生成总结文字
-  const latest = chartData[chartData.length - 1];
-  const earliest = chartData[0];
-  const maxOrders = Math.max(...chartData.map(d => d.orders));
-  const maxAnomalies = Math.max(...chartData.map(d => d.anomalies));
-  const totalSkipScans = chartData.reduce((sum, d) => sum + d.skip_scans, 0);
-  const maxSkipScans = Math.max(...chartData.map(d => d.skip_scans));
 
   const orderSummary = latest
     ? `当前订单 ${latest.orders} 单，配送中 ${latest.delivering} 单，24小时内峰值 ${maxOrders} 单。${latest.orders > earliest.orders ? '订单量整体上升' : latest.orders < earliest.orders ? '订单量整体下降' : '订单量基本持平'}。`

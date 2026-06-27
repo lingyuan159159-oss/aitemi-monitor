@@ -5,10 +5,10 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-export function copyToClipboard(text: string): boolean {
+export async function copyToClipboard(text: string): Promise<boolean> {
   try {
     if (navigator.clipboard && window.isSecureContext) {
-      navigator.clipboard.writeText(text);
+      await navigator.clipboard.writeText(text);
       return true;
     }
     const ta = document.createElement('textarea');

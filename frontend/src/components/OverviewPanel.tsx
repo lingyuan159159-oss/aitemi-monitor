@@ -8,7 +8,7 @@ import { Area, AreaChart, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, R
 import type { MonitorData, HistoryEntry, Anomaly } from '@/lib/types';
 import { SEVERITY_BADGE_CLASSES, SEVERITY_LABEL_MAP, TYPE_BADGE_CLASSES } from '@/lib/constants';
 import { Package, Truck, AlertTriangle, Clock, RotateCcw, CheckCircle2, TrendingUp, TrendingDown, ChevronRight } from 'lucide-react';
-import { useChartTheme } from '@/lib/chartTheme';
+import { getChartTheme } from '@/lib/chartTheme';
 
 interface Props {
   data: MonitorData | null;
@@ -46,9 +46,9 @@ function MetricCard({ icon: Icon, label, value, color, prev, onClick }: {
 
 /* Mobile-friendly anomaly card for small screens */
 function AnomalyMobileCard({ anomaly, onClick, onShowToast }: { anomaly: Anomaly; onClick: () => void; onShowToast?: (msg: string) => void }) {
-  const copyOid = (e: React.MouseEvent) => {
+  const copyOid = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (copyToClipboard(anomaly.oid)) {
+    if (await copyToClipboard(anomaly.oid)) {
       onShowToast?.('已复制到剪贴板');
     }
   };
@@ -131,6 +131,7 @@ function HealthRing({ score, prevScore }: { score: number; prevScore?: number | 
 export function OverviewPanel({ data, history = [], formatTime: _formatTime, onTabChange, onShowToast }: Props) {
   const [anomalyModalType, setAnomalyModalType] = useState<string | null>(null);
   const [selectedAnomaly, setSelectedAnomaly] = useState<Anomaly | null>(null);
+  const { isDark, customTooltipStyle } = getChartTheme();
 
   const distData = useMemo(() => [
     { name: '分拣', count: (data?.anomalies || []).filter(a => a.type === '分拣超时').length, fill: '#ff3b30' },
@@ -195,8 +196,6 @@ export function OverviewPanel({ data, history = [], formatTime: _formatTime, onT
   const typeCnt: Record<string, number> = {};
   data.anomalies.forEach(a => { typeCnt[a.type] = (typeCnt[a.type] || 0) + 1; });
   const skipCnt = data.skip_scans.length;
-
-  const { isDark, customTooltipStyle } = useChartTheme();
 
   // Auto-interval for X axis: skip labels when many data points
   const xInterval = trendData.length > 10 ? Math.floor(trendData.length / 5) : trendData.length > 6 ? 1 : 0;
