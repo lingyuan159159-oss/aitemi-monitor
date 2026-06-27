@@ -46,7 +46,7 @@ export default function App() {
   const [refreshing, setRefreshing] = useState(false);
   const [currentTab, setCurrentTab] = useState('overview');
   const [toast, setToast] = useState<{ message: string; visible: boolean }>({ message: '', visible: false });
-  const toastTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const showToast = (msg: string) => {
     if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
     setToast({ message: msg, visible: true });
