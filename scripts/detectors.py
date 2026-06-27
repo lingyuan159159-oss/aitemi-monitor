@@ -110,7 +110,6 @@ def _classify_with_baseline(current, threshold, baseline, slope, anomaly_type=No
     """基于弹簧-阻尼机制判定严重度。
 
     判定矩阵:
-      压单 -> 独立判定 (>60min 严重, >45min 中等, >30min 轻微)
       超标 + slope > 3        -> 严重（持续恶化）
       超标 + ratio > 1.5      -> 严重（远超基线）
       超标 + slope > 1        -> 中等（轻微恶化）
@@ -118,7 +117,6 @@ def _classify_with_baseline(current, threshold, baseline, slope, anomaly_type=No
       未超标 + slope > 5 + current > threshold*0.8 -> 警告（预警）
       其他                    -> 正常
     """
-    # 压单也用弹簧机制（不再独立判定）
     over = current > threshold
     ratio = current / max(baseline, 1)
 
@@ -537,23 +535,23 @@ def compute_rider_stats(orders, ops, config, shop_areas_api=None):
                 if deliver_elapsed >= 0:
                     rider_data[key]['deliver'].append(deliver_elapsed)
 
+    def calc_dim(values, threshold):
+        if not values:
+            return {'total': 0, 'overtime': 0, 'rate': 0, 'avg': 0}
+        total = len(values)
+        overtime = sum(1 for v in values if v > threshold)
+        avg = sum(values) / total
+        rate = overtime / total * 100 if total else 0
+        return {
+            'total': total,
+            'overtime': overtime,
+            'rate': round(rate, 1),
+            'avg': round(avg, 1),
+        }
+
     result = []
     for (rider, area), data in rider_data.items():
         th = thresholds.get(area, thresholds.get('_default', {}))
-
-        def calc_dim(values, threshold):
-            if not values:
-                return {'total': 0, 'overtime': 0, 'rate': 0, 'avg': 0}
-            total = len(values)
-            overtime = sum(1 for v in values if v > threshold)
-            avg = sum(values) / total
-            rate = overtime / total * 100 if total else 0
-            return {
-                'total': total,
-                'overtime': overtime,
-                'rate': round(rate, 1),
-                'avg': round(avg, 1),
-            }
 
         result.append({
             'name': rider,

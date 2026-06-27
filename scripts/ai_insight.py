@@ -45,15 +45,22 @@ def generate_insights(current, previous, history):
         if count >= 5:
             insights.append({"type": "warning", "text": f"{area} 集中 {count} 条异常"})
 
-    # 5. 骑手超时率飙升
+    # 5. 骑手超时率飙升（合并同一骑手的分拣+配送，最多报3人）
     riders = current.get('riders', [])
+    rider_alerts = 0
     for r in riders:
+        if rider_alerts >= 3:
+            break
         sort_rate = r.get('sort', {}).get('rate', 0)
         deliver_rate = r.get('deliver', {}).get('rate', 0)
-        if sort_rate > 50:
-            insights.append({"type": "warning", "text": f"骑手 {r['name']}({r['area']}) 分拣超时率 {sort_rate}%，效率下降"})
-        if deliver_rate > 50:
-            insights.append({"type": "warning", "text": f"骑手 {r['name']}({r['area']}) 配送超时率 {deliver_rate}%"})
+        if sort_rate > 50 or deliver_rate > 50:
+            parts = []
+            if sort_rate > 50:
+                parts.append(f"分拣 {sort_rate}%")
+            if deliver_rate > 50:
+                parts.append(f"配送 {deliver_rate}%")
+            insights.append({"type": "warning", "text": f"骑手 {r['name']}({r['area']}) {'、'.join(parts)}，效率下降"})
+            rider_alerts += 1
 
     # 6. 积极变化
     if curr_anomaly < prev_anomaly and prev_anomaly > 0:
@@ -112,8 +119,7 @@ def generate_insights(current, previous, history):
         elif anomaly_trend[0] > 0 and anomaly_trend[2] < anomaly_trend[0] * 0.5:
             insights.append({"type": "good", "text": f"异常持续下降：{anomaly_trend[0]}→{anomaly_trend[1]}→{anomaly_trend[2]}"})
 
-    # 限制：异常类最多 3 条，竞品类最多 2 条，趋势类最多 1 条
-    anomaly_insights = [i for i in insights if i['type'] not in ('info', 'trend')]
+    # 限制：异常类最多 3 条，竞品类最多 2 条
+    anomaly_insights = [i for i in insights if i['type'] != 'info']
     competitor_insights = [i for i in insights if i['type'] == 'info']
-    trend_insights = [i for i in insights if i['type'] == 'trend']
-    return anomaly_insights[:3] + competitor_insights[:2] + trend_insights[:1]
+    return anomaly_insights[:3] + competitor_insights[:2]

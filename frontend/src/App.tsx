@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useMonitorData } from '@/hooks/useMonitorData';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -45,6 +45,39 @@ export default function App() {
   const [alertOpen, setAlertOpen] = useState(false);
   const [alertInfo, setAlertInfo] = useState<{ title: string; message: string; level: 'danger' | 'warning' }>({ title: '', message: '', level: 'warning' });
   const [aiReportOpen, setAiReportOpen] = useState(false);
+
+  // Pull-to-refresh
+  const [pullDistance, setPullDistance] = useState(0);
+  const [isPulling, setIsPulling] = useState(false);
+  const pullStartY = useRef(0);
+  const mainRef = useRef<HTMLDivElement>(null);
+  const PULL_THRESHOLD = 80;
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    if (mainRef.current && mainRef.current.scrollTop <= 0) {
+      pullStartY.current = e.touches[0].clientY;
+      setIsPulling(true);
+    }
+  }, []);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!isPulling) return;
+    const diff = e.touches[0].clientY - pullStartY.current;
+    if (diff > 0) {
+      setPullDistance(Math.min(diff * 0.5, 120));
+    }
+  }, [isPulling]);
+
+  const handleTouchEnd = useCallback(async () => {
+    if (pullDistance >= PULL_THRESHOLD && !refreshing) {
+      setRefreshing(true);
+      await triggerCollect();
+      setRefreshing(false);
+      showToast('已刷新');
+    }
+    setPullDistance(0);
+    setIsPulling(false);
+  }, [pullDistance, refreshing, triggerCollect]);
 
   // 暗色模式: 'system' | 'dark' | 'light'
   const [darkMode, setDarkMode] = useState(() => {
@@ -305,8 +338,27 @@ export default function App() {
         </div>
       )}
 
+      {/* Pull-to-refresh indicator */}
+      <div className="flex justify-center overflow-hidden transition-all" style={{ height: pullDistance > 0 ? pullDistance : 0 }}>
+        <div className="flex flex-col items-center justify-center gap-1">
+          <RefreshCw className={cn('h-5 w-5 text-[#86868b] dark:text-[#98989d] transition-transform', pullDistance >= PULL_THRESHOLD && 'rotate-180 text-[#0071e3] dark:text-[#0a84ff]', refreshing && 'animate-spin')} />
+          {pullDistance >= PULL_THRESHOLD && !refreshing && (
+            <span className="text-[11px] text-[#0071e3] dark:text-[#0a84ff]">松开刷新</span>
+          )}
+          {refreshing && (
+            <span className="text-[11px] text-[#86868b] dark:text-[#98989d]">刷新中...</span>
+          )}
+        </div>
+      </div>
+
       {/* Main Content */}
-      <main className="max-w-6xl mx-auto px-3 sm:px-4 py-3 sm:py-4 pb-[calc(6rem+env(safe-area-inset-bottom,0px))]">
+      <main
+        ref={mainRef}
+        className="max-w-6xl mx-auto px-3 sm:px-4 py-3 sm:py-4 pb-[calc(6rem+env(safe-area-inset-bottom,0px))]"
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
         {currentTab !== 'overview' && currentTab !== 'more' && (
           <Button
             variant="ghost"

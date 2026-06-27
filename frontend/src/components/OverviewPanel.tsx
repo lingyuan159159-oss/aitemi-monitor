@@ -18,13 +18,13 @@ interface Props {
   onShowToast?: (msg: string) => void;
 }
 
-function MetricCard({ icon: Icon, label, value, color, prev, onClick, wide }: {
-  icon: React.ElementType; label: string; value: number; color: string; prev?: number | null; onClick?: () => void; wide?: boolean;
+function MetricCard({ icon: Icon, label, value, color, prev, onClick }: {
+  icon: React.ElementType; label: string; value: number; color: string; prev?: number | null; onClick?: () => void;
 }) {
   const pctChange = prev != null && prev > 0 ? ((value - prev) / prev * 100) : null;
   return (
     <Card
-      className={cn('cursor-pointer transition-all duration-150 active:scale-[0.97] active:opacity-80 dark:bg-[#1c1c1e]', onClick && 'cursor-pointer', wide && 'col-span-2 sm:col-span-1')}
+      className={cn('cursor-pointer transition-all duration-150 active:scale-[0.97] active:opacity-80 dark:bg-[#1c1c1e]', onClick && 'cursor-pointer')}
       onClick={onClick}
     >
       <CardContent className="p-3 sm:p-3">
@@ -264,9 +264,9 @@ export function OverviewPanel({ data, history = [], formatTime: _formatTime, onT
 
       {/* Metric Cards - 2 cols on mobile, responsive */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3">
-        <MetricCard icon={Package} label="总订单" value={s.total_orders} color="bg-[#0071e3]/10 text-[#0071e3]" wide />
+        <MetricCard icon={Package} label="总订单" value={s.total_orders} color="bg-[#0071e3]/10 text-[#0071e3]" />
         <MetricCard icon={Truck} label="配送中" value={s.delivering} color="bg-[#34c759]/10 text-[#34c759]" onClick={() => onTabChange?.('anomalies')} />
-        <MetricCard icon={AlertTriangle} label="异常" value={s.anomaly_count} color={s.anomaly_count > 0 ? 'bg-[#ff3b30]/10 text-[#ff3b30]' : 'bg-[#34c759]/10 text-[#34c759]'} onClick={() => onTabChange?.('anomalies')} wide />
+        <MetricCard icon={AlertTriangle} label="异常" value={s.anomaly_count} color={s.anomaly_count > 0 ? 'bg-[#ff3b30]/10 text-[#ff3b30]' : 'bg-[#34c759]/10 text-[#34c759]'} onClick={() => onTabChange?.('anomalies')} />
         <MetricCard icon={Clock} label="跳扫码" value={s.skip_scan_count} color={s.skip_scan_count > 0 ? 'bg-[#ff9500]/10 text-[#ff9500]' : 'bg-[#34c759]/10 text-[#34c759]'} onClick={() => onTabChange?.('skipscan')} />
         <MetricCard icon={RotateCcw} label="售后" value={s.aftersale} color="bg-[#ff9500]/10 text-[#ff9500]" />
         <MetricCard icon={CheckCircle2} label="已完成" value={s.completed} color="bg-[#34c759]/10 text-[#34c759]" />
