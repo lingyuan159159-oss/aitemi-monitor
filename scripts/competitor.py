@@ -12,12 +12,8 @@ import random
 from datetime import datetime, date
 from pathlib import Path
 
-try:
-    import requests
-except ImportError:
-    import urllib.request
-    import urllib.parse
-    requests = None
+import urllib.request
+import urllib.parse
 
 API_BASE = "https://chudalife.jumanxing.com/app/wxapp.php"
 
@@ -39,69 +35,29 @@ BASE_PARAMS = {
 }
 
 
-def _make_session(session_id):
-    if requests:
-        s = requests.Session()
-        s.proxies = {"http": None, "https": None}
-        s.trust_env = False
-        s.cookies.set("PHPSESSID", session_id, domain="chudalife.jumanxing.com")
-        s.headers.update({
-            "User-Agent": USER_AGENT,
-            "Accept": "*/*",
-            "Accept-Language": "zh-CN,zh;q=0.9",
-            "Referer": "https://servicewechat.com/wx67599a2ffa67c452/9/page-frame.html",
-            "xweb_xhr": "1",
-        })
-        return s
-    else:
-        return _UrllibSession(session_id)
+_HEADERS = {
+    "User-Agent": USER_AGENT,
+    "Accept": "*/*",
+    "Accept-Language": "zh-CN,zh;q=0.9",
+    "Referer": "https://servicewechat.com/wx67599a2ffa67c452/9/page-frame.html",
+    "xweb_xhr": "1",
+}
 
 
-class _UrllibSession:
-    def __init__(self, session_id):
-        self.session_id = session_id
-        self.headers = {
-            "User-Agent": USER_AGENT,
-            "Accept": "*/*",
-            "Accept-Language": "zh-CN,zh;q=0.9",
-            "Referer": "https://servicewechat.com/wx67599a2ffa67c452/9/page-frame.html",
-            "xweb_xhr": "1",
-        }
-
-    def get(self, url, params=None, timeout=30):
-        if params:
-            qs = urllib.parse.urlencode(params)
-            full_url = f"{url}?{qs}"
-        else:
-            full_url = url
-        req = urllib.request.Request(full_url, headers=self.headers)
-        req.add_header("Cookie", f"PHPSESSID={self.session_id}")
-        resp = urllib.request.urlopen(req, timeout=timeout)
-        body = resp.read().decode('utf-8')
-        # 检查返回是否是 JSON（防止 HTML 错误页导致模糊报错）
-        try:
-            json.loads(body)
-        except json.JSONDecodeError:
-            raise ValueError(f"API 返回非 JSON 响应（可能是错误页），前 200 字符: {body[:200]}")
-        return _UrllibResponse(resp, body)
-
-
-class _UrllibResponse:
-    def __init__(self, resp, body):
-        self.status_code = resp.getcode()
-        self._body = body
-
-    def json(self):
-        return json.loads(self._body)
-
-
-def _fetch_store_page(session, page, psize=50):
+def _fetch_store_page(session_id, page, psize=50):
     params = {**BASE_PARAMS, "page": str(page), "psize": str(psize)}
+    url = f"{API_BASE}?{urllib.parse.urlencode(params)}"
     try:
-        resp = session.get(API_BASE, params=params, timeout=30)
-        if resp.status_code != 200:
-            return None, f"HTTP {resp.status_code}"
-        data = resp.json()
+        req = urllib.request.Request(url, headers=_HEADERS)
+        req.add_header("Cookie", f"PHPSESSID={session_id}")
+        resp = urllib.request.urlopen(req, timeout=30)
+        if resp.getcode() != 200:
+            return None, f"HTTP {resp.getcode()}"
+        body = resp.read().decode('utf-8')
+        try:
+            data = json.loads(body)
+        except json.JSONDecodeError:
+            return None, f"非 JSON 响应（前 200 字符）: {body[:200]}"
         msg = data.get("message", {})
         errno = msg.get("errno", 0)
         if isinstance(errno, int) and errno != 0:
@@ -118,14 +74,13 @@ def fetch_all_stores(session_id, max_retries=3):
     best_count = 0
 
     for attempt in range(1, max_retries + 1):
-        session = _make_session(session_id)
         all_stores = []
         page = 1
         empty_streak = 0
         seen_ids = set()
 
         while empty_streak < 3 and page <= 10:
-            stores, err = _fetch_store_page(session, page, psize=50)
+            stores, err = _fetch_store_page(session_id, page, psize=50)
             if err:
                 print(f"  [WARN] page {page}: {err}", file=sys.stderr)
                 empty_streak += 1
@@ -191,7 +146,8 @@ def compute_competitor_data(stores, history_path=None):
         try:
             with open(history_path, 'r', encoding='utf-8') as f:
                 history = json.load(f)
-        except Exception:
+        except Exception as e:
+            print(f'Warning: Failed to load history {history_path}: {e}', file=sys.stderr)
             history = {}
 
     # 找昨天最后一小时的快照（用于计算当日总量）

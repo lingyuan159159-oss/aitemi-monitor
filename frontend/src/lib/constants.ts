@@ -1,19 +1,3 @@
-export const SEVERITY_COLORS: Record<string, string> = {
-  '严重': '#ff3b30',
-  '中等': '#ff9500',
-  '轻微': '#ffcc00',
-  '警告': '#5ac8fa',
-  '正常': '#34c759',
-};
-
-export const SEVERITY_LABELS: Record<string, string> = {
-  '严重': '严重',
-  '中等': '中等',
-  '轻微': '轻微',
-  '警告': '警告',
-  '正常': '正常',
-};
-
 /**
  * Severity badge class map (Tailwind classes).
  * Covers both English (HIGH/MED/LOW/WARN) and Chinese (严重/中等/轻微/警告) keys
@@ -37,4 +21,13 @@ export const SEVERITY_BADGE_CLASSES: Record<string, string> = {
 export const SEVERITY_LABEL_MAP: Record<string, string> = {
   HIGH: '严重', MED: '中等', LOW: '轻微', WARN: '警告',
   '严重': '严重', '中等': '中等', '轻微': '轻微', '警告': '警告',
+};
+
+/**
+ * Anomaly type badge classes (colored background pill).
+ */
+export const TYPE_BADGE_CLASSES: Record<string, string> = {
+  '分拣超时': 'bg-[#ff3b30]/10 text-[#ff3b30] dark:bg-[#ff453a]/15 dark:text-[#ff453a]',
+  '配送超时': 'bg-[#ffcc00]/10 text-[#9a6700] dark:bg-[#ffd60a]/15 dark:text-[#ffd60a]',
+  '压单': 'bg-[#86868b]/10 text-[#86868b] dark:bg-[#98989d]/15 dark:text-[#98989d]',
 };

@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
-  LayoutDashboard, AlertTriangle, Users, Camera, Clock,
+  LayoutDashboard, AlertTriangle, Users, Clock,
   MoreHorizontal, TrendingUp, BarChart3, Settings,
   Loader2, RefreshCw, ChevronRight, Activity, FileText,
   Sun, Moon
@@ -32,19 +32,15 @@ export default function App() {
     const saved = localStorage.getItem('refresh_interval');
     return saved ? parseInt(saved, 10) : 300;
   });
-  const { data, history, compHistory, loading, error, triggerCollect } = useMonitorData(authenticated ? refreshInterval : 0);
+  const { data, history, compHistory, loading, error, warning, triggerCollect } = useMonitorData(authenticated ? refreshInterval : 0);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [currentTab, setCurrentTab] = useState('overview');
-  const [thresholds, setThresholds] = useState<Record<string, number>>(() => {
-    try {
-      const saved = localStorage.getItem('thresholds');
-      return saved ? JSON.parse(saved) : { sort_timeout: 20, deliver_timeout: 15, backlog: 30, skip_scan: 60 };
-    } catch {
-      return { sort_timeout: 20, deliver_timeout: 15, backlog: 30, skip_scan: 60 };
-    }
-  });
-
+  const [toast, setToast] = useState<{ message: string; visible: boolean }>({ message: '', visible: false });
+  const showToast = (msg: string) => {
+    setToast({ message: msg, visible: true });
+    setTimeout(() => setToast(s => ({ ...s, visible: false })), 2000);
+  };
   // 告警弹窗
   const [alertOpen, setAlertOpen] = useState(false);
   const [alertInfo, setAlertInfo] = useState<{ title: string; message: string; level: 'danger' | 'warning' }>({ title: '', message: '', level: 'warning' });
@@ -138,7 +134,8 @@ export default function App() {
   const handleRefresh = async () => {
     setRefreshing(true);
     await triggerCollect();
-    setTimeout(() => setRefreshing(false), 2000);
+    setRefreshing(false);
+    showToast('已刷新');
   };
 
   const handleIntervalChange = (val: number) => {
@@ -172,11 +169,34 @@ export default function App() {
 
   if (loading && !data) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[100dvh] gap-3">
-        <div className="w-12 h-12 rounded-2xl bg-[#0071e3] flex items-center justify-center">
-          <Loader2 className="h-6 w-6 animate-spin text-white" />
+      <div className="min-h-[100dvh] bg-[#f5f5f7] dark:bg-[#0a0a0a]">
+        <div className="sticky top-0 z-50 border-b border-black/[0.06] dark:border-white/[0.06] bg-white/70 dark:bg-[#1c1c1e]/70 backdrop-blur-xl h-[64px]" />
+        <div className="max-w-6xl mx-auto px-3 sm:px-4 py-3 sm:py-4 space-y-4">
+          {/* Skeleton: health score */}
+          <div className="bg-white dark:bg-[#1c1c1e] rounded-2xl p-4 flex items-center gap-4 animate-pulse">
+            <div className="w-16 h-16 rounded-full bg-[#e5e5ea] dark:bg-[#38383a]" />
+            <div className="flex-1 space-y-2"><div className="h-4 w-24 bg-[#e5e5ea] dark:bg-[#38383a] rounded" /><div className="h-3 w-32 bg-[#e5e5ea] dark:bg-[#38383a] rounded" /></div>
+          </div>
+          {/* Skeleton: metric cards */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="bg-white dark:bg-[#1c1c1e] rounded-2xl p-3 animate-pulse">
+                <div className="w-7 h-7 rounded-lg bg-[#e5e5ea] dark:bg-[#38383a] mb-2" />
+                <div className="h-3 w-12 bg-[#e5e5ea] dark:bg-[#38383a] rounded mb-1" />
+                <div className="h-5 w-16 bg-[#e5e5ea] dark:bg-[#38383a] rounded" />
+              </div>
+            ))}
+          </div>
+          {/* Skeleton: charts */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+            {[...Array(2)].map((_, i) => (
+              <div key={i} className="bg-white dark:bg-[#1c1c1e] rounded-2xl p-4 animate-pulse">
+                <div className="h-3 w-20 bg-[#e5e5ea] dark:bg-[#38383a] rounded mb-3" />
+                <div className="h-40 bg-[#e5e5ea] dark:bg-[#38383a] rounded-xl" />
+              </div>
+            ))}
+          </div>
         </div>
-        <span className="text-sm text-[#86868b] dark:text-[#98989d]">正在加载...</span>
       </div>
     );
   }
@@ -204,15 +224,18 @@ export default function App() {
             </Badge>
           </div>
           <div className="flex items-center gap-1.5 text-[13px] text-[#86868b] dark:text-[#98989d]">
-            <span className="hidden sm:inline">{relativeTime(data?.updated_at || '')}更新</span>
             <Button
               variant="ghost"
               size="icon"
               onClick={handleRefresh}
               disabled={refreshing}
               className="text-[#86868b] dark:text-[#98989d] hover:text-[#1d1d1f] dark:hover:text-white hover:bg-black/[0.04] dark:hover:bg-white/[0.05]"
+              title={`${relativeTime(data?.updated_at || '')}更新`}
             >
-              <RefreshCw className={cn('h-[18px] w-[18px]', refreshing && 'animate-spin')} />
+              {refreshing
+                ? <Loader2 className="h-[18px] w-[18px] animate-spin text-[#0071e3]" />
+                : <RefreshCw className="h-[18px] w-[18px]" />
+              }
             </Button>
             <span className="w-px h-4 bg-black/[0.08] dark:bg-white/[0.08] mx-0.5" />
             <Button
@@ -233,7 +256,22 @@ export default function App() {
         <div className="max-w-6xl mx-auto px-4 pt-3">
           <Alert variant="destructive" className="rounded-2xl border-none bg-[#ff3b30]/8 dark:bg-[#ff453a]/12 text-[#ff3b30] dark:text-[#ff453a]">
             <AlertTriangle className="h-4 w-4" />
-            <AlertDescription className="text-[13px]">{error}</AlertDescription>
+            <div className="flex items-center justify-between flex-1 gap-2">
+              <AlertDescription className="text-[13px]">{error}</AlertDescription>
+              <Button variant="ghost" size="sm" onClick={handleRefresh} disabled={refreshing}
+                className="text-[#ff3b30] dark:text-[#ff453a] hover:bg-[#ff3b30]/10 dark:hover:bg-[#ff453a]/15 text-[12px] shrink-0">
+                重试
+              </Button>
+            </div>
+          </Alert>
+        </div>
+      )}
+
+      {warning && !error && (
+        <div className="max-w-6xl mx-auto px-4 pt-3">
+          <Alert className="rounded-2xl border-none bg-[#ff9500]/8 dark:bg-[#ff9f0a]/12 text-[#ff9500] dark:text-[#ff9f0a]">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription className="text-[13px]">{warning}</AlertDescription>
           </Alert>
         </div>
       )}
@@ -281,22 +319,34 @@ export default function App() {
         )}
 
         {currentTab === 'overview' && (
-          <OverviewPanel data={data} history={history} formatTime={formatTime} onTabChange={setCurrentTab} />
+          <div className="animate-[fadeIn_0.15s_ease]">
+            <OverviewPanel data={data} history={history} formatTime={formatTime} onTabChange={setCurrentTab} onShowToast={showToast} />
+          </div>
         )}
         {currentTab === 'anomalies' && (
-          <AnomalyPanel data={data} formatTime={formatTime} />
+          <div className="animate-[fadeIn_0.15s_ease]">
+            <AnomalyPanel data={data} formatTime={formatTime} />
+          </div>
         )}
         {currentTab === 'riders' && (
-          <RiderPanel data={data} />
+          <div className="animate-[fadeIn_0.15s_ease]">
+            <RiderPanel data={data} />
+          </div>
         )}
         {currentTab === 'skipscan' && (
-          <SkipScanPanel data={data} />
+          <div className="animate-[fadeIn_0.15s_ease]">
+            <SkipScanPanel data={data} />
+          </div>
         )}
         {currentTab === 'competitor' && (
-          <CompetitorPanel data={data} compHistory={compHistory} />
+          <div className="animate-[fadeIn_0.15s_ease]">
+            <CompetitorPanel data={data} compHistory={compHistory} />
+          </div>
         )}
         {currentTab === 'history' && (
-          <HistoryPanel history={history} />
+          <div className="animate-[fadeIn_0.15s_ease]">
+            <HistoryPanel history={history} />
+          </div>
         )}
 
         {/* More Page */}
@@ -305,6 +355,7 @@ export default function App() {
             <h2 className="text-[17px] font-semibold text-[#1d1d1f] dark:text-white">更多</h2>
             <div className="bg-white dark:bg-[#1c1c1e] rounded-2xl overflow-hidden shadow-sm">
               {[
+                { icon: AlertTriangle, label: '跳扫码检测', tab: 'skipscan', color: 'text-[#ff9500]', badge: data?.summary?.skip_scan_count },
                 { icon: BarChart3, label: '竞品监控', tab: 'competitor', color: 'text-[#0071e3]' },
                 { icon: TrendingUp, label: '历史曲线', tab: 'history', color: 'text-[#34c759]' },
                 { icon: FileText, label: 'AI 日报', action: 'aireport', color: 'text-[#af52de]' },
@@ -324,11 +375,16 @@ export default function App() {
                   }}
                   className={cn(
                     'w-full flex items-center gap-3 px-4 py-3 sm:py-3.5 text-left hover:bg-black/[0.03] dark:hover:bg-white/[0.05] active:bg-black/[0.06] dark:active:bg-white/[0.08] transition-colors min-h-[48px]',
-                    i < 3 && 'border-b border-[#f2f2f7] dark:border-[#38383a]'
+                    i < 4 && 'border-b border-[#f2f2f7] dark:border-[#38383a]'
                   )}
                 >
                   <item.icon className={cn('h-5 w-5', item.color)} />
                   <span className="text-[15px] text-[#1d1d1f] dark:text-white flex-1">{item.label}</span>
+                  {item.badge != null && item.badge > 0 && (
+                    <span className="min-w-[20px] h-5 flex items-center justify-center rounded-full bg-[#ff9500] text-white text-[11px] font-medium px-1.5">
+                      {item.badge}
+                    </span>
+                  )}
                   <ChevronRight className="h-4 w-4 text-[#c7c7cc] dark:text-[#636366]" />
                 </button>
               ))}
@@ -344,8 +400,7 @@ export default function App() {
             { id: 'overview', label: '总览', icon: LayoutDashboard },
             { id: 'anomalies', label: '异常', icon: AlertTriangle, badge: data?.summary?.anomaly_count },
             { id: 'riders', label: '骑手', icon: Users },
-            { id: 'skipscan', label: '跳扫', icon: Camera, badge: data?.summary?.skip_scan_count, badgeColor: 'bg-[#ff9500]' },
-            { id: 'more', label: '更多', icon: MoreHorizontal },
+            { id: 'more', label: '更多', icon: MoreHorizontal, badge: (data?.summary?.skip_scan_count ?? 0) > 0 ? data?.summary?.skip_scan_count : undefined, badgeColor: 'bg-[#ff9500]' },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -387,8 +442,6 @@ export default function App() {
         scanIntervals={data?.config?.scan_intervals}
         scanTimeRange={data?.config?.scan_time_range}
         onTimeRangeChange={handleTimeRangeChange}
-        thresholds={thresholds}
-        onThresholdsChange={setThresholds}
       />
 
       {/* Alert Dialog - Session / Health Score */}
@@ -431,6 +484,27 @@ export default function App() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Toast */}
+      <div
+        style={{
+          position: 'fixed',
+          bottom: '80px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          background: 'rgba(0,0,0,0.7)',
+          color: 'white',
+          padding: '8px 16px',
+          borderRadius: '20px',
+          fontSize: '13px',
+          zIndex: 9999,
+          transition: 'opacity 0.3s',
+          opacity: toast.visible ? 1 : 0,
+          pointerEvents: toast.visible ? 'auto' : 'none',
+        }}
+      >
+        {toast.message}
+      </div>
     </div>
   );
 }

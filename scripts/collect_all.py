@@ -12,6 +12,7 @@
 import hashlib
 import json
 import os
+import re
 import sys
 import time
 from datetime import datetime
@@ -24,8 +25,7 @@ from aitemi_api import validate_session, load_all_ops, load_all_orders, load_sho
 from detectors import detect_anomalies, detect_skip_scans, compute_rider_stats
 from competitor import fetch_all_stores, compute_competitor_data
 from notify import process_alerts, send_daily_report, notify_failure, notify_session_expired, flush_pending_summaries
-from ai_report import generate_daily_report
-from ai_insight import generate_insights
+from intelligence import generate_daily_report, generate_insights
 
 BASE_URL = 'https://admshop.mengshimei.shop'
 DATA_DIR = SCRIPT_DIR.parent / 'data'
@@ -45,95 +45,46 @@ EMPTY_COMPETITOR = {
 DATA_VERSION = '2.0.0'
 
 
-def normalize_shop_name(name):
-    """统一店铺名：括号转全角、去多余空格。"""
-    if not name:
-        return name
-    name = name.replace('(', '（').replace(')', '）')
-    # 去掉括号前后的多余空格
-    import re
-    name = re.sub(r'\s*（', '（', name)
-    name = re.sub(r'）\s*', '）', name)
-    # 去掉店铺名和括号之间的多余空格
-    name = re.sub(r'\s+', ' ', name).strip()
-    return name
-
-
-def _config_hash(config):
-    """计算 config 的短 hash，用于嵌入 latest.json。"""
-    raw = json.dumps(config, sort_keys=True, ensure_ascii=False)
-    return hashlib.md5(raw.encode()).hexdigest()[:12]
 
 
 def _calc_health_score(summary, anomalies, skip_scans, skip_riders, rider_stats, competitor):
-    """计算健康评分（0-100），加权算法。
-
-    权重:
-    - 异常严重度 (40%): 严重-20, 中等-8, 轻微-2, 警告-1
-    - 跳扫码 (20%): 每条-3, 高危骑手额外-10
-    - 配送效率 (20%): 基于骑手平均超时率
-    - 订单完成度 (10%): 售后率
-    - 竞品活跃度 (10%): 活跃店铺比例
-    """
+    """计算健康评分（0-100）。权重：异常40% 跳扫码20% 效率20% 售后10% 竞品10%。"""
     score = 100.0
+    sev_weights = {'严重': 20, '中等': 8, '轻微': 2, '警告': 1}
 
     # 异常严重度 (40%)
-    sev_weights = {'严重': 20, '中等': 8, '轻微': 2, '警告': 1}
-    anomaly_deduction = 0
-    for a in anomalies:
-        anomaly_deduction += sev_weights.get(a.get('severity', ''), 1)
-    score -= min(anomaly_deduction, 40)
+    score -= min(sum(sev_weights.get(a.get('severity', ''), 1) for a in anomalies), 40)
 
     # 跳扫码 (20%)
-    skip_deduction = len(skip_scans) * 3
-    high_risk = sum(1 for r in skip_riders if r.get('high_risk'))
-    skip_deduction += high_risk * 10
-    score -= min(skip_deduction, 20)
+    score -= min(len(skip_scans) * 3 + sum(1 for r in skip_riders if r.get('high_risk')) * 10, 20)
 
-    # 配送效率 (20%): 平均超时率（只算有数据的维度）
+    # 配送效率 (20%)
     if rider_stats:
-        avg_rates = []
-        for r in rider_stats:
-            for dim in ('sort', 'stay', 'deliver'):
-                dim_data = r.get(dim, {})
-                if dim_data.get('total', 0) > 0 and dim_data.get('rate', 0) > 0:
-                    avg_rates.append(dim_data['rate'])
-        if avg_rates:
-            avg_rate = sum(avg_rates) / len(avg_rates)
-            eff_deduction = min(avg_rate / 5, 20)  # 100%超时率 → -20分
-            score -= eff_deduction
+        rates = [d['rate'] for r in rider_stats for d in (r.get('sort'), r.get('stay'), r.get('deliver'))
+                 if d and d.get('total', 0) > 0 and d.get('rate', 0) > 0]
+        if rates:
+            score -= min(sum(rates) / len(rates) / 5, 20)
 
-    # 订单完成度 (10%): 售后率
+    # 售后率 (10%)
     total = summary.get('total_orders', 0)
-    aftersale = summary.get('aftersale', 0)
     if total > 0:
-        aftersale_rate = aftersale / total * 100
-        score -= min(aftersale_rate * 2, 10)  # 5%售后 → -10分
+        score -= min(summary.get('aftersale', 0) / total * 200, 10)
 
-    # 竞品活跃度 (10%): 活跃店铺比例（比例越高说明市场越活跃，竞争越激烈）
+    # 竞品活跃度 (10%)
     if competitor and competitor.get('total_stores', 0) > 0:
-        active_rate = competitor['active_stores'] / competitor['total_stores']
-        # 竞争越激烈（活跃比例高）扣分越多，但最多扣10分
-        score -= min(active_rate * 10, 10)
+        score -= min(competitor['active_stores'] / competitor['total_stores'] * 10, 10)
 
     return max(0, min(100, round(score)))
 
 
-def load_config():
-    with open(CONFIG_PATH) as f:
-        return json.load(f)
 
 
-def get_session_from_env():
     phpsessid = os.environ.get('AITEMI_PHPSESSID', '').strip()
     adminsession = os.environ.get('AITEMI_ADMINSESSION', '').strip()
     if not phpsessid or not adminsession:
         return None
     return {'PHPSESSID': phpsessid, 'adminsession': adminsession}
 
-
-def get_competitor_session():
-    return os.environ.get('COMPETITOR_SESSION', '').strip()
 
 
 def write_json(path, data):
@@ -146,17 +97,10 @@ def load_json(path, default=None):
     if path.exists():
         try:
             return json.loads(path.read_text())
-        except Exception:
-            pass
+        except Exception as e:
+            print(f'Warning: Failed to load {path}: {e}', file=sys.stderr)
     return default if default is not None else {}
 
-
-def load_runtime():
-    return load_json(RUNTIME_PATH, {})
-
-
-def save_runtime(state):
-    write_json(RUNTIME_PATH, state)
 
 
 def should_run(state, component, interval_min):
@@ -224,8 +168,8 @@ def main():
     collect_start = time.time()
     print(f"=== 艾特米数据采集 {now_str} ===", file=sys.stderr)
 
-    config = load_config()
-    runtime = load_runtime()
+    config = json.load(open(CONFIG_PATH))
+    runtime = load_json(RUNTIME_PATH, {})
     intervals = config.get('scan_intervals', {})
     force = '--force' in sys.argv
     date_str = None
@@ -249,7 +193,9 @@ def main():
             print(f"  当前时间 {current_time} 不在采集范围 {start_time}-{end_time}，跳过", file=sys.stderr)
             sys.exit(0)
 
-    session = get_session_from_env()
+    phpsessid = os.environ.get('AITEMI_PHPSESSID', '').strip()
+    adminsession = os.environ.get('AITEMI_ADMINSESSION', '').strip()
+    session = {'PHPSESSID': phpsessid, 'adminsession': adminsession} if phpsessid and adminsession else None
     if not session:
         print("  ERROR: 环境变量未设置", file=sys.stderr)
         write_json(STATUS_PATH, {'session_valid': False, 'updated_at': now_str, 'error': 'env_vars_missing'})
@@ -281,7 +227,13 @@ def main():
 
         # 统一店铺名格式
         for o in orders:
-            o['shop'] = normalize_shop_name(o['shop'])
+            s = o['shop']
+            if s:
+                s = s.replace('(', '（').replace(')', '）')
+                s = re.sub(r'\s*（', '（', s)
+                s = re.sub(r'）\s*', '）', s)
+                s = re.sub(r'\s+', ' ', s).strip()
+                o['shop'] = s
 
         print("\n=== 异常检测 ===", file=sys.stderr)
         anomalies, historical_backlogs = detect_anomalies(orders, ops, config, str(DATA_DIR / 'baseline.json'), shop_areas_api)
@@ -382,7 +334,7 @@ def main():
         'skip_scan_riders': skip_riders,
         'riders': rider_stats,
         'competitor': competitor,
-        'config_hash': _config_hash(config),
+        'config_hash': hashlib.md5(json.dumps(config, sort_keys=True, ensure_ascii=False).encode()).hexdigest()[:12],
         'collection_duration_sec': collect_duration,
         'health_score': health_score,
         'insights': insights,
@@ -408,7 +360,7 @@ def main():
         'error': None,
         'version': DATA_VERSION,
     })
-    save_runtime(runtime)
+    write_json(RUNTIME_PATH, runtime)
 
     # 追加历史
     if need_fetch:
@@ -433,7 +385,7 @@ def main():
                 ai_report_text = ai_text
             send_daily_report(str(DATA_DIR), summary, competitor, deduped, ai_text)
             runtime['daily_report_date'] = now.strftime('%Y-%m-%d')
-            save_runtime(runtime)
+            write_json(RUNTIME_PATH, runtime)
         except Exception as e:
             print(f"  日报生成失败: {e}", file=sys.stderr)
 
@@ -442,7 +394,7 @@ def main():
 
 
 def _collect_competitor(config, now_str):
-    session_id = get_competitor_session()
+    session_id = os.environ.get('COMPETITOR_SESSION', '').strip()
     if not session_id:
         print("  COMPETITOR_SESSION 未设置，跳过", file=sys.stderr)
         return EMPTY_COMPETITOR

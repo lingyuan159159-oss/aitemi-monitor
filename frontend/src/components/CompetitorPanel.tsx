@@ -1,11 +1,12 @@
 import { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, Area, AreaChart, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, LabelList } from 'recharts';
 import type { MonitorData } from '@/lib/types';
 import type { CompetitorHistory } from '@/hooks/useMonitorData';
 import { Store, TrendingUp, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useChartTheme } from '@/lib/chartTheme';
 
 interface Props { data: MonitorData | null; compHistory?: CompetitorHistory; }
 
@@ -52,7 +53,6 @@ export function CompetitorPanel({ data, compHistory = {} }: Props) {
     if (keys.length < 2) return [];
     const dayMap: Record<string, { total: number; hours: number }> = {};
     let prevTotal: number | null = null;
-    let prevDay = '';
     for (const key of keys) {
       const day = key.split('T')[0];
       const stores = compHistory[key];
@@ -64,7 +64,6 @@ export function CompetitorPanel({ data, compHistory = {} }: Props) {
         dayMap[day].hours += 1;
       }
       prevTotal = total;
-      prevDay = day;
     }
     return Object.entries(dayMap)
       .sort((a, b) => a[0].localeCompare(b[0]))
@@ -85,17 +84,7 @@ export function CompetitorPanel({ data, compHistory = {} }: Props) {
     );
   }
 
-  const isDark = document.documentElement.classList.contains('dark');
-  const customTooltipStyle = {
-    backgroundColor: isDark ? 'rgba(28, 28, 30, 0.92)' : 'rgba(255, 255, 255, 0.9)',
-    backdropFilter: 'blur(8px)',
-    border: 'none',
-    borderRadius: '12px',
-    boxShadow: isDark ? '0 2px 12px rgba(0,0,0,0.4)' : '0 2px 12px rgba(0,0,0,0.08)',
-    padding: '8px 12px',
-    fontSize: '12px',
-    color: isDark ? '#ffffff' : '#1d1d1f',
-  };
+  const { isDark, customTooltipStyle } = useChartTheme();
 
   return (
     <div className="space-y-4">
@@ -147,13 +136,19 @@ export function CompetitorPanel({ data, compHistory = {} }: Props) {
           </CardHeader>
           <CardContent className="pt-2 px-1 sm:px-6">
             <ResponsiveContainer width="100%" height={200}>
-              <LineChart data={hourlyTrend} margin={{ top: 4, right: 16, left: 0, bottom: 0 }}>
+              <AreaChart data={hourlyTrend} margin={{ top: 4, right: 16, left: 0, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="compHourlyGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#0071e3" stopOpacity={0.2} />
+                    <stop offset="95%" stopColor="#0071e3" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke={isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)'} vertical={false} />
                 <XAxis dataKey="time" tick={{ fontSize: 10, fill: isDark ? '#98989d' : '#86868b' }} axisLine={false} tickLine={false} interval={hourlyTrend.length > 8 ? 1 : 0} />
                 <YAxis tick={{ fontSize: 10, fill: isDark ? '#98989d' : '#86868b' }} axisLine={false} tickLine={false} width={35} />
                 <Tooltip contentStyle={customTooltipStyle} />
-                <Line type="monotone" dataKey="delta" stroke="#0071e3" strokeWidth={2} dot={{ r: 3, fill: '#0071e3' }} activeDot={{ r: 5 }} name="增量" />
-              </LineChart>
+                <Area type="monotone" dataKey="delta" stroke="#0071e3" strokeWidth={2.5} fill="url(#compHourlyGradient)" dot={{ r: 3, fill: '#0071e3', strokeWidth: 0 }} activeDot={{ r: 5, stroke: '#0071e3', strokeWidth: 2, fill: '#fff' }} name="增量" />
+              </AreaChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
@@ -172,7 +167,12 @@ export function CompetitorPanel({ data, compHistory = {} }: Props) {
                 <XAxis dataKey="label" tick={{ fontSize: 10, fill: isDark ? '#98989d' : '#86868b' }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 10, fill: isDark ? '#98989d' : '#86868b' }} axisLine={false} tickLine={false} width={35} />
                 <Tooltip contentStyle={customTooltipStyle} />
-                <Bar dataKey="total" fill="#34c759" radius={[6, 6, 0, 0]} name="日增量" />
+                <Bar dataKey="total" radius={[6, 6, 0, 0]} barSize={32} name="日增量">
+                  <LabelList dataKey="total" position="top" style={{ fontSize: 11, fill: isDark ? '#ffffff' : '#1d1d1f', fontWeight: 600 }} />
+                  {dailyComparison.map((_, i) => (
+                    <Cell key={i} fill={`hsl(${142 + i * 8}, 68%, ${46 - i * 2}%)`} />
+                  ))}
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
@@ -191,11 +191,45 @@ export function CompetitorPanel({ data, compHistory = {} }: Props) {
               <XAxis type="number" tick={{ fontSize: 10, fill: isDark ? '#98989d' : '#86868b' }} axisLine={false} tickLine={false} />
               <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: isDark ? '#ffffff' : '#1d1d1f' }} width={60} axisLine={false} tickLine={false} />
               <Tooltip contentStyle={customTooltipStyle} />
-              <Bar dataKey="daily" fill="#0071e3" radius={[0, 6, 6, 0]} />
+              <Bar dataKey="daily" radius={[0, 6, 6, 0]} barSize={16}>
+                {top15.map((_, i) => (
+                  <Cell key={i} fill={`hsl(${210 + i * 4}, 85%, ${55 - i * 2}%)`} />
+                ))}
+                <LabelList dataKey="daily" position="right" style={{ fontSize: 10, fill: isDark ? '#98989d' : '#86868b' }} />
+              </Bar>
             </BarChart>
           </ResponsiveContainer>
         </CardContent>
       </Card>
+
+      {/* TOP 5 Pie Chart */}
+      {(() => {
+        const pieData = top15.slice(0, 5).map((s, i) => ({
+          name: s.name,
+          value: s.daily,
+          fill: ['#0071e3', '#34c759', '#ff9500', '#af52de', '#ff3b30'][i],
+        }));
+        return pieData.length > 0 && pieData.some(d => d.value > 0) ? (
+          <Card className="dark:bg-[#1c1c1e]">
+            <CardHeader className="pb-0 px-3 sm:px-6">
+              <CardTitle className="text-[13px] font-medium text-[#1d1d1f] dark:text-white">TOP 5 销量占比</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-2 px-1 sm:px-6">
+              <ResponsiveContainer width="100%" height={200}>
+                <PieChart>
+                  <Pie data={pieData} cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={2} dataKey="value">
+                    {pieData.map((entry, i) => (
+                      <Cell key={i} fill={entry.fill} />
+                    ))}
+                  </Pie>
+                  <Tooltip contentStyle={customTooltipStyle} />
+                  <Legend wrapperStyle={{ fontSize: '11px' }} />
+                </PieChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        ) : null;
+      })()}
 
       {/* Full Ranking - mobile cards + desktop table */}
       <Card className="dark:bg-[#1c1c1e]">

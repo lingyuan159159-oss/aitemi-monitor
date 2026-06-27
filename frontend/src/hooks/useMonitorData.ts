@@ -29,10 +29,10 @@ export function useMonitorData(refreshInterval: number = 300) {
       ]);
 
       if (!dataRes.ok) throw new Error('数据加载失败');
-      const monitorData = await dataRes.json();
+      let monitorData = await dataRes.json();
       if (configRes.ok) {
         const config = await configRes.json();
-        monitorData.config = { ...monitorData.config, ...config };
+        monitorData = { ...monitorData, config: { ...monitorData.config, ...config } };
       }
       setData(monitorData);
       setError(null);

@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import type { HistoryEntry } from '@/lib/types';
+import { useChartTheme } from '@/lib/chartTheme';
 
 interface Props { history: HistoryEntry[]; }
 
@@ -23,17 +24,7 @@ export function HistoryPanel({ history }: Props) {
     skip_scans: h.skip_scans,
   }));
 
-  const isDark = document.documentElement.classList.contains('dark');
-  const customTooltipStyle = {
-    backgroundColor: isDark ? 'rgba(28, 28, 30, 0.92)' : 'rgba(255, 255, 255, 0.9)',
-    backdropFilter: 'blur(8px)',
-    border: 'none',
-    borderRadius: '12px',
-    boxShadow: isDark ? '0 2px 12px rgba(0,0,0,0.4)' : '0 2px 12px rgba(0,0,0,0.08)',
-    padding: '6px 10px',
-    fontSize: '11px',
-    color: isDark ? '#ffffff' : '#1d1d1f',
-  };
+  const { isDark, customTooltipStyle } = useChartTheme();
 
   const legendStyle = { fontSize: '10px', color: isDark ? '#98989d' : '#86868b' };
 

@@ -1,41 +1,42 @@
 import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { cn } from '@/lib/utils';
-import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { cn, copyToClipboard } from '@/lib/utils';
+import { Area, AreaChart, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, LabelList } from 'recharts';
 import type { MonitorData, HistoryEntry, Anomaly } from '@/lib/types';
-import { SEVERITY_BADGE_CLASSES, SEVERITY_LABEL_MAP } from '@/lib/constants';
-import { Package, Truck, AlertTriangle, Clock, RotateCcw, CheckCircle2, TrendingUp, TrendingDown, ChevronRight, ArrowRight } from 'lucide-react';
+import { SEVERITY_BADGE_CLASSES, SEVERITY_LABEL_MAP, TYPE_BADGE_CLASSES } from '@/lib/constants';
+import { Package, Truck, AlertTriangle, Clock, RotateCcw, CheckCircle2, TrendingUp, TrendingDown, ChevronRight } from 'lucide-react';
+import { useChartTheme } from '@/lib/chartTheme';
 
 interface Props {
   data: MonitorData | null;
   history?: HistoryEntry[];
   formatTime: (ts: string) => string;
   onTabChange?: (tab: string) => void;
+  onShowToast?: (msg: string) => void;
 }
 
-function MetricCard({ icon: Icon, label, value, color, prev, onClick }: {
-  icon: React.ElementType; label: string; value: number; color: string; prev?: number | null; onClick?: () => void;
+function MetricCard({ icon: Icon, label, value, color, prev, onClick, wide }: {
+  icon: React.ElementType; label: string; value: number; color: string; prev?: number | null; onClick?: () => void; wide?: boolean;
 }) {
-  const diff = prev != null ? value - prev : null;
+  const pctChange = prev != null && prev > 0 ? ((value - prev) / prev * 100) : null;
   return (
     <Card
-      className={cn('cursor-pointer transition-all duration-150 active:scale-[0.97] active:opacity-80 dark:bg-[#1c1c1e]', onClick && 'cursor-pointer')}
+      className={cn('cursor-pointer transition-all duration-150 active:scale-[0.97] active:opacity-80 dark:bg-[#1c1c1e]', onClick && 'cursor-pointer', wide && 'col-span-2 sm:col-span-1')}
       onClick={onClick}
     >
       <CardContent className="p-3 sm:p-3">
-        <div className={cn('w-6 h-6 sm:w-7 sm:h-7 rounded-lg flex items-center justify-center mb-1.5 sm:mb-2', color)}>
-          <Icon className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+        <div className={cn('w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center mb-1.5 sm:mb-2', color.replace('/10', '/15'))}>
+          <Icon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
         </div>
         <div className="text-[10px] sm:text-[11px] text-[#86868b] dark:text-[#98989d] mb-0.5">{label}</div>
         <div className="text-lg sm:text-xl font-semibold tracking-tight text-[#1d1d1f] dark:text-white">{value}</div>
-        {diff != null && diff !== 0 && (
-          <div className={cn('flex items-center gap-0.5 mt-1 text-[11px] sm:text-xs font-medium', diff > 0 ? 'text-[#ff3b30]' : 'text-[#34c759]')}>
-            {diff > 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-            {diff > 0 ? '+' : ''}{diff}
+        {pctChange != null && Math.abs(pctChange) >= 1 && (
+          <div className={cn('flex items-center gap-0.5 mt-1 text-[11px] sm:text-xs font-medium', pctChange > 0 ? 'text-[#ff3b30]' : 'text-[#34c759]')}>
+            {pctChange > 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+            {pctChange > 0 ? '+' : ''}{pctChange.toFixed(0)}%
           </div>
         )}
       </CardContent>
@@ -44,10 +45,12 @@ function MetricCard({ icon: Icon, label, value, color, prev, onClick }: {
 }
 
 /* Mobile-friendly anomaly card for small screens */
-function AnomalyMobileCard({ anomaly, onClick }: { anomaly: Anomaly; onClick: () => void }) {
+function AnomalyMobileCard({ anomaly, onClick, onShowToast }: { anomaly: Anomaly; onClick: () => void; onShowToast?: (msg: string) => void }) {
   const copyOid = (e: React.MouseEvent) => {
     e.stopPropagation();
-    navigator.clipboard.writeText(anomaly.oid);
+    if (copyToClipboard(anomaly.oid)) {
+      onShowToast?.('已复制到剪贴板');
+    }
   };
   return (
     <button
@@ -55,10 +58,20 @@ function AnomalyMobileCard({ anomaly, onClick }: { anomaly: Anomaly; onClick: ()
       className="w-full text-left p-3 bg-[#f5f5f7] dark:bg-[#2c2c2e] rounded-xl active:bg-[#ebebed] dark:active:bg-[#3a3a3c] transition-colors min-h-[56px]"
     >
       <div className="flex items-center justify-between mb-1">
-        <span className="font-medium text-[14px] text-[#1d1d1f] dark:text-white truncate max-w-[55%]">{anomaly.shop}</span>
-        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold ${SEVERITY_BADGE_CLASSES[anomaly.severity] || SEVERITY_BADGE_CLASSES.WARN}`}>
-          {SEVERITY_LABEL_MAP[anomaly.severity] || anomaly.severity}
-        </span>
+        <div className="min-w-0 flex-1 mr-2">
+          <span className="font-medium text-[14px] text-[#1d1d1f] dark:text-white truncate block">{anomaly.shop}</span>
+          {anomaly.detail && (
+            <span className="text-[11px] text-[#86868b] dark:text-[#98989d] block truncate">{anomaly.detail}</span>
+          )}
+        </div>
+        <div className="flex flex-col items-end gap-1 flex-shrink-0">
+          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold ${SEVERITY_BADGE_CLASSES[anomaly.severity] || SEVERITY_BADGE_CLASSES.WARN}`}>
+            {SEVERITY_LABEL_MAP[anomaly.severity] || anomaly.severity}
+          </span>
+          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold ${TYPE_BADGE_CLASSES[anomaly.type] || 'bg-[#86868b]/10 text-[#86868b] dark:bg-[#98989d]/15 dark:text-[#98989d]'}`}>
+            {anomaly.type}
+          </span>
+        </div>
       </div>
       <div className="flex items-center gap-2 flex-wrap text-[12px] text-[#86868b] dark:text-[#98989d]">
         <span className="text-[#ff3b30] dark:text-[#ff453a] font-medium">{anomaly.elapsed_label || anomaly.type} {anomaly.elapsed_min}分钟</span>
@@ -67,7 +80,7 @@ function AnomalyMobileCard({ anomaly, onClick }: { anomaly: Anomaly; onClick: ()
         {anomaly.dorm && <span>宿舍 {anomaly.dorm}</span>}
       </div>
       <div className="flex items-center gap-2 mt-1.5">
-        <span className="text-[11px] text-[#0071e3] dark:text-[#0a84ff] font-mono" onClick={copyOid}>
+        <span className="text-[11px] text-[#0071e3] dark:text-[#0a84ff] font-mono cursor-pointer active:underline" onClick={copyOid}>
           {anomaly.oid}
         </span>
         <span className="text-[10px] text-[#c7c7cc] dark:text-[#636366]">点击复制</span>
@@ -76,7 +89,46 @@ function AnomalyMobileCard({ anomaly, onClick }: { anomaly: Anomaly; onClick: ()
   );
 }
 
-export function OverviewPanel({ data, history = [], formatTime: _formatTime, onTabChange }: Props) {
+function HealthRing({ score, prevScore }: { score: number; prevScore?: number | null }) {
+  const circumference = 2 * Math.PI * 36;
+  const offset = circumference - (score / 100) * circumference;
+  // Continuous color: green(120°) → yellow(45°) → red(0°)
+  const hue = score >= 80 ? 142 + (score - 80) * 0.3 : score >= 60 ? 45 + (score - 60) * 3.85 : score * 0.75;
+  const color = `hsl(${hue}, 75%, 48%)`;
+  const grade = score >= 80 ? '优' : score >= 60 ? '良' : '差';
+  const diff = prevScore != null ? score - prevScore : null;
+  return (
+    <div className="flex items-center gap-3">
+      <svg width="72" height="72" viewBox="0 0 80 80" className="flex-shrink-0">
+        <defs>
+          <linearGradient id="ring-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor={color} stopOpacity="1" />
+            <stop offset="100%" stopColor={color} stopOpacity="0.6" />
+          </linearGradient>
+        </defs>
+        <circle cx="40" cy="40" r="36" fill="none" stroke="#e5e5ea" strokeWidth="5"
+          className="dark:stroke-[#38383a]" />
+        <circle cx="40" cy="40" r="36" fill="none" stroke="url(#ring-grad)" strokeWidth="5"
+          strokeDasharray={circumference} strokeDashoffset={offset}
+          strokeLinecap="round" transform="rotate(-90 40 40)"
+          style={{ transition: 'stroke-dashoffset 0.8s cubic-bezier(0.4,0,0.2,1)' }} />
+        <text x="40" y="36" textAnchor="middle" dominantBaseline="central"
+          fontSize="22" fontWeight="700" fill={color}
+          className="font-variant-numeric tabular-nums">{score}</text>
+        <text x="40" y="52" textAnchor="middle" dominantBaseline="central"
+          fontSize="10" fontWeight="500" fill={color} opacity="0.7">{grade}</text>
+      </svg>
+      {diff != null && diff !== 0 && (
+        <div className={cn('flex items-center gap-0.5 text-[11px] font-medium', diff > 0 ? 'text-[#34c759]' : 'text-[#ff3b30]')}>
+          {diff > 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+          {diff > 0 ? '+' : ''}{diff}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function OverviewPanel({ data, history = [], formatTime: _formatTime, onTabChange, onShowToast }: Props) {
   const [anomalyModalType, setAnomalyModalType] = useState<string | null>(null);
   const [selectedAnomaly, setSelectedAnomaly] = useState<Anomaly | null>(null);
 
@@ -144,17 +196,7 @@ export function OverviewPanel({ data, history = [], formatTime: _formatTime, onT
   data.anomalies.forEach(a => { typeCnt[a.type] = (typeCnt[a.type] || 0) + 1; });
   const skipCnt = data.skip_scans.length;
 
-  const isDark = document.documentElement.classList.contains('dark');
-  const customTooltipStyle = {
-    backgroundColor: isDark ? 'rgba(28, 28, 30, 0.92)' : 'rgba(255, 255, 255, 0.9)',
-    backdropFilter: 'blur(8px)',
-    border: 'none',
-    borderRadius: '12px',
-    boxShadow: isDark ? '0 2px 12px rgba(0,0,0,0.4)' : '0 2px 12px rgba(0,0,0,0.08)',
-    padding: '6px 10px',
-    fontSize: '11px',
-    color: isDark ? '#ffffff' : '#1d1d1f',
-  };
+  const { isDark, customTooltipStyle } = useChartTheme();
 
   // Auto-interval for X axis: skip labels when many data points
   const xInterval = trendData.length > 10 ? Math.floor(trendData.length / 5) : trendData.length > 6 ? 1 : 0;
@@ -170,14 +212,7 @@ export function OverviewPanel({ data, history = [], formatTime: _formatTime, onT
           'border-[#ff3b30]/30 bg-[#ff3b30]/5'
         )}>
           <CardContent className="p-3 sm:p-5 flex items-center gap-3 sm:gap-5">
-            <div className={cn(
-              'w-14 h-14 sm:w-20 sm:h-20 rounded-xl sm:rounded-2xl flex items-center justify-center text-2xl sm:text-[32px] font-bold flex-shrink-0',
-              data.health_score >= 80 ? 'bg-[#34c759]/15 dark:bg-[#30d158]/20 text-[#34c759] dark:text-[#30d158]' :
-              data.health_score >= 60 ? 'bg-[#ff9500]/15 dark:bg-[#ff9f0a]/20 text-[#ff9500] dark:text-[#ff9f0a]' :
-              'bg-[#ff3b30]/15 dark:bg-[#ff453a]/20 text-[#ff3b30] dark:text-[#ff453a]'
-            )}>
-              {data.health_score}
-            </div>
+            <HealthRing score={data.health_score} />
             <div className="min-w-0">
               <div className="text-[14px] sm:text-[15px] font-semibold text-[#1d1d1f] dark:text-white">
                 {data.health_score >= 80 ? '一切正常' : data.health_score >= 60 ? '有小问题' : '需要关注'}
@@ -229,9 +264,9 @@ export function OverviewPanel({ data, history = [], formatTime: _formatTime, onT
 
       {/* Metric Cards - 2 cols on mobile, responsive */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3">
-        <MetricCard icon={Package} label="总订单" value={s.total_orders} color="bg-[#0071e3]/10 text-[#0071e3]" />
+        <MetricCard icon={Package} label="总订单" value={s.total_orders} color="bg-[#0071e3]/10 text-[#0071e3]" wide />
         <MetricCard icon={Truck} label="配送中" value={s.delivering} color="bg-[#34c759]/10 text-[#34c759]" onClick={() => onTabChange?.('anomalies')} />
-        <MetricCard icon={AlertTriangle} label="异常" value={s.anomaly_count} color={s.anomaly_count > 0 ? 'bg-[#ff3b30]/10 text-[#ff3b30]' : 'bg-[#34c759]/10 text-[#34c759]'} onClick={() => onTabChange?.('anomalies')} />
+        <MetricCard icon={AlertTriangle} label="异常" value={s.anomaly_count} color={s.anomaly_count > 0 ? 'bg-[#ff3b30]/10 text-[#ff3b30]' : 'bg-[#34c759]/10 text-[#34c759]'} onClick={() => onTabChange?.('anomalies')} wide />
         <MetricCard icon={Clock} label="跳扫码" value={s.skip_scan_count} color={s.skip_scan_count > 0 ? 'bg-[#ff9500]/10 text-[#ff9500]' : 'bg-[#34c759]/10 text-[#34c759]'} onClick={() => onTabChange?.('skipscan')} />
         <MetricCard icon={RotateCcw} label="售后" value={s.aftersale} color="bg-[#ff9500]/10 text-[#ff9500]" />
         <MetricCard icon={CheckCircle2} label="已完成" value={s.completed} color="bg-[#34c759]/10 text-[#34c759]" />
@@ -268,7 +303,7 @@ export function OverviewPanel({ data, history = [], formatTime: _formatTime, onT
                 </div>
               ) : null}
               {typeCnt['配送超时'] ? (
-                <div className="flex items-center justify-between text-[#9a6700] dark:text-[#ffd60a] cursor-pointer hover:bg-[#ffcc00]/5 dark:hover:bg-[#ffd60a]/10 active:bg-[#ffcc00]/10 rounded-lg px-2 py-1.5 -mx-2 min-h-[44px]" onClick={(e) => { e.stopPropagation(); setAnomalyModalType('配送超时'); }}>
+                <div className="flex items-center justify-between text-[#9a6700] dark:text-[#ff9500] cursor-pointer hover:bg-[#ffcc00]/5 dark:hover:bg-[#ff9500]/10 active:bg-[#ffcc00]/10 rounded-lg px-2 py-1.5 -mx-2 min-h-[44px]" onClick={(e) => { e.stopPropagation(); setAnomalyModalType('配送超时'); }}>
                   <span>配送超时 <strong className="text-[15px] sm:text-[17px]">{typeCnt['配送超时']}</strong> 单</span>
                   <ChevronRight className="h-4 w-4 opacity-40" />
                 </div>
@@ -366,7 +401,7 @@ export function OverviewPanel({ data, history = [], formatTime: _formatTime, onT
                   {/* Mobile: card list */}
                   <div className="sm:hidden space-y-2">
                     {filtered.map((a) => (
-                      <AnomalyMobileCard key={`${a.oid}-${a.type}`} anomaly={a} onClick={() => setSelectedAnomaly(a)} />
+                      <AnomalyMobileCard key={`${a.oid}-${a.type}`} anomaly={a} onClick={() => setSelectedAnomaly(a)} onShowToast={onShowToast} />
                     ))}
                   </div>
                   {/* Desktop: table */}
@@ -392,7 +427,7 @@ export function OverviewPanel({ data, history = [], formatTime: _formatTime, onT
                             <TableCell className="text-[13px]">
                               <span
                                 className="text-[#0071e3] dark:text-[#0a84ff] font-mono cursor-pointer hover:underline"
-                                onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(a.oid); }}
+                                onClick={(e) => { e.stopPropagation(); copyToClipboard(a.oid); onShowToast?.('已复制到剪贴板'); }}
                                 title="点击复制"
                               >
                                 {a.oid}
@@ -465,15 +500,16 @@ export function OverviewPanel({ data, history = [], formatTime: _formatTime, onT
           <CardContent className="pt-1 sm:pt-2 px-1 sm:px-6">
             {distData.some(d => d.count > 0) ? (
               <ResponsiveContainer width="100%" height={180}>
-                <BarChart data={distData} margin={{ top: 4, right: 8, left: -12, bottom: 0 }}>
+                <BarChart data={distData} margin={{ top: 4, right: 8, left: -12, bottom: 0 }} barCategoryGap="20%">
                   <CartesianGrid strokeDasharray="3 3" stroke={isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)'} vertical={false} />
                   <XAxis dataKey="name" tick={{ fontSize: 11, fill: isDark ? '#98989d' : '#86868b' }} axisLine={false} tickLine={false} />
                   <YAxis tick={{ fontSize: 10, fill: isDark ? '#98989d' : '#86868b' }} axisLine={false} tickLine={false} width={30} />
                   <Tooltip contentStyle={customTooltipStyle} />
-                  <Bar dataKey="count" radius={[6, 6, 0, 0]}>
+                  <Bar dataKey="count" radius={[6, 6, 0, 0]} barSize={36}>
                     {distData.map((entry, i) => (
                       <Cell key={i} fill={entry.fill} />
                     ))}
+                    <LabelList dataKey="count" position="top" style={{ fontSize: 11, fill: isDark ? '#ffffff' : '#1d1d1f', fontWeight: 600 }} />
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
@@ -491,13 +527,19 @@ export function OverviewPanel({ data, history = [], formatTime: _formatTime, onT
           <CardContent className="pt-1 sm:pt-2 px-1 sm:px-6">
             {trendData.length > 1 ? (
               <ResponsiveContainer width="100%" height={180}>
-                <LineChart data={trendData} margin={{ top: 4, right: 8, left: -12, bottom: 0 }}>
+                <AreaChart data={trendData} margin={{ top: 4, right: 8, left: -12, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="trendGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#0071e3" stopOpacity={0.2} />
+                      <stop offset="95%" stopColor="#0071e3" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke={isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)'} vertical={false} />
                   <XAxis dataKey="time" tick={{ fontSize: 10, fill: isDark ? '#98989d' : '#86868b' }} axisLine={false} tickLine={false} interval={xInterval} />
                   <YAxis tick={{ fontSize: 10, fill: isDark ? '#98989d' : '#86868b' }} axisLine={false} tickLine={false} width={30} />
                   <Tooltip contentStyle={customTooltipStyle} />
-                  <Line type="monotone" dataKey="orders" stroke="#0071e3" strokeWidth={2} dot={false} activeDot={{ r: 4 }} name="订单数" />
-                </LineChart>
+                  <Area type="monotone" dataKey="orders" stroke="#0071e3" strokeWidth={2.5} fill="url(#trendGradient)" dot={{ r: 3, fill: '#0071e3', strokeWidth: 0 }} activeDot={{ r: 5, stroke: '#0071e3', strokeWidth: 2, fill: '#fff' }} name="订单数" />
+                </AreaChart>
               </ResponsiveContainer>
             ) : (
               <div className="flex items-center justify-center h-[180px] text-[13px] text-[#86868b] dark:text-[#98989d]">
@@ -525,7 +567,7 @@ export function OverviewPanel({ data, history = [], formatTime: _formatTime, onT
                 </div>
                 <div className="sm:hidden space-y-2">
                   {items.map((a) => (
-                    <AnomalyMobileCard key={`${a.oid}-${a.type}`} anomaly={a} onClick={() => setSelectedAnomaly(a)} />
+                    <AnomalyMobileCard key={`${a.oid}-${a.type}`} anomaly={a} onClick={() => setSelectedAnomaly(a)} onShowToast={onShowToast} />
                   ))}
                 </div>
                 <div className="hidden sm:block overflow-x-auto">
@@ -555,7 +597,7 @@ export function OverviewPanel({ data, history = [], formatTime: _formatTime, onT
                           </TableCell>
                           <TableCell className="text-[13px] font-mono">{a.scan_time || '--'}</TableCell>
                           <TableCell className="text-[13px]">
-                            <span className="text-[#0071e3] dark:text-[#0a84ff] font-mono cursor-pointer hover:underline" onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(a.oid); }} title="点击复制">{a.oid}</span>
+                            <span className="text-[#0071e3] dark:text-[#0a84ff] font-mono cursor-pointer hover:underline" onClick={(e) => { e.stopPropagation(); copyToClipboard(a.oid); onShowToast?.('已复制到剪贴板'); }} title="点击复制">{a.oid}</span>
                           </TableCell>
                           <TableCell className="font-medium text-[13px]">{a.shop}</TableCell>
                           <TableCell className="text-[13px]">{a.dorm || '--'}</TableCell>

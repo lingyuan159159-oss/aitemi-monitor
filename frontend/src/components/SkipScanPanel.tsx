@@ -6,11 +6,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { cn } from '@/lib/utils';
 import type { MonitorData } from '@/lib/types';
 import { SEVERITY_BADGE_CLASSES, SEVERITY_LABEL_MAP } from '@/lib/constants';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { useChartTheme } from '@/lib/chartTheme';
 
 interface Props { data: MonitorData | null; }
 
 export function SkipScanPanel({ data }: Props) {
   const [selectedRider, setSelectedRider] = useState<string | null>(null);
+  const { isDark, customTooltipStyle } = useChartTheme();
   if (!data) return null;
   const { skip_scans: scans } = data;
   const threshold = data.config?.skip_scan_threshold || 60;
@@ -27,6 +30,12 @@ export function SkipScanPanel({ data }: Props) {
   const computedRiders = Object.entries(riderCountMap)
     .map(([name, info]) => ({ name, count: info.count, high_risk: info.high_risk }))
     .sort((a, b) => b.count - a.count);
+
+  const chartData = computedRiders.map(r => ({
+    name: r.name,
+    count: r.count,
+    fill: r.high_risk ? '#ff3b30' : '#af52de',
+  }));
 
   // 获取选中骑手的订单（直接从 scans 筛选）
   const selectedOrders = selectedRider ? scans.filter(s => s.rider === selectedRider) : [];
@@ -52,6 +61,29 @@ export function SkipScanPanel({ data }: Props) {
             </Card>
           ))}
         </div>
+      )}
+
+      {chartData.length > 0 && (
+        <Card className="dark:bg-[#1c1c1e]">
+          <CardHeader className="pb-0 px-3 sm:px-6 pt-3 sm:pt-6">
+            <CardTitle className="text-[12px] sm:text-[13px] font-medium text-[#1d1d1f] dark:text-white">骑手跳扫码分布</CardTitle>
+          </CardHeader>
+          <CardContent className="pt-1 sm:pt-2 px-1 sm:px-6">
+            <ResponsiveContainer width="100%" height={200}>
+              <BarChart data={chartData} margin={{ top: 4, right: 8, left: -12, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke={isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)'} vertical={false} />
+                <XAxis dataKey="name" tick={{ fontSize: 11, fill: isDark ? '#98989d' : '#86868b' }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 10, fill: isDark ? '#98989d' : '#86868b' }} axisLine={false} tickLine={false} width={30} />
+                <Tooltip contentStyle={customTooltipStyle} />
+                <Bar dataKey="count" radius={[6, 6, 0, 0]} name="跳扫码数">
+                  {chartData.map((entry, i) => (
+                    <Cell key={i} fill={entry.fill} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
       )}
 
       {/* Detail Table */}
